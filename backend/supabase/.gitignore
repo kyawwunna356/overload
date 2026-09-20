@@ -1,0 +1,8 @@
+# Supabase
+.branches
+.temp
+
+# dotenvs
+.env
+.env.*
+!.env.example
