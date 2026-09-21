@@ -8,11 +8,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 ## Where we are
 
-- **Milestone 2 — Sessions and timers** is in progress. Milestone 1 (data and logging) is
-  finished and was checked on the iPhone.
-- **Last commit:** Ticket 11: End session — optional End button and Resume.
-- **Next:** Ticket 12: On-device check for milestone 2 (the last ticket of the milestone;
-  the user confirms it by hand on the iPhone and bumps the milestone in CLAUDE.md).
+- **Milestone 2 — Sessions and timers** is finished: Tickets 8–11 are committed and Ticket 12
+  (the on-device check) was confirmed by the user on the iPhone. Milestone 1 was checked the
+  same way. CLAUDE.md's "Current milestone" is the user's to bump to 3.
+- **Last commit:** the docs commit recording the milestone 2 device check (after Ticket 11:
+  End session — optional End button and Resume).
+- **Next:** milestone 3 (patterns, staleness sort, coverage strip, template-as-view). The board
+  already groups by pattern and sorts by staleness, so what's left is the coverage strip and
+  template-as-view. Plan its tickets when the user asks.
 - **Tests:** 162 Vitest tests, domain layer only.
 
 ## What works today
@@ -103,12 +106,20 @@ These aren't obvious from the code and shaped later work.
   ending is undoable. Ticket 12 will show whether two taps is too many.
 - `useSessionSummary` passes `deriveSessions` only the markers before the next set, so an older
   session never reads as ended because of a later one's marker.
-- Ticket 7 (on-device check for milestone 1) has no commit: it was confirmed by hand.
+- Tickets 7 and 12 (the on-device checks for milestones 1 and 2) have no code commit: the user
+  confirmed them by hand on the iPhone.
 
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 12: On-device check — run milestone 2 on the iPhone
+`docs: Record the milestone 2 device check` · 2026-09-21
+
+- No code. The user ran the 25-point checklist on the iPhone (timers across lock, app switch and
+  a killed Safari; summary; End and Resume; offline; one-handed reach) and confirmed it.
+- `tickets.md` marks Ticket 12 done; this file now says milestone 2 is finished.
 
 ### Ticket 11: End session — optional End button and Resume
 `feature: Add optional End session button and Resume` · 2026-09-21
