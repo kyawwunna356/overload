@@ -101,8 +101,10 @@ don't exist yet.
 ## Design
 
 The look follows [frontend/DESIGN.md](frontend/DESIGN.md), a Wise-inspired design system
-installed with `npx getdesign@latest add wise`: a sage page, white rounded cards, one lime
-accent, Inter type, and 48px-plus touch targets.
+installed with `npx getdesign@latest add wise`. The app is **dark only**: a near-black page,
+slightly lighter rounded cards, off-white text, one lime accent, Inter type, and 48px-plus
+touch targets. Wise defines no dark mode, so the dark values are derived from its palette
+(its ink color is the page, the lime accent is unchanged).
 
 **To change how the whole app looks, edit [frontend/app/theme.css](frontend/app/theme.css).**
 All colors, fonts and corner radii are defined there as named tokens (`bg-page`,

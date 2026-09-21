@@ -1,8 +1,15 @@
 @import "tailwindcss";
 @import "./theme.css";
 
-/* No colors or fonts are chosen here — they come from theme.css. */
+/* No colors or fonts are chosen here — they come from theme.css. The app is dark only:
+   color-scheme makes the browser draw its own controls, scrollbars and overscroll area
+   dark too, and the page color goes on html as well as body so no light edge shows. */
 @layer base {
+  html {
+    color-scheme: dark;
+    @apply bg-page;
+  }
+
   body {
     @apply bg-page font-sans text-ink;
   }

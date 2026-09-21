@@ -31,7 +31,7 @@ export function PatternGroup({ group }: { group: BoardGroup }) {
               type="button"
               aria-expanded={expanded}
               onClick={() => setExpanded(!expanded)}
-              className="h-12 w-full rounded-pill bg-page text-base font-semibold text-ink active:bg-primary-active"
+              className="h-12 w-full rounded-pill bg-page text-base font-semibold text-ink active:bg-line"
             >
               {expanded ? "Show less" : `Show ${hidden} more`}
             </button>

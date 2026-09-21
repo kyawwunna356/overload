@@ -208,7 +208,7 @@ function RoundButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="h-14 w-14 shrink-0 touch-manipulation rounded-pill bg-page text-3xl font-semibold text-ink active:bg-primary-active"
+      className="h-14 w-14 shrink-0 touch-manipulation rounded-pill bg-page text-3xl font-semibold text-ink active:bg-line"
     >
       {children}
     </button>

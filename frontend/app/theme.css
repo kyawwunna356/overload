@@ -6,8 +6,17 @@
  * Change a value here and the whole app changes; nothing outside this file may use a raw
  * color (the commit skill's check-rules.sh fails if one appears).
  *
- * Values follow frontend/DESIGN.md (the Wise-inspired design system). The comment after
- * each token gives its DESIGN.md name.
+ * THE APP IS DARK ONLY. There is no light theme and no follow-the-phone switch.
+ *
+ * The token names and the lime accent follow frontend/DESIGN.md (the Wise-inspired design
+ * system). Wise defines no dark mode, so the dark VALUES below are derived from it: the page
+ * is Wise's own ink color, and the accent is unchanged. A token's name says what it is FOR,
+ * not what it looks like — so `ink` is the primary text color, which is light here, and
+ * `ink-deep` is the readable text color on `primary-pale`.
+ *
+ * Every text/background pair the UI uses is at least 4.5:1 contrast. If you retune a value,
+ * keep that true for the pairs it touches (text-ink and text-body on page/card, text-on-primary
+ * on primary, text-ink-deep on primary-pale, text-negative-deep on card).
  *
  * Two things live outside this file because they need code rather than CSS:
  *  - the font FILE is loaded in app/layout.tsx via next/font; this file only picks which
@@ -22,30 +31,30 @@
   --color-*: initial;
 
   /* Surfaces */
-  --color-page: #e8ebe6; /* canvas-soft — the sage page behind everything */
-  --color-card: #ffffff; /* canvas — cards sit on the page */
-  --color-line: #e8ebe6; /* hairline dividers inside a card (same sage as the page) */
+  --color-page: #0e0f0c; /* ink — the page behind everything (Wise's near-black) */
+  --color-card: #1a1c18; /* cards sit one step above the page */
+  --color-line: #2c2f29; /* dividers inside a card; also a neutral button's pressed fill */
 
   /* Text */
-  --color-ink: #0e0f0c; /* ink — primary text */
-  --color-body: #454745; /* body — secondary text; passes AA on card and page */
-  --color-mute: #868685; /* mute — non-essential text only; ~3.5:1 on white, below AA */
+  --color-ink: #f2f4ef; /* primary text */
+  --color-body: #b9bdb4; /* secondary text and ghost values */
+  --color-mute: #868685; /* non-essential text only; 4.7:1 on a card */
 
   /* Brand — the single accent. Sits on neutral surfaces, never on another green. */
-  --color-primary: #9fe870; /* primary */
-  --color-on-primary: #0e0f0c; /* on-primary — text on a primary fill */
-  --color-primary-active: #cdffad; /* primary-active — pressed/hover fill */
-  --color-primary-neutral: #c5edab; /* primary-neutral */
-  --color-primary-pale: #e2f6d5; /* primary-pale — soft tints, badges */
-  --color-ink-deep: #163300; /* ink-deep — dark green text on pale green */
+  --color-primary: #9fe870; /* primary — the Log button */
+  --color-on-primary: #0e0f0c; /* text on a primary fill */
+  --color-primary-active: #cdffad; /* the primary button while pressed */
+  --color-primary-neutral: #3f6b24; /* primary-neutral — mid green; not used yet */
+  --color-primary-pale: #1f3a12; /* primary-pale — dark green tint, e.g. the selected chip */
+  --color-ink-deep: #cdffad; /* readable text (and ring) on primary-pale */
 
-  /* Status */
+  /* Status. The "-deep" variants are the ones readable as text on a dark card. */
   --color-positive: #2ead4b; /* positive */
-  --color-positive-deep: #054d28; /* positive-deep */
+  --color-positive-deep: #7fe39a; /* positive-deep */
   --color-warning: #ffd11a; /* warning */
-  --color-warning-deep: #b86700; /* warning-deep */
+  --color-warning-deep: #ffb84d; /* warning-deep */
   --color-negative: #d03238; /* negative */
-  --color-negative-deep: #a72027; /* negative-deep */
+  --color-negative-deep: #ff7a7f; /* negative-deep — e.g. the delete button */
 
   /* Corners — DESIGN.md: 24px cards and pills, never sharp */
   --radius-card: 1.5rem; /* rounded-xl */

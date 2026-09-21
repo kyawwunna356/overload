@@ -32,7 +32,7 @@ export function LogSheet() {
               router.back();
             }
           }}
-          className="inline-flex h-12 touch-manipulation items-center rounded-pill bg-card px-5 text-base font-semibold text-ink active:bg-primary-active"
+          className="inline-flex h-12 touch-manipulation items-center rounded-pill bg-card px-5 text-base font-semibold text-ink active:bg-line"
         >
           ‹ Board
         </Link>

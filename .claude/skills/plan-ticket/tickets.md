@@ -13,7 +13,9 @@ first one. The milestone order itself comes from the build order in CLAUDE.md.
 | 2 | Domain layer — previous-set prefill and staleness | done |
 | 3 | Board — pattern groups, staleness sort, last weight inline (plus the Wise theme in `theme.css`) | done |
 | 4 | Log sheet — ghost values, one-tap repeat, ± buttons, Dexie-then-outbox writes | done |
-| 5 | On-device check — run milestone 1 on the iPhone | next |
+| 5 | Dark theme — the whole app dark, no light mode | done |
+| 6 | Exercise history — every set, grouped by day with weekday/date labels | next |
+| 7 | On-device check — run milestone 1 on the iPhone | not started |
 
 Milestone 2 (gap-rule sessions, both timers, session summary) is broken into tickets when
-Ticket 5: On-device check passes.
+Ticket 7: On-device check passes.
