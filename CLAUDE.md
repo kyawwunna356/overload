@@ -111,7 +111,7 @@ Supabase Postgres               durable archive only
 ```
 app/
   (app)/page.tsx                 board (home)
-  (app)/exercise/[id]/page.tsx   log sheet
+  (app)/exercise/page.tsx        log sheet (?id=… — a static page, so it opens offline)
   (app)/session/[id]/page.tsx    session summary
   (app)/manage/page.tsx          exercises + template
   (app)/history/page.tsx         sessions + per-exercise history

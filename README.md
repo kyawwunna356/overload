@@ -10,9 +10,9 @@ It's a single-user app, installed as a PWA on an iPhone and used in a gym baseme
 no signal. Everything works offline; the network is only ever a background backup.
 
 > **Status: early development.** The data layer (Dexie schema, seed data, the first
-> domain functions) and the board — the home screen showing your exercises by movement
-> pattern with the last set inline — are in place. Logging a set isn't built yet. See
-> [Roadmap](#roadmap).
+> domain functions), the board — the home screen showing your exercises by movement
+> pattern with the last set inline — and the log sheet, where one tap records a set, are
+> in place. Sessions and timers are next. See [Roadmap](#roadmap).
 
 ## How it thinks
 
@@ -59,20 +59,22 @@ frontend/                 Next.js app
   DESIGN.md               the design system (Wise-inspired) the UI follows
   app/
     theme.css             every color, font and radius — the one place to change the look
-    (app)/                the app's screens (currently the board at /)
-  components/             Board, PatternGroup, ExerciseRow
+    (app)/                the app's screens: the board at /, the log sheet at /exercise?id=…
+  components/             Board, PatternGroup, ExerciseRow, LogSheet, SetEntry, RecentSets
   lib/
     db.ts                 Dexie schema, seeding, dev reset
+    writes.ts             the write path: logSet / deleteSet, each a Dexie + outbox transaction
     seed.ts               pure generator for ~6 weeks of realistic training data
-    format.ts             display helpers (weights, "days ago")
+    format.ts             display helpers (weights, "days ago", times)
     uuid.ts               UUIDv7 ids
     constants.ts          local user id
-    hooks/                useBoard — reads Dexie live and feeds the domain layer
+    hooks/                useBoard, useLogSheet, useNow — read Dexie live for the UI
     domain/               pure functions over plain data — no db, sync, react or next
       types.ts            row types shared by everything
       previous.ts         last working set of an exercise (prefill)
       staleness.ts        days since an exercise was last performed
       board.ts            groups and sorts exercises for the home screen
+      entry.ts            stepping and parsing for the log sheet's weight and reps
 backend/
   supabase/               Supabase project config (migrations arrive with sync)
 .claude/skills/commit/    the commit workflow and hard-rule checker used in this repo
@@ -183,7 +185,8 @@ Work goes strictly in this order, and a step isn't started until the previous on
 end to end on a real device.
 
 1. **Data and logging** *(in progress)* — Dexie schema and seed data ✅, domain functions
-   ✅, the board ✅, then one-tap logging with previous-value prefill.
+   ✅, the board ✅, one-tap logging with previous-value prefill ✅ — pending the on-device
+   check.
 2. **Sessions and timers** — the gap rule, both timers, and a session summary.
 3. **Patterns and coverage** — staleness sort, coverage strip, template as a view.
 4. **Rewards** — PR flash, weekly ring, mastery levels.

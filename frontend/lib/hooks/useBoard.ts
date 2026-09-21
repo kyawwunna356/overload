@@ -2,10 +2,11 @@
 
 import Dexie from 'dexie';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { db } from '../db';
 import { buildBoard, type BoardGroup } from '../domain/board';
 import type { SetLog } from '../domain/types';
+import { useNow } from './useNow';
 
 // The board, read from Dexie only (Hard Rule 5). Returns undefined until the first
 // read completes, which is milliseconds locally — so no loading UI is needed.
@@ -42,19 +43,4 @@ export function useBoard(): BoardGroup[] | undefined {
     () => (data ? buildBoard(data.exercises, data.logs, now) : undefined),
     [data, now],
   );
-}
-
-// The current time as state. It's only ever *read* from the clock — never counted —
-// and re-read whenever the page becomes visible again, so days-ago snaps correct
-// after the phone wakes (Hard Rule 4). No interval is needed at day granularity.
-function useNow(): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === 'visible') setNow(Date.now());
-    };
-    document.addEventListener('visibilitychange', refresh);
-    return () => document.removeEventListener('visibilitychange', refresh);
-  }, []);
-  return now;
 }
