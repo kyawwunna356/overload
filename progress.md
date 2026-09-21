@@ -1,0 +1,158 @@
+# Progress
+
+What has been built in this app and what's next, so a new session can pick up without
+re-reading the whole repo. **Read this file at the start of every session**, then
+`CLAUDE.md` (rules and current milestone) and `.claude/skills/plan-ticket/tickets.md`
+(ticket statuses). It is updated in the same commit as each piece of work — see
+[How this file is kept](#how-this-file-is-kept).
+
+## Where we are
+
+- **Milestone 2 — Sessions and timers** is in progress. Milestone 1 (data and logging) is
+  finished and was checked on the iPhone.
+- **Last commit:** Ticket 8: Sessions domain — the pure gap-rule functions, no UI yet.
+- **Next:** Ticket 9: Timers — the session timer (time since your first set) in the board
+  header and on the log sheet, and the rest timer (time since the last set) on the log
+  sheet. Then Ticket 10: Session summary page, Ticket 11: End session — optional End
+  button and Resume, and Ticket 12: On-device check for milestone 2.
+- **Tests:** 148 Vitest tests, domain layer only.
+
+## What works today
+
+- **Board** (`/`): six movement-pattern groups, each sorted most recently performed first
+  (never-performed last), collapsed to the top 3 with "Show N more". Every row shows the
+  last working set inline (`82.5 kg × 5`, `BW × 9`) and days ago.
+- **Log sheet** (`/exercise?id=…`): last working set as large ghost values, ± buttons
+  (2.5 kg, ±1 rep), tap a number to type, kind chips (warmup / working / drop / failure)
+  that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
+  last set. Below it, the full history grouped by day (Today, Yesterday, weekday, date)
+  with delete.
+- **Local data:** Dexie database seeded once with 25 exercises, a default "Full Body"
+  template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
+  and `outbox`. Nothing syncs yet.
+- **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
+  `board`, `entry`, `history`, `sessions`. `sessions.ts` is written but nothing in the UI
+  uses it yet.
+- **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
+
+**Not built yet:** timers, session summary, End session, coverage strip, template-as-view,
+PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
+
+## Decisions worth remembering
+
+These aren't obvious from the code and shaped later work.
+
+- **Sessions are derived at read time**, not stored (chosen in Ticket 8). A session's id is
+  its first set's id. `set_logs.session_id` stays null and the `sessions` table holds only
+  manual end markers.
+- **Hard Rule 2 was reworded in Ticket 8:** there's still no "Start Workout", but an
+  optional **End session** button is allowed. It writes an end marker (`ended_at`) to
+  `sessions`, is one tap with no dialog, is never required, and has a Resume that deletes
+  the marker. Ticket 11 builds it.
+- **Screens that take an id use a query string** (`/exercise?id=…`, and later
+  `/session?id=…`), not `[id]` routes, because dynamic routes aren't prefetched and would
+  need the server to open — which fails with no signal.
+- **The "‹ Board" link goes back through history**, since a plain link to `/` needs the
+  server.
+- **Secondary text uses `text-body`, not `text-mute`,** which is too faint in a dim gym.
+- **Neutral buttons press to `line`,** and only the Log button presses to the lime.
+- **`pnpm` isn't on the PATH in Claude's shell:** use `corepack pnpm …` (or the binaries
+  in `frontend/node_modules/.bin`).
+- Ticket 7 (on-device check for milestone 1) has no commit: it was confirmed by hand.
+
+## Log
+
+Newest first. One entry per commit, matching `git log`; hashes are left out because an
+entry is written in the same commit it describes.
+
+### Progress log
+`docs: Add progress.md and a session-start check` · 2026-09-21
+
+- `progress.md` summarises every earlier commit, the current state and the decisions behind them.
+- CLAUDE.md's new "PROGRESS LOG" section, the plan-ticket skill and the commit skill (new
+  step 2b) make it read at the start of a session and updated in each commit.
+
+### Ticket 8: Sessions domain — gap rule, end markers, active session, session summary
+`feature: Add session gap-rule domain functions with end markers` · 2026-09-21
+
+- `lib/domain/sessions.ts`: `deriveSessions` and `assignSession` split sets at gaps over
+  90 minutes (exactly 90 stays together) or at an end marker; `activeSession`; and
+  `summarizeSession`, which groups a session's sets by exercise in first-performed order.
+- `sessions.test.ts` covers the boundary, markers, ordering, ties and missing exercises.
+- Hard Rule 2 reworded for the optional End button, Rule 1 notes the end marker, milestone
+  marker moved to 2, and the session route is now `/session?id=…`.
+- Milestone 2 ticket breakdown added to `tickets.md`.
+
+### Ticket 6: Exercise history — every set, grouped by day
+`feature: Group exercise history by day with weekday and date labels` · 2026-09-21
+
+- The log sheet's "Recent sets" (last 5) became "History": every set of the exercise, one
+  card per day, newest first, with Today / Yesterday / weekday / date headings.
+- `lib/domain/history.ts` (`groupByDay`, `dayLabel`, `ordinal`) over local calendar days,
+  33 tests run in five timezones. `RecentSets.tsx` became `SetHistory.tsx`.
+
+### Ticket 5: Dark theme — the whole app dark, no light mode
+`feature: Switch the app to a dark-only theme` · 2026-09-21
+
+- `theme.css` got dark values for every token, same names; `color-scheme: dark` in CSS and
+  the Next viewport. Every text/background pair is at least 4.5:1.
+
+### Ticket 4: Log sheet — ghost values, one-tap repeat, ± buttons, Dexie-then-outbox writes
+`feature: Add log sheet with one-tap set logging and outbox writes` · 2026-09-21
+
+- `/exercise?id=…` with ghost values, ± buttons, tap-to-type, kind chips and a pinned Log
+  button; `lib/writes.ts` (`logSet`, `deleteSet`) in one Dexie transaction with an outbox row.
+- `lib/domain/entry.ts` (stepping, parsing, prefill; 41 tests), `useLogSheet`, and `useNow`
+  extracted from `useBoard`. Board rows link to the sheet.
+
+### Ticket 3: Board — pattern groups, staleness sort, last weight inline
+`feature: Add board with pattern groups, last-set inline and Wise theme` · 2026-09-21
+
+- Board at `/` with `lib/domain/board.ts` (`buildBoard`, 13 tests) and `useBoard`, which
+  reads two indexed rows per exercise so cost stays flat as history grows.
+- `DESIGN.md` and `app/theme.css` (Wise-inspired tokens; Tailwind's default palette cleared);
+  `check-rules.sh` now fails on raw colors outside `theme.css`.
+- `next.config.ts` allows VS Code tunnel origins in dev for phone testing.
+
+### Planning workflow
+`docs: Add plan-ticket skill and ticket list` · 2026-09-21
+
+- `plan-ticket` skill (orient, name "Ticket N: main feature", write the plan, hand over;
+  built but not committed until asked) and `tickets.md`.
+
+### Ticket 2: Domain layer — previous-set prefill and staleness
+`feature: Add previous-set and staleness domain functions` · 2026-09-21
+
+- `previousSet` (last working set; ignores warmup, drop, failure) and `staleness` (days
+  since any set; null if never performed), both pure and order-independent.
+- `test-utils.ts` (`makeSet`), 28 tests including a realism check against the seed.
+
+### Project README
+`docs: Add project README` · 2026-09-21
+
+- What the app is, stack, layout, layered architecture, setup, seed data, data model and
+  the five-step roadmap.
+
+### Ticket 1: Data foundation — Dexie schema, types, seed
+`feature: Add Dexie schema, seed data and commit skill` · 2026-09-21
+
+- `lib/domain/types.ts`, `lib/db.ts` (Dexie v1, the `[exercise_id+logged_at]` index, seeded
+  on first creation, dev-only `resetAndSeed`), `lib/seed.ts` (25 exercises, a default
+  template, ~6 weeks / 16 sessions), `lib/uuid.ts`, `lib/constants.ts`.
+- The commit skill and `check-rules.sh`, a grep for CLAUDE.md hard-rule violations.
+
+### Scaffold
+`Scaffold frontend (Next.js) and backend (Supabase) projects` · 2026-09-20
+
+- `frontend/` from create-next-app (App Router, TypeScript, Tailwind 4, ESLint, pnpm);
+  `backend/` from `supabase init` (config only, no custom server); `CLAUDE.md`.
+
+## How this file is kept
+
+- **Before each commit**, add a Log entry at the top (ticket label, commit subject, date,
+  a few bullets) and refresh "Where we are", "What works today" and "Decisions worth
+  remembering" if the commit changed them. Stage it with the rest so it lands in the same
+  commit and the tree stays clean.
+- **At the start of a session,** read this file first.
+- Keep it a summary, not a copy of `git log`: the *why* and the current state, not every
+  file touched.

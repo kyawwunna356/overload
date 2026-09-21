@@ -239,6 +239,15 @@ the board sorting and prefill behaviour can't be evaluated.
 
 ---
 
+## PROGRESS LOG
+
+[progress.md](progress.md) records what has been built, the decisions behind it, and what
+comes next. **Read it at the start of every session**, before planning or coding. **Update
+it with every commit**: add the Log entry and refresh the summary sections before
+committing, so it lands in the same commit (the commit skill has the step).
+
+---
+
 ## KNOWN TRAPS
 
 - **`setInterval` as the timer's source of truth.** The default pattern everywhere. Wrong

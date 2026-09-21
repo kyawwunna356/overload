@@ -14,6 +14,8 @@ main changes).** Everything below serves that.
 
 Do this before writing a word of the plan.
 
+- Read `progress.md` at the repo root first: what's built, the decisions behind it, and
+  what's next. It's the history of earlier sessions.
 - `git status` and `git log --oneline -5`. Confirm the previous ticket is committed, and
   say whether it's pushed. If the tree holds unrelated uncommitted work, flag it first.
 - Read CLAUDE.md for the **current milestone**, the build order, the UI rules and the

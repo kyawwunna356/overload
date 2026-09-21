@@ -60,6 +60,18 @@ The script can't judge intent, so read the diff for the rest of Tier 1 yourself:
 If a change needs to break a rule, stop and ask the user — CLAUDE.md treats that as a
 decision for them, not a judgment call for the commit.
 
+## 2b. Update progress.md
+
+Before staging, update [progress.md](../../../progress.md) at the repo root so the next
+session knows what this commit did:
+
+- Add a Log entry at the top: the ticket label, the commit subject, the date and a few
+  bullets (the *why* and the notable pieces, not every file).
+- Refresh "Where we are" (last commit, next ticket, test count), "What works today" and
+  "Decisions worth remembering" wherever this commit changed them.
+- Stage it with the rest, so it lands in the same commit and the tree stays clean. The
+  entry has no hash, since it can't know its own; `git log` has it.
+
 ## 3. Stage deliberately
 
 Stage by path, or use `git add -A` only after `git status` shows nothing that shouldn't
