@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { patternLabel } from "@/lib/format";
 import { useLogSheet } from "@/lib/hooks/useLogSheet";
 import { useNow } from "@/lib/hooks/useNow";
-import { RecentSets } from "./RecentSets";
 import { SetEntry } from "./SetEntry";
+import { SetHistory } from "./SetHistory";
 
 // The log sheet for one exercise, chosen by `?id=` in the URL. It's a static page that reads
 // the id in the browser, so opening it from the board never waits on a server — it works
@@ -51,7 +51,7 @@ export function LogSheet() {
             <p className="pt-2 text-body">{patternLabel(data.exercise.pattern)}</p>
           </header>
           <SetEntry exerciseId={data.exercise.id} previous={data.previous} now={now} />
-          <RecentSets sets={data.recent} />
+          <SetHistory history={data.history} now={now} />
         </div>
       )}
     </div>

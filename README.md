@@ -60,7 +60,7 @@ frontend/                 Next.js app
   app/
     theme.css             every color, font and radius — the one place to change the look
     (app)/                the app's screens: the board at /, the log sheet at /exercise?id=…
-  components/             Board, PatternGroup, ExerciseRow, LogSheet, SetEntry, RecentSets
+  components/             Board, PatternGroup, ExerciseRow, LogSheet, SetEntry, SetHistory
   lib/
     db.ts                 Dexie schema, seeding, dev reset
     writes.ts             the write path: logSet / deleteSet, each a Dexie + outbox transaction
@@ -75,6 +75,7 @@ frontend/                 Next.js app
       staleness.ts        days since an exercise was last performed
       board.ts            groups and sorts exercises for the home screen
       entry.ts            stepping and parsing for the log sheet's weight and reps
+      history.ts          groups an exercise's sets by day (Today, Yesterday, weekday, date)
 backend/
   supabase/               Supabase project config (migrations arrive with sync)
 .claude/skills/commit/    the commit workflow and hard-rule checker used in this repo
