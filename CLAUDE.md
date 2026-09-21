@@ -16,16 +16,21 @@ even if the code works. If a change requires breaking one of these, stop and ask
 
 `set_logs` is the single source of truth. Sessions, timers, PRs, streaks, coverage,
 staleness and "previous weight" are all **derived** from it. Do not introduce stored
-state for anything that can be computed from `set_logs`.
+state for anything that can be computed from `set_logs`. The one stored session fact is
+the optional end marker in Rule 2, because it records a choice rather than a computation.
 
 ### 2. Sessions are derived, never started
 
-There is **no "Start Workout" button and no "Finish Workout" button.** A session is a run
-of sets with no gap larger than `SESSION_GAP_MINUTES` (90). The first set logged opens a
-session implicitly; an idle gap closes it.
+There is **no "Start Workout" button.** A session is a run of sets with no gap larger than
+`SESSION_GAP_MINUTES` (90). The first set logged opens a session implicitly; an idle gap
+closes it.
 
-Finishing a session must **always** be possible, unconditionally. There is never a
-validation step, a confirmation dialog, or a cleanup task before a session can end.
+Ending a session is **optional**. An idle gap always closes one, whether or not anything is
+tapped. An optional **End session** button can close it sooner by writing an end marker
+(`ended_at`) to `sessions`; the next set then opens a new session even within 90 minutes.
+Ending must **always** be possible, unconditionally: one tap, never a validation step, a
+confirmation dialog, or a cleanup task, and never required. A mistaken End can be undone
+(Resume), which deletes the marker.
 
 ### 3. Templates are a view, never a constraint
 
@@ -112,7 +117,7 @@ Supabase Postgres               durable archive only
 app/
   (app)/page.tsx                 board (home)
   (app)/exercise/page.tsx        log sheet (?id=… — a static page, so it opens offline)
-  (app)/session/[id]/page.tsx    session summary
+  (app)/session/page.tsx         session summary (?id=… — a static page, so it opens offline)
   (app)/manage/page.tsx          exercises + template
   (app)/history/page.tsx         sessions + per-exercise history
 lib/
@@ -145,7 +150,8 @@ set_logs        (id, user_id, exercise_id, session_id, logged_at,
                 -- kind: warmup | working | drop | failure
 
 sessions        (id, user_id, started_at, ended_at, template_id?, updated_at)
-                -- materialised by the gap rule; template_id is a label only
+                -- holds manual end markers only (ended_at); sessions are derived from
+                -- set_logs by the gap rule. template_id is a label only
 
 outbox          (id, table, op, payload, created_at)   -- local only, never synced
 ```
@@ -226,7 +232,7 @@ end-to-end on a real device.
 4. PR flash, weekly ring, mastery levels
 5. Supabase + outbox sync + PWA install + `navigator.storage.persist()`
 
-**Current milestone: 1**
+**Current milestone: 2**
 
 Seed ~6 weeks of realistic full-body training data early, before building UI. Without it
 the board sorting and prefill behaviour can't be evaluated.

@@ -21,9 +21,9 @@ full in [CLAUDE.md](CLAUDE.md); the short version:
 
 - **A set is the only thing that exists.** Sessions, timers, PRs, streaks, coverage and
   "previous weight" are all *derived* from the log of sets, never stored on their own.
-- **No "Start Workout" or "Finish Workout".** A session is just a run of sets with no gap
-  longer than 90 minutes. The first set opens one; an idle gap closes it. Nothing ever
-  has to be confirmed or cleaned up.
+- **No "Start Workout".** A session is just a run of sets with no gap longer than 90
+  minutes. The first set opens one; an idle gap closes it. An optional "End session" button
+  can close it sooner, in one tap. Nothing ever has to be confirmed, ended or cleaned up.
 - **Templates are a view, not a rule.** A template decides what appears on screen and in
   what order. It never limits what you can log, and there's nothing to "skip".
 - **Timers are timestamp arithmetic.** Session time is `now − first set`; rest time is
@@ -76,6 +76,7 @@ frontend/                 Next.js app
       board.ts            groups and sorts exercises for the home screen
       entry.ts            stepping and parsing for the log sheet's weight and reps
       history.ts          groups an exercise's sets by day (Today, Yesterday, weekday, date)
+      sessions.ts         the gap rule: derives sessions, the active one, and a session summary
 backend/
   supabase/               Supabase project config (migrations arrive with sync)
 .claude/skills/commit/    the commit workflow and hard-rule checker used in this repo
@@ -96,8 +97,8 @@ Sync (lib/sync/)           flushes the outbox on `online` and on foreground
 Supabase Postgres          durable archive only
 ```
 
-`lib/sync/` and the remaining `lib/domain/` modules (sessions, timers, PRs, coverage)
-don't exist yet.
+`lib/sync/` and the remaining `lib/domain/` modules (timers, PRs, coverage) don't exist
+yet; `lib/domain/sessions.ts` (the gap rule) does.
 
 ## Design
 
@@ -175,6 +176,7 @@ template_items  id, template_id, exercise_id, pattern, sort_order
 set_logs        id, exercise_id, session_id, logged_at, weight, reps, rpe, kind
                 kind: warmup | working | drop | failure
 sessions        id, started_at, ended_at, template_id (label only)
+                only manual end markers are stored; sessions are derived from set_logs
 outbox          id, table, op, payload, created_at   — local only, never synced
 ```
 
@@ -187,10 +189,10 @@ template.
 Work goes strictly in this order, and a step isn't started until the previous one runs
 end to end on a real device.
 
-1. **Data and logging** *(in progress)* — Dexie schema and seed data ✅, domain functions
-   ✅, the board ✅, one-tap logging with previous-value prefill ✅ — pending the on-device
-   check.
-2. **Sessions and timers** — the gap rule, both timers, and a session summary.
+1. **Data and logging** ✅ — Dexie schema and seed data, domain functions, the board,
+   one-tap logging with previous-value prefill.
+2. **Sessions and timers** *(in progress)* — the gap rule, both timers, a session summary,
+   and an optional End session button.
 3. **Patterns and coverage** — staleness sort, coverage strip, template as a view.
 4. **Rewards** — PR flash, weekly ring, mastery levels.
 5. **Sync and install** — Supabase, outbox sync, PWA install, persistent storage.
