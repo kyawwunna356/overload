@@ -2,6 +2,7 @@
 
 import { useBoard } from "@/lib/hooks/useBoard";
 import { PatternGroup } from "./PatternGroup";
+import { SessionHeader } from "./SessionHeader";
 
 // The client boundary between the server-rendered page and the local database. Until
 // the first local read finishes (milliseconds) only the title shows — there is no
@@ -11,10 +12,11 @@ export function Board() {
 
   return (
     <>
-      <header className="pb-6">
+      <header className="flex items-baseline justify-between gap-4 pb-6">
         <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">
           Overload
         </h1>
+        <SessionHeader />
       </header>
       {groups && (
         <div className="flex flex-col gap-6">

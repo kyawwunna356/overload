@@ -10,12 +10,11 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 2 — Sessions and timers** is in progress. Milestone 1 (data and logging) is
   finished and was checked on the iPhone.
-- **Last commit:** Ticket 8: Sessions domain — the pure gap-rule functions, no UI yet.
-- **Next:** Ticket 9: Timers — the session timer (time since your first set) in the board
-  header and on the log sheet, and the rest timer (time since the last set) on the log
-  sheet. Then Ticket 10: Session summary page, Ticket 11: End session — optional End
-  button and Resume, and Ticket 12: On-device check for milestone 2.
-- **Tests:** 148 Vitest tests, domain layer only.
+- **Last commit:** Ticket 9: Timers — the session timer and the rest timer are on screen.
+- **Next:** Ticket 10: Session summary page (what you did in one session, reached by
+  tapping the session timer). Then Ticket 11: End session — optional End button and
+  Resume, and Ticket 12: On-device check for milestone 2.
+- **Tests:** 161 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -27,15 +26,20 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
   last set. Below it, the full history grouped by day (Today, Yesterday, weekday, date)
   with delete.
+- **Timers** (only while a session is active, i.e. a set in the last 90 minutes): a small
+  grey `Session 42:10` (time since the session's first set) in the board header and on the
+  log sheet, and a `Rest` timer (time since the last set, any exercise, counts up) at the top
+  right of the log sheet. There's no start button: your first set opens the session.
 - **Local data:** Dexie database seeded once with 25 exercises, a default "Full Body"
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `entry`, `history`, `sessions`. `sessions.ts` is written but nothing in the UI
-  uses it yet.
+  `board`, `entry`, `history`, `sessions`, `timers`. `useActiveSession` (in `lib/hooks/`)
+  reads the current session from Dexie through `sessions.ts`; the session summary and End
+  session don't use it yet.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** timers, session summary, End session, coverage strip, template-as-view,
+**Not built yet:** session summary, End session, coverage strip, template-as-view,
 PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
 
 ## Decisions worth remembering
@@ -58,12 +62,37 @@ These aren't obvious from the code and shaped later work.
 - **Neutral buttons press to `line`,** and only the Log button presses to the lime.
 - **`pnpm` isn't on the PATH in Claude's shell:** use `corepack pnpm …` (or the binaries
   in `frontend/node_modules/.bin`).
+- **Timers hide when there's no active session.** The seed data is weeks old, so a fresh
+  board shows no timers until you log a set. That's correct, not a bug.
+- **Timers are `now − timestamp`** (Hard Rule 4): `elapsed()` in `lib/domain/timers.ts`.
+  `useNow(500)` repaints twice a second by re-reading `Date.now()`, never by adding to a
+  value; 500 ms (not 1000) so a displayed second can't be skipped. It stops while the page is
+  hidden and re-reads on `visibilitychange`.
+- **Rest = since the last set of any exercise,** not per exercise. The rest timer is
+  `text-3xl` (the first try, `text-5xl`, was too big); the session timer stays small and grey,
+  so two prominent counters never share a screen.
+- `startsNewSession` in `sessions.ts` is the single definition of where a session splits;
+  `useActiveSession` reuses it to stop walking the log, so the rule lives in one place.
+- **The app on port 3000 was `next start` (production), which never hot-reloads.** After a
+  code change: `next build`, then restart it. `pnpm dev` hot-reloads.
 - Ticket 7 (on-device check for milestone 1) has no commit: it was confirmed by hand.
 
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 9: Timers — session timer (time since your first set) and rest timer
+`feature: Add session and rest timers derived from timestamps` · 2026-09-21
+
+- `lib/domain/timers.ts` (`elapsed`, `formatElapsed`, 13 tests); `startsNewSession` is now
+  exported from `sessions.ts` and covered by tests.
+- `useActiveSession` walks the log newest-first (`orderBy('logged_at').reverse().until(...)`),
+  so cost is the length of the current session; `useNow` takes an optional repaint interval.
+- `SessionHeader` (small, grey, board and log sheet) and `RestTimer` (log sheet header, right
+  column); the header reserves its height so the form doesn't jump when they appear.
+- The walk was also checked against a fake IndexedDB (the >90-minute gap, exactly 90 minutes,
+  end markers, Resume, empty log, ties). Not driven in a real browser or on the iPhone yet.
 
 ### Progress log
 `docs: Add progress.md and a session-start check` · 2026-09-21

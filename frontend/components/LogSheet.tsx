@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { patternLabel } from "@/lib/format";
 import { useLogSheet } from "@/lib/hooks/useLogSheet";
 import { useNow } from "@/lib/hooks/useNow";
+import { RestTimer } from "./RestTimer";
+import { SessionHeader } from "./SessionHeader";
 import { SetEntry } from "./SetEntry";
 import { SetHistory } from "./SetHistory";
 
@@ -44,11 +46,20 @@ export function LogSheet() {
         </p>
       ) : (
         <div key={data.exercise.id} className="flex flex-col gap-6">
-          <header className="px-2">
-            <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">
-              {data.exercise.name}
-            </h1>
-            <p className="pt-2 text-body">{patternLabel(data.exercise.pattern)}</p>
+          {/* min-h holds the height of the timer column, so the form below doesn't jump when
+              the first set of a session makes the timers appear. */}
+          <header className="flex min-h-20 items-start justify-between gap-4 px-2">
+            <div className="min-w-0">
+              <h1 className="font-display text-4xl font-black leading-none tracking-tight break-words text-ink">
+                {data.exercise.name}
+              </h1>
+              <p className="pt-2 text-body">{patternLabel(data.exercise.pattern)}</p>
+            </div>
+            {/* The rest timer is the prominent counter; the session timer is the quiet one. */}
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <RestTimer />
+              <SessionHeader />
+            </div>
           </header>
           <SetEntry exerciseId={data.exercise.id} previous={data.previous} now={now} />
           <SetHistory history={data.history} now={now} />

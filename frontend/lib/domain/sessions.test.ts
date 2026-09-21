@@ -4,6 +4,7 @@ import {
   activeSession,
   assignSession,
   deriveSessions,
+  startsNewSession,
   summarizeSession,
 } from './sessions';
 import { makeExercise, makeSet } from './test-utils';
@@ -135,6 +136,22 @@ describe('deriveSessions — end markers', () => {
   it('leaves a session closed by the gap alone not ended manually', () => {
     const sessions = deriveSessions([at(0), at(500)], GAP, []);
     expect(sessions.map((s) => s.endedManually)).toEqual([false, false]);
+  });
+});
+
+describe('startsNewSession', () => {
+  it('is false within the gap, exactly at it, and true a millisecond past it', () => {
+    const earlier = at(0);
+    expect(startsNewSession(earlier, at(60), GAP, [])).toBe(false);
+    expect(startsNewSession(earlier, at(90), GAP, [])).toBe(false);
+    expect(startsNewSession(earlier, makeSet({ logged_at: T0 + 90 * MIN + 1 }), GAP, [])).toBe(true);
+  });
+
+  it('is true when an end marker falls between the two sets, and agrees with deriveSessions', () => {
+    const [earlier, later] = [at(0), at(10)];
+    expect(startsNewSession(earlier, later, GAP, [T0 + 5 * MIN])).toBe(true);
+    expect(startsNewSession(earlier, later, GAP, [T0 + 11 * MIN])).toBe(false);
+    expect(deriveSessions([earlier, later], GAP, [T0 + 5 * MIN])).toHaveLength(2);
   });
 });
 

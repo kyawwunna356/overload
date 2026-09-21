@@ -33,14 +33,13 @@ export function deriveSessions(
   gapMinutes: number,
   endMarkers: readonly number[],
 ): DerivedSession[] {
-  const gapMs = gapMinutes * MINUTE_MS;
   const sorted = [...logs].sort(oldestFirst);
 
   const runs: SetLog[][] = [];
   for (const set of sorted) {
     const run = runs.at(-1);
     const previous = run?.at(-1);
-    if (run && previous && !startsNewSession(previous, set, gapMs, endMarkers)) run.push(set);
+    if (run && previous && !startsNewSession(previous, set, gapMinutes, endMarkers)) run.push(set);
     else runs.push([set]);
   }
 
@@ -124,14 +123,18 @@ export function summarizeSession(
   };
 }
 
-function startsNewSession(
-  previous: SetLog,
-  next: SetLog,
-  gapMs: number,
+// The one definition of where a session ends: does `later` open a new session after
+// `earlier`? True when they're more than `gapMinutes` apart, or when an end marker falls at
+// or after `earlier` and before `later`. Exported so a reader that walks the log newest-first
+// (useActiveSession) can stop at exactly the point deriveSessions would split.
+export function startsNewSession(
+  earlier: SetLog,
+  later: SetLog,
+  gapMinutes: number,
   endMarkers: readonly number[],
 ): boolean {
-  if (next.logged_at - previous.logged_at > gapMs) return true;
-  return endMarkers.some((marker) => marker >= previous.logged_at && marker < next.logged_at);
+  if (later.logged_at - earlier.logged_at > gapMinutes * MINUTE_MS) return true;
+  return endMarkers.some((marker) => marker >= earlier.logged_at && marker < later.logged_at);
 }
 
 // Oldest first; equal timestamps fall back to id (UUIDv7 sorts by time) for a stable order.
