@@ -10,11 +10,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 2 — Sessions and timers** is in progress. Milestone 1 (data and logging) is
   finished and was checked on the iPhone.
-- **Last commit:** Ticket 10: Session summary page — what you did in one session, reachable
-  from the timer.
-- **Next:** Ticket 11: End session — optional End button and Resume. Then Ticket 12:
-  On-device check for milestone 2.
-- **Tests:** 149 Vitest tests, domain layer only.
+- **Last commit:** Ticket 11: End session — optional End button and Resume.
+- **Next:** Ticket 12: On-device check for milestone 2 (the last ticket of the milestone;
+  the user confirms it by hand on the iPhone and bumps the milestone in CLAUDE.md).
+- **Tests:** 162 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -27,9 +26,15 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   last set. Below it, the full history grouped by day (Today, Yesterday, weekday, then short
   dates like "13 Sep") with delete.
 - **Session summary** (`/session?id=…`): one session's sets grouped by exercise (in the order
-  first performed) with totals and the time span. Read-only. Tapping the session timer
-  opens it; when no session is active, the board shows "Last session · <day> ›" instead,
-  linking to the most recent one.
+  first performed) with totals and the time span. Read-only apart from the bottom bar below.
+  Tapping the session timer opens it; when no session is active, the board shows
+  "Last session · <day> ›" instead, linking to the most recent one.
+- **End session and Resume** (a bar pinned to the bottom of the summary, latest session only):
+  while the session is active it says **End session**. One tap writes an end marker, no
+  dialog, and both timers disappear. The bar then reads `Session ended`, `Your next set
+  starts a new session.` and **Resume session**, which deletes the marker. Once a set is
+  logged after an End, that set opens a new session and the old summary offers neither.
+  A session closed by the 90-minute gap shows no bar.
 - **Timers** (only while a session is active, i.e. a set in the last 90 minutes): a small
   grey `Session 42:10` (time since the session's first set, a link to the summary) in the
   board header and on the log sheet, and a `Rest` timer (time since the last set, any
@@ -41,10 +46,12 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   `board`, `entry`, `history`, `sessions`, `timers`. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
-  `formatDuration`. End session doesn't exist yet.
+  `formatDuration`. `writes.ts` now has `logSet`, `deleteSet`, `endSession` and `resumeSession`,
+  each one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` and
+  `closingMarkers` behind the last two.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** End session, coverage strip, template-as-view,
+**Not built yet:** coverage strip, template-as-view,
 PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
 
 ## Decisions worth remembering
@@ -57,7 +64,7 @@ These aren't obvious from the code and shaped later work.
 - **Hard Rule 2 was reworded in Ticket 8:** there's still no "Start Workout", but an
   optional **End session** button is allowed. It writes an end marker (`ended_at`) to
   `sessions`, is one tap with no dialog, is never required, and has a Resume that deletes
-  the marker. Ticket 11 builds it.
+  the marker. Built in Ticket 11.
 - **Screens that take an id use a query string** (`/exercise?id=…`, and later
   `/session?id=…`), not `[id]` routes, because dynamic routes aren't prefetched and would
   need the server to open — which fails with no signal.
@@ -85,12 +92,37 @@ These aren't obvious from the code and shaped later work.
 - **Date labels are short** ("13 Sep", "13 Sep 2025"), never "13th of September".
 - **The board's idle link shows only the most recent session.** A list of sessions is the
   later history page.
+- **The End marker time is `max(now, last set)`** (`endMarkerTime`), so it always satisfies
+  `last set <= T < next set`, even if a set is stamped in the future. Ending an ended session
+  writes nothing, so a double tap is one row.
+- **Resume only applies to the latest session** and deletes every marker at or after its last
+  set. A marker that a later set has already split on is kept for good: an End that isn't undone
+  before the next set leaves two sessions. Merging older sessions is a history-page concern.
+- **End lives only on the summary page** (two taps from the board via the session timer), never
+  beside the pinned Log button where a mis-tap would hurt. The button is neutral, not red:
+  ending is undoable. Ticket 12 will show whether two taps is too many.
+- `useSessionSummary` passes `deriveSessions` only the markers before the next set, so an older
+  session never reads as ended because of a later one's marker.
 - Ticket 7 (on-device check for milestone 1) has no commit: it was confirmed by hand.
 
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 11: End session — optional End button and Resume
+`feature: Add optional End session button and Resume` · 2026-09-21
+
+- `endMarkerTime` and `closingMarkers` in `lib/domain/sessions.ts` (pure, 13 tests) decide the
+  marker timestamp and which markers Resume deletes; `makeMarker` test helper.
+- `endSession` and `resumeSession` in `lib/writes.ts`, each one Dexie transaction over
+  `sessions` and `outbox`; `outboxRow` now takes any synced table. No schema change.
+- `SessionEndBar` on the summary page: pinned End session, then Session ended with Resume.
+  No dialog, and nothing near the Log button.
+- `useSessionSummary` scopes end markers to the session's own span (an older session was
+  reading as ended once any later marker existed).
+- Checked against a fake IndexedDB (one row on a double tap, End then Resume, duplicate markers,
+  a future-stamped set) and headless Chrome at 390px. Not yet on the iPhone; that is Ticket 12.
 
 ### Ticket 10: Session summary page — what you did in one session, reachable from the timer
 `feature: Add session summary page reachable from the session timer` · 2026-09-21

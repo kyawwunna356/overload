@@ -59,16 +59,20 @@ frontend/                 Next.js app
   DESIGN.md               the design system (Wise-inspired) the UI follows
   app/
     theme.css             every color, font and radius — the one place to change the look
-    (app)/                the app's screens: the board at /, the log sheet at /exercise?id=…
-  components/             Board, PatternGroup, ExerciseRow, LogSheet, SetEntry, SetHistory
+    (app)/                the app's screens: the board at /, the log sheet at /exercise?id=…,
+                          the session summary at /session?id=…
+  components/             Board, PatternGroup, ExerciseRow, LogSheet, SetEntry, SetHistory,
+                          SessionSummary, SessionHeader, RestTimer, SessionEndBar, BackLink
   lib/
     db.ts                 Dexie schema, seeding, dev reset
-    writes.ts             the write path: logSet / deleteSet, each a Dexie + outbox transaction
+    writes.ts             the write path: logSet / deleteSet / endSession / resumeSession,
+                          each one Dexie + outbox transaction
     seed.ts               pure generator for ~6 weeks of realistic training data
     format.ts             display helpers (weights, "days ago", times)
     uuid.ts               UUIDv7 ids
     constants.ts          local user id
-    hooks/                useBoard, useLogSheet, useNow — read Dexie live for the UI
+    hooks/                useBoard, useLogSheet, useActiveSession, useSessionSummary, useNow —
+                          read Dexie live for the UI
     domain/               pure functions over plain data — no db, sync, react or next
       types.ts            row types shared by everything
       previous.ts         last working set of an exercise (prefill)
@@ -76,7 +80,9 @@ frontend/                 Next.js app
       board.ts            groups and sorts exercises for the home screen
       entry.ts            stepping and parsing for the log sheet's weight and reps
       history.ts          groups an exercise's sets by day (Today, Yesterday, weekday, date)
-      sessions.ts         the gap rule: derives sessions, the active one, and a session summary
+      sessions.ts         the gap rule: derives sessions, the active one, a session summary,
+                          and the end-marker helpers behind End session and Resume
+      timers.ts           elapsed time for the session and rest timers, and duration labels
 backend/
   supabase/               Supabase project config (migrations arrive with sync)
 .claude/skills/commit/    the commit workflow and hard-rule checker used in this repo
@@ -97,8 +103,8 @@ Sync (lib/sync/)           flushes the outbox on `online` and on foreground
 Supabase Postgres          durable archive only
 ```
 
-`lib/sync/` and the remaining `lib/domain/` modules (timers, PRs, coverage) don't exist
-yet; `lib/domain/sessions.ts` (the gap rule) does.
+`lib/sync/` and the remaining `lib/domain/` modules (PRs, coverage) don't exist yet;
+`lib/domain/sessions.ts` (the gap rule) and `lib/domain/timers.ts` do.
 
 ## Design
 

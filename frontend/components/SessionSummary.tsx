@@ -8,6 +8,7 @@ import { countLabel, formatSet, formatTime, kindLabel, patternLabel } from "@/li
 import { useNow } from "@/lib/hooks/useNow";
 import { useSessionSummary } from "@/lib/hooks/useSessionSummary";
 import { BackLink } from "./BackLink";
+import { SessionEndBar } from "./SessionEndBar";
 
 // What you did in one session, chosen by `?id=` in the URL (a session's id is its first set's
 // id). A static page that reads the id in the browser, so it opens with no signal, and every
@@ -20,7 +21,8 @@ export function SessionSummary() {
   const summary = data?.summary ?? null;
 
   return (
-    <div>
+    // Bottom padding keeps the last card clear of the pinned End / Resume bar.
+    <div className="pb-32">
       <nav className="pb-4">
         <BackLink href="/" label="‹ Back" />
       </nav>
@@ -76,6 +78,7 @@ export function SessionSummary() {
               </ul>
             </section>
           ))}
+          <SessionEndBar sessionId={summary.session.id} />
         </div>
       )}
     </div>

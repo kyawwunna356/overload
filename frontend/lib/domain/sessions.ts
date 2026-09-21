@@ -1,10 +1,10 @@
-import type { Exercise, SetLog } from './types';
+import type { Exercise, Session, SetLog } from './types';
 
 // Sessions are derived, never started (Hard Rule 2): a session is a run of sets with no gap
 // larger than SESSION_GAP_MINUTES, computed from the sets every time it's needed (Hard Rule 1).
 // The one stored fact is an optional end marker — "closed at time T" — for when you end a
-// session yourself; it's passed in as a plain timestamp. Pure: `now` is an argument and
-// nothing here reads the clock.
+// session yourself; it's passed in as a plain timestamp, and lib/writes.ts stores and deletes
+// the rows (End and Resume). Pure: `now` is an argument and nothing here reads the clock.
 
 export const SESSION_GAP_MINUTES = 90;
 
@@ -81,6 +81,30 @@ export function activeSession(
   const latest = sessions.at(-1);
   if (!latest || latest.endedManually) return null;
   return now - latest.last_set_at <= gapMinutes * MINUTE_MS ? latest : null;
+}
+
+// The timestamp to store as the end marker for `session`, or null when a marker already closes
+// it, so a second End tap writes nothing. A marker must satisfy last_set_at <= T < next set, so
+// T is `now`, raised to the last set's time if that set is stamped in the future (clock skew).
+// "A marker at or after the last set" is the same test deriveSessions uses for `endedManually`.
+export function endMarkerTime(
+  session: Pick<DerivedSession, 'last_set_at'>,
+  markers: readonly number[],
+  now: number,
+): number | null {
+  if (markers.some((marker) => marker >= session.last_set_at)) return null;
+  return Math.max(now, session.last_set_at);
+}
+
+// The marker rows that close `session`: every row whose `ended_at` is at or after its last set.
+// Resume deletes all of them, not just the newest, so a duplicate can't leave the session ended.
+// Meant for the latest session, where no later set exists. Generic so the caller gets its own
+// rows back (ids included) without a cast.
+export function closingMarkers<T extends Pick<Session, 'ended_at'>>(
+  session: Pick<DerivedSession, 'last_set_at'>,
+  rows: readonly T[],
+): T[] {
+  return rows.filter((row) => row.ended_at !== null && row.ended_at >= session.last_set_at);
 }
 
 export type SessionGroup = {

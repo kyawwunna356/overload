@@ -1,6 +1,7 @@
 import { LOCAL_USER_ID } from './constants';
 import { db } from './db';
-import type { OutboxRow, SetKind, SetLog } from './domain/types';
+import { closingMarkers, endMarkerTime, type DerivedSession } from './domain/sessions';
+import type { OutboxRow, Session, SetKind, SetLog, SyncedRow, SyncedTable } from './domain/types';
 import { newId } from './uuid';
 
 // The write path (Hard Rule 5). Every write goes to Dexie first and enqueues an outbox
@@ -33,7 +34,7 @@ export async function logSet(input: NewSet): Promise<SetLog> {
   };
   await db.transaction('rw', db.set_logs, db.outbox, async () => {
     await db.set_logs.add(set);
-    await db.outbox.add(outboxRow('upsert', set, now));
+    await db.outbox.add(outboxRow('set_logs', 'upsert', set, now));
   });
   return set;
 }
@@ -45,10 +46,60 @@ export async function deleteSet(id: string): Promise<void> {
     const set = await db.set_logs.get(id);
     if (!set) return;
     await db.set_logs.delete(id);
-    await db.outbox.add(outboxRow('delete', set, Date.now()));
+    await db.outbox.add(outboxRow('set_logs', 'delete', set, Date.now()));
   });
 }
 
-function outboxRow(op: OutboxRow['op'], payload: SetLog, at: number): OutboxRow {
-  return { id: newId(at), table: 'set_logs', op, payload, created_at: at };
+// Ends a session by writing an end marker (Hard Rule 2): one tap, no confirmation, and never
+// required. The marker is the one stored session fact; the session itself stays derived from
+// its sets. Ending a session that's already ended does nothing (returns null), so a double tap
+// writes one row: the second transaction runs after the first and finds its marker.
+export async function endSession(
+  session: Pick<DerivedSession, 'started_at' | 'last_set_at'>,
+): Promise<Session | null> {
+  const now = Date.now();
+  return db.transaction('rw', db.sessions, db.outbox, async () => {
+    const markers = (await db.sessions.toArray()).flatMap((row) =>
+      row.ended_at === null ? [] : [row.ended_at],
+    );
+    const endedAt = endMarkerTime(session, markers, now);
+    if (endedAt === null) return null;
+
+    const marker: Session = {
+      id: newId(now),
+      user_id: LOCAL_USER_ID,
+      // Informational: when the session began. template_id is a label and is never read.
+      started_at: session.started_at,
+      ended_at: endedAt,
+      template_id: null,
+      updated_at: now,
+    };
+    await db.sessions.add(marker);
+    await db.outbox.add(outboxRow('sessions', 'upsert', marker, now));
+    return marker;
+  });
+}
+
+// Undoes End: deletes the marker(s) that closed the latest session, so it's active again and the
+// next set joins it. If a set has been logged since, that set already opened a new session and
+// the marker only records the split, so it's kept. Nothing to undo does nothing. As with
+// deleteSet, the outbox row carries the row as it was.
+export async function resumeSession(session: Pick<DerivedSession, 'last_set_at'>): Promise<void> {
+  const now = Date.now();
+  await db.transaction('rw', db.sessions, db.set_logs, db.outbox, async () => {
+    if ((await db.set_logs.where('logged_at').above(session.last_set_at).count()) > 0) return;
+    const closing = closingMarkers(session, await db.sessions.toArray());
+    if (closing.length === 0) return;
+    await db.sessions.bulkDelete(closing.map((row) => row.id));
+    await db.outbox.bulkAdd(closing.map((row) => outboxRow('sessions', 'delete', row, now)));
+  });
+}
+
+function outboxRow(
+  table: SyncedTable,
+  op: OutboxRow['op'],
+  payload: SyncedRow,
+  at: number,
+): OutboxRow {
+  return { id: newId(at), table, op, payload, created_at: at };
 }

@@ -24,5 +24,5 @@ first one. The milestone order itself comes from the build order in CLAUDE.md.
 | 8 | Sessions domain — gap rule, end markers, active session, session summary | done |
 | 9 | Timers — session timer (time since your first set) and rest timer | done |
 | 10 | Session summary page — what you did in one session, reachable from the timer | done |
-| 11 | End session — optional End button and Resume | next |
-| 12 | On-device check — run milestone 2 on the iPhone | not started |
+| 11 | End session — optional End button and Resume | done |
+| 12 | On-device check — run milestone 2 on the iPhone | next |

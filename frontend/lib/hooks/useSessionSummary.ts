@@ -62,7 +62,14 @@ export function useSessionSummary(setId: string | null): SessionSummaryData | un
 
     // The anchor is in both halves; keying by id keeps one copy.
     const run = [...new Map([...older, ...later].map((set) => [set.id, set])).values()];
-    const session = deriveSessions(run, SESSION_GAP_MINUTES, markers).find((candidate) =>
+    // deriveSessions sees only this session's sets, so it can't tell which markers belong to a
+    // later session. Keep the markers before the next set, or an older session would read as
+    // ended by any marker that came after it.
+    const lastLoggedAt = Math.max(...run.map((set) => set.logged_at));
+    const next = await db.set_logs.where('logged_at').above(lastLoggedAt).first();
+    const ownMarkers = next ? markers.filter((marker) => marker < next.logged_at) : markers;
+
+    const session = deriveSessions(run, SESSION_GAP_MINUTES, ownMarkers).find((candidate) =>
       candidate.sets.some((set) => set.id === setId),
     );
     if (!session) return NOTHING;

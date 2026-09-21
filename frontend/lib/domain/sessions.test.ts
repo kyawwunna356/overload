@@ -3,11 +3,13 @@ import {
   SESSION_GAP_MINUTES,
   activeSession,
   assignSession,
+  closingMarkers,
   deriveSessions,
+  endMarkerTime,
   startsNewSession,
   summarizeSession,
 } from './sessions';
-import { makeExercise, makeSet } from './test-utils';
+import { makeExercise, makeMarker, makeSet } from './test-utils';
 
 const MIN = 60 * 1000;
 const GAP = SESSION_GAP_MINUTES;
@@ -265,5 +267,90 @@ describe('summarizeSession', () => {
     expect(summary.groups).toHaveLength(1);
     expect(summary.groups[0].exercise).toBeNull();
     expect(summary.exerciseCount).toBe(1);
+  });
+});
+
+describe('endMarkerTime', () => {
+  const last = T0 + 30 * MIN;
+
+  it('is now when the last set is in the past', () => {
+    expect(endMarkerTime({ last_set_at: last }, [], last + 5 * MIN)).toBe(last + 5 * MIN);
+  });
+
+  it('is now when now is exactly the last set', () => {
+    expect(endMarkerTime({ last_set_at: last }, [], last)).toBe(last);
+  });
+
+  it('is raised to the last set when that set is stamped in the future', () => {
+    const future = last + 10 * MIN;
+    const marker = endMarkerTime({ last_set_at: future }, [], last);
+    expect(marker).toBe(future);
+    expect(marker).toBeGreaterThanOrEqual(future);
+  });
+
+  it('is null when a marker at the last set already closes the session, so a second tap writes nothing', () => {
+    expect(endMarkerTime({ last_set_at: last }, [last], last + MIN)).toBeNull();
+  });
+
+  it('is null when a marker after the last set already closes it', () => {
+    expect(endMarkerTime({ last_set_at: last }, [last + 2 * MIN], last + 5 * MIN)).toBeNull();
+  });
+
+  it("ignores an older session's marker and still returns now", () => {
+    expect(endMarkerTime({ last_set_at: last }, [last - 200 * MIN], last + 5 * MIN)).toBe(last + 5 * MIN);
+  });
+
+  it('gives a marker that ends the session and makes the next set open a new one, even within 90 minutes', () => {
+    const sets = [at(0), at(30)];
+    const marker = endMarkerTime({ last_set_at: T0 + 30 * MIN }, [], T0 + 31 * MIN);
+    expect(marker).not.toBeNull();
+    const markers = marker === null ? [] : [marker];
+    expect(deriveSessions(sets, GAP, markers)[0].endedManually).toBe(true);
+    const next = at(30, { logged_at: T0 + 31 * MIN + 1 });
+    expect(deriveSessions([...sets, next], GAP, markers)).toHaveLength(2);
+  });
+});
+
+describe('closingMarkers', () => {
+  const last = T0 + 30 * MIN;
+
+  it('returns nothing for no rows, or only markers before the last set', () => {
+    expect(closingMarkers({ last_set_at: last }, [])).toEqual([]);
+    expect(closingMarkers({ last_set_at: last }, [makeMarker(last - MIN)])).toEqual([]);
+  });
+
+  it('returns the marker at or after the last set, as the same row', () => {
+    const row = makeMarker(last + MIN, { id: 'keep-this-id' });
+    const result = closingMarkers({ last_set_at: last }, [row]);
+    expect(result).toEqual([row]);
+    expect(result[0]).toBe(row);
+    expect(closingMarkers({ last_set_at: last }, [makeMarker(last)])).toHaveLength(1);
+  });
+
+  it('returns every closing marker when there are two', () => {
+    const rows = [makeMarker(last + MIN), makeMarker(last + 2 * MIN)];
+    expect(closingMarkers({ last_set_at: last }, rows)).toEqual(rows);
+  });
+
+  it('ignores rows with no ended_at', () => {
+    expect(closingMarkers({ last_set_at: last }, [makeMarker(0, { ended_at: null })])).toEqual([]);
+  });
+
+  it("leaves an older session's marker alone", () => {
+    const older = makeMarker(last - 100 * MIN);
+    const closing = makeMarker(last + MIN);
+    expect(closingMarkers({ last_set_at: last }, [older, closing])).toEqual([closing]);
+  });
+
+  it('removing the returned rows makes the session active again, and a later set joins it', () => {
+    const sets = [at(0), at(30)];
+    const rows = [makeMarker(T0 + 31 * MIN)];
+    const markersOf = (kept: typeof rows) => kept.flatMap((row) => (row.ended_at === null ? [] : [row.ended_at]));
+    expect(deriveSessions(sets, GAP, markersOf(rows))[0].endedManually).toBe(true);
+
+    const removed = closingMarkers({ last_set_at: T0 + 30 * MIN }, rows);
+    const kept = rows.filter((row) => !removed.includes(row));
+    expect(deriveSessions(sets, GAP, markersOf(kept))[0].endedManually).toBe(false);
+    expect(deriveSessions([...sets, at(40)], GAP, markersOf(kept))).toHaveLength(1);
   });
 });
