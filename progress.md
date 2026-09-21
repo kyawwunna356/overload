@@ -12,9 +12,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   and was checked on the iPhone, like milestone 1. CLAUDE.md's "Current milestone" still says 2;
   bumping it is the user's to do. The board already groups by pattern and sorts by recency, so
   milestone 3 adds the coverage strip and template-as-view.
-- **Last commit:** Ticket 13: Coverage domain — which patterns a session has touched.
-- **Next:** Ticket 14: Coverage strip on the board. Then Ticket 15: Template-as-view domain,
-  Ticket 16: Board uses the template, and Ticket 17: On-device check for milestone 3.
+- **Last commit:** Ticket 14: Coverage strip — the row at the top of the board.
+- **Next:** Ticket 15: Template-as-view domain (the board's visible picks come from a template).
+  Then Ticket 16: Board uses the template, and Ticket 17: On-device check for milestone 3.
 - **Tests:** 172 Vitest tests, domain layer only.
 
 ## What works today
@@ -27,6 +27,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
   last set. Below it, the full history grouped by day (Today, Yesterday, weekday, then short
   dates like "13 Sep") with delete.
+- **Coverage strip** (top of the board, only while a session is active): six pills, one per
+  pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
+  rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
+  session ends (idle gap or End) and returns on Resume.
 - **Session summary** (`/session?id=…`): one session's sets grouped by exercise (in the order
   first performed) with totals and the time span. Read-only apart from the bottom bar below.
   Tapping the session timer opens it; when no session is active, the board shows
@@ -45,7 +49,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `entry`, `history`, `sessions`, `timers`, `coverage`. `useActiveSession` (in `lib/hooks/`)
+  `board`, `entry`, `history`, `sessions`, `timers`, `coverage`. `useCoverage` combines the active
+  session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
   `formatDuration`. `writes.ts` now has `logSet`, `deleteSet`, `endSession` and `resumeSession`,
@@ -53,7 +58,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   `closingMarkers` behind the last two.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** coverage strip (its domain function exists), template-as-view,
+**Not built yet:** template-as-view,
 PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
 
 ## Decisions worth remembering
@@ -106,8 +111,9 @@ These aren't obvious from the code and shaped later work.
 - `useSessionSummary` passes `deriveSessions` only the markers before the next set, so an older
   session never reads as ended because of a later one's marker.
 - **Coverage counts any kind of set** (warmups included, like `staleness`), takes no template, and
-  is never a target. It will show only while a session is active, so a row of untouched patterns
-  never reads as failure.
+  is never a target. It shows only while a session is active, so a row of untouched patterns
+  never reads as failure. Untouched pills carry no dash or mark, by the user's choice: the ✓ and
+  the tint are the only signal. Six pills including Core wrap to two rows at phone width.
 - Tickets 7 and 12 (the on-device checks for milestones 1 and 2) have no code commit: the user
   confirmed them by hand on the iPhone.
 
@@ -115,6 +121,17 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 14: Coverage strip — the row at the top of the board
+`feature: Add pattern coverage strip to the board` · 2026-09-22
+
+- `useCoverage` (the active session's sets plus one Dexie read of the exercises, recomputed only
+  when the session or exercises change, not on each clock tick) and `CoverageStrip`, rendered by
+  `Board` between the title and the groups. Tokens only.
+- Shows only while a session is active; gone after End, back after Resume, and derived from the
+  stored sets so a reload keeps it. No counts, no progress bar, nothing tappable.
+- Checked in headless Chrome at 390px (idle, per-pattern ticks, End, Resume, reload, no overflow).
+  Not yet on the iPhone; that is Ticket 17.
 
 ### Ticket 13: Coverage domain — which patterns a session has touched
 `feature: Add coverage domain function for session patterns` · 2026-09-22

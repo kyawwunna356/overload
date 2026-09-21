@@ -32,7 +32,7 @@ first one. The milestone order itself comes from the build order in CLAUDE.md.
 | # | Ticket | Status |
 |---|---|---|
 | 13 | Coverage domain — which patterns a session has touched (pure, tested) | done |
-| 14 | Coverage strip — the row at the top of the board while a session is active | next |
-| 15 | Template-as-view domain — the board's visible picks come from a template (pure, tested) | not started |
+| 14 | Coverage strip — the row at the top of the board while a session is active | done |
+| 15 | Template-as-view domain — the board's visible picks come from a template (pure, tested) | next |
 | 16 | Board uses the template — reads the default template and folds the rest away | not started |
 | 17 | On-device check — run milestone 3 on the iPhone | not started |

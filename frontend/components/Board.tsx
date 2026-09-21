@@ -1,6 +1,7 @@
 "use client";
 
 import { useBoard } from "@/lib/hooks/useBoard";
+import { CoverageStrip } from "./CoverageStrip";
 import { PatternGroup } from "./PatternGroup";
 import { SessionHeader } from "./SessionHeader";
 
@@ -18,6 +19,7 @@ export function Board() {
         </h1>
         <SessionHeader showLast />
       </header>
+      <CoverageStrip />
       {groups && (
         <div className="flex flex-col gap-6">
           {groups.map((group) => (
