@@ -10,11 +10,11 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 2 — Sessions and timers** is in progress. Milestone 1 (data and logging) is
   finished and was checked on the iPhone.
-- **Last commit:** Ticket 9: Timers — the session timer and the rest timer are on screen.
-- **Next:** Ticket 10: Session summary page (what you did in one session, reached by
-  tapping the session timer). Then Ticket 11: End session — optional End button and
-  Resume, and Ticket 12: On-device check for milestone 2.
-- **Tests:** 161 Vitest tests, domain layer only.
+- **Last commit:** Ticket 10: Session summary page — what you did in one session, reachable
+  from the timer.
+- **Next:** Ticket 11: End session — optional End button and Resume. Then Ticket 12:
+  On-device check for milestone 2.
+- **Tests:** 149 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -24,22 +24,27 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Log sheet** (`/exercise?id=…`): last working set as large ghost values, ± buttons
   (2.5 kg, ±1 rep), tap a number to type, kind chips (warmup / working / drop / failure)
   that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
-  last set. Below it, the full history grouped by day (Today, Yesterday, weekday, date)
-  with delete.
+  last set. Below it, the full history grouped by day (Today, Yesterday, weekday, then short
+  dates like "13 Sep") with delete.
+- **Session summary** (`/session?id=…`): one session's sets grouped by exercise (in the order
+  first performed) with totals and the time span. Read-only. Tapping the session timer
+  opens it; when no session is active, the board shows "Last session · <day> ›" instead,
+  linking to the most recent one.
 - **Timers** (only while a session is active, i.e. a set in the last 90 minutes): a small
-  grey `Session 42:10` (time since the session's first set) in the board header and on the
-  log sheet, and a `Rest` timer (time since the last set, any exercise, counts up) at the top
-  right of the log sheet. There's no start button: your first set opens the session.
+  grey `Session 42:10` (time since the session's first set, a link to the summary) in the
+  board header and on the log sheet, and a `Rest` timer (time since the last set, any
+  exercise, counts up) at the top right of the log sheet. There's no start button: your first set opens the session.
 - **Local data:** Dexie database seeded once with 25 exercises, a default "Full Body"
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
   `board`, `entry`, `history`, `sessions`, `timers`. `useActiveSession` (in `lib/hooks/`)
-  reads the current session from Dexie through `sessions.ts`; the session summary and End
-  session don't use it yet.
+  reads the current session from Dexie through `sessions.ts` and also returns `last` (the
+  most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
+  `formatDuration`. End session doesn't exist yet.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** session summary, End session, coverage strip, template-as-view,
+**Not built yet:** End session, coverage strip, template-as-view,
 PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
 
 ## Decisions worth remembering
@@ -75,12 +80,33 @@ These aren't obvious from the code and shaped later work.
   `useActiveSession` reuses it to stop walking the log, so the rule lives in one place.
 - **The app on port 3000 was `next start` (production), which never hot-reloads.** After a
   code change: `next build`, then restart it. `pnpm dev` hot-reloads.
+- **The session summary is read-only** (delete stays on the log sheet) and opens the session
+  that *contains* the id in the URL, so any set's id in a session works, not only its first.
+- **Date labels are short** ("13 Sep", "13 Sep 2025"), never "13th of September".
+- **The board's idle link shows only the most recent session.** A list of sessions is the
+  later history page.
 - Ticket 7 (on-device check for milestone 1) has no commit: it was confirmed by hand.
 
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 10: Session summary page — what you did in one session, reachable from the timer
+`feature: Add session summary page reachable from the session timer` · 2026-09-21
+
+- `/session?id=…` (a static page) lists one session's sets grouped by exercise with totals and
+  the time span, read from Dexie only. Read-only; delete stays on the log sheet.
+- `useSessionSummary` walks outward from a set using `startsNewSession`, so the gap rule stays
+  in one place and it finds the session that *contains* the set.
+- The session timer is now a link to the summary; the board shows "Last session · <day> ›" when
+  nothing is active (`useActiveSession` also returns `last`).
+- `formatDuration` (`timers.ts`, tested), `countLabel` (`lib/format.ts`) and `BackLink`
+  (extracted from `LogSheet`).
+- Date labels shortened everywhere to "13 Sep" / "13 Sep 2025"; the `ordinal` helper and its
+  16 tests were removed, which also changes the exercise history headings.
+- Checked against a fake IndexedDB and in headless Chrome at 390px; not yet on the iPhone
+  (that is Ticket 12).
 
 ### Ticket 9: Timers — session timer (time since your first set) and rest timer
 `feature: Add session and rest timers derived from timestamps` · 2026-09-21
@@ -117,8 +143,8 @@ entry is written in the same commit it describes.
 
 - The log sheet's "Recent sets" (last 5) became "History": every set of the exercise, one
   card per day, newest first, with Today / Yesterday / weekday / date headings.
-- `lib/domain/history.ts` (`groupByDay`, `dayLabel`, `ordinal`) over local calendar days,
-  33 tests run in five timezones. `RecentSets.tsx` became `SetHistory.tsx`.
+- `lib/domain/history.ts` (`groupByDay`, `dayLabel`, `ordinal`; `ordinal` was later dropped in
+  Ticket 10) over local calendar days, 33 tests run in five timezones. `RecentSets.tsx` became `SetHistory.tsx`.
 
 ### Ticket 5: Dark theme — the whole app dark, no light mode
 `feature: Switch the app to a dark-only theme` · 2026-09-21

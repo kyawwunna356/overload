@@ -20,6 +20,8 @@ const REPAINT_MS = 500;
 export type ActiveSessionState = {
   // The session you're in right now, or null when there isn't one.
   session: DerivedSession | null;
+  // The most recent session, active or not — what "Last session" links to. Null with no sets.
+  last: DerivedSession | null;
   // The clock reading this render is based on. Timers subtract from it (Hard Rule 4).
   now: number;
 };
@@ -60,6 +62,7 @@ export function useActiveSession(): ActiveSessionState | undefined {
       latest
         ? {
             session: activeSession(latest.session ? [latest.session] : [], now, SESSION_GAP_MINUTES),
+            last: latest.session,
             now,
           }
         : undefined,

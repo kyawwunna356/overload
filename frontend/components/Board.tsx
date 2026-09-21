@@ -16,7 +16,7 @@ export function Board() {
         <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">
           Overload
         </h1>
-        <SessionHeader />
+        <SessionHeader showLast />
       </header>
       {groups && (
         <div className="flex flex-col gap-6">

@@ -8,7 +8,7 @@ import type { SetLog } from './types';
 export type DayGroup = {
   // Local calendar day as YYYY-MM-DD; also the sort key.
   day: string;
-  // "Today", "Yesterday", "Thursday", "13th of September", "13th of September 2025".
+  // "Today", "Yesterday", "Thursday", "13 Sep", "13 Sep 2025".
   label: string;
   // Newest first.
   sets: SetLog[];
@@ -16,20 +16,7 @@ export type DayGroup = {
 
 // Fixed English names: the labels never depend on the phone's language setting.
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -57,7 +44,7 @@ export function groupByDay(sets: readonly SetLog[], now: number): DayGroup[] {
 //   today            -> "Today"
 //   yesterday        -> "Yesterday"
 //   2-6 days ago     -> the weekday, "Thursday" (a rolling week, so a weekday name is never ambiguous)
-//   7 or more days   -> the date, "13th of September" (plus the year if it isn't this year)
+//   7 or more days   -> the short date, "13 Sep" (plus the year if it isn't this year)
 export function dayLabel(timestamp: number, now: number): string {
   const day = localDate(Math.min(timestamp, now));
   const today = localDate(now);
@@ -67,24 +54,8 @@ export function dayLabel(timestamp: number, now: number): string {
   if (daysAgo === 1) return 'Yesterday';
   if (daysAgo < 7) return WEEKDAYS[new Date(day.year, day.month, day.date).getDay()];
 
-  const date = `${day.date}${ordinal(day.date)} of ${MONTHS[day.month]}`;
+  const date = `${day.date} ${MONTHS[day.month]}`;
   return day.year === today.year ? date : `${date} ${day.year}`;
-}
-
-// 1st, 2nd, 3rd, 4th … 11th, 12th, 13th … 21st, 22nd, 23rd … 31st.
-export function ordinal(n: number): string {
-  const lastTwo = n % 100;
-  if (lastTwo >= 11 && lastTwo <= 13) return 'th';
-  switch (n % 10) {
-    case 1:
-      return 'st';
-    case 2:
-      return 'nd';
-    case 3:
-      return 'rd';
-    default:
-      return 'th';
-  }
 }
 
 type LocalDate = { year: number; month: number; date: number };

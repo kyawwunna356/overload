@@ -48,3 +48,8 @@ export function formatDaysAgo(days: number): string {
 export function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
+
+// "1 set", "12 sets", "0 exercises" — every word used here pluralises with an "s".
+export function countLabel(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? '' : 's'}`;
+}

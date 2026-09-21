@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayLabel, groupByDay, ordinal } from './history';
+import { dayLabel, groupByDay } from './history';
 import { makeSet } from './test-utils';
 
 // Every date is built with the LOCAL-time constructor, so these tests give the same result in
@@ -8,29 +8,6 @@ const at = (year: number, month: number, date: number, hour = 12, minute = 0) =>
   new Date(year, month - 1, date, hour, minute).getTime();
 const NOW = at(2026, 9, 24, 10);
 const setAt = (timestamp: number, overrides = {}) => makeSet({ logged_at: timestamp, ...overrides });
-
-describe('ordinal', () => {
-  it.each([
-    [1, 'st'],
-    [2, 'nd'],
-    [3, 'rd'],
-    [4, 'th'],
-    [10, 'th'],
-    [11, 'th'],
-    [12, 'th'],
-    [13, 'th'],
-    [14, 'th'],
-    [20, 'th'],
-    [21, 'st'],
-    [22, 'nd'],
-    [23, 'rd'],
-    [24, 'th'],
-    [30, 'th'],
-    [31, 'st'],
-  ])('%i takes "%s"', (n, suffix) => {
-    expect(ordinal(n)).toBe(suffix);
-  });
-});
 
 describe('dayLabel', () => {
   it('labels today, at any time of day', () => {
@@ -52,27 +29,27 @@ describe('dayLabel', () => {
   });
 
   it('switches to the date at exactly 7 days, so a weekday name is never ambiguous', () => {
-    expect(dayLabel(at(2026, 9, 17), NOW)).toBe('17th of September'); // last Thursday, 7 days
+    expect(dayLabel(at(2026, 9, 17), NOW)).toBe('17 Sep'); // last Thursday, 7 days
   });
 
   it('uses the date for anything older', () => {
-    expect(dayLabel(at(2026, 9, 13), NOW)).toBe('13th of September');
-    expect(dayLabel(at(2026, 9, 1), NOW)).toBe('1st of September');
-    expect(dayLabel(at(2026, 8, 22), NOW)).toBe('22nd of August');
-    expect(dayLabel(at(2026, 8, 3), NOW)).toBe('3rd of August');
-    expect(dayLabel(at(2026, 1, 12), NOW)).toBe('12th of January');
+    expect(dayLabel(at(2026, 9, 13), NOW)).toBe('13 Sep');
+    expect(dayLabel(at(2026, 9, 1), NOW)).toBe('1 Sep');
+    expect(dayLabel(at(2026, 8, 22), NOW)).toBe('22 Aug');
+    expect(dayLabel(at(2026, 8, 3), NOW)).toBe('3 Aug');
+    expect(dayLabel(at(2026, 1, 12), NOW)).toBe('12 Jan');
   });
 
   it('adds the year only when it is not the current year', () => {
-    expect(dayLabel(at(2025, 12, 31), NOW)).toBe('31st of December 2025');
-    expect(dayLabel(at(2025, 9, 13), NOW)).toBe('13th of September 2025');
+    expect(dayLabel(at(2025, 12, 31), NOW)).toBe('31 Dec 2025');
+    expect(dayLabel(at(2025, 9, 13), NOW)).toBe('13 Sep 2025');
   });
 
   it('counts days across a month boundary and a leap day', () => {
     const now = at(2028, 3, 1, 10); // Wednesday 1 March 2028
     expect(dayLabel(at(2028, 2, 29), now)).toBe('Yesterday');
     expect(dayLabel(at(2028, 2, 28), now)).toBe('Monday');
-    expect(dayLabel(at(2028, 2, 23), now)).toBe('23rd of February');
+    expect(dayLabel(at(2028, 2, 23), now)).toBe('23 Feb');
   });
 
   it('treats a timestamp in the future as today', () => {
@@ -103,7 +80,7 @@ describe('groupByDay', () => {
     const c = setAt(at(2026, 9, 24, 9));
     const d = setAt(at(2026, 9, 10, 12));
     const groups = groupByDay([a, d, b, c], NOW);
-    expect(groups.map((g) => g.label)).toEqual(['Today', 'Tuesday', '10th of September']);
+    expect(groups.map((g) => g.label)).toEqual(['Today', 'Tuesday', '10 Sep']);
     expect(groups[1].sets).toEqual([b, a]);
   });
 

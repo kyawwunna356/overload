@@ -17,3 +17,13 @@ export function formatElapsed(seconds: number): string {
   const secs = String(total % 60).padStart(2, '0');
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${secs}` : `${minutes}:${secs}`;
 }
+
+// How long a finished span lasted, for a summary: "under 1 min", "42 min", "1h 07m". Whole
+// minutes, rounded down. Unlike the timers this is never counted live: it's the gap between two
+// timestamps that already happened.
+export function formatDuration(ms: number): string {
+  const minutes = Math.max(0, Math.floor(ms / 60_000));
+  if (minutes < 1) return 'under 1 min';
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+}

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { patternLabel } from "@/lib/format";
 import { useLogSheet } from "@/lib/hooks/useLogSheet";
 import { useNow } from "@/lib/hooks/useNow";
+import { BackLink } from "./BackLink";
 import { RestTimer } from "./RestTimer";
 import { SessionHeader } from "./SessionHeader";
 import { SetEntry } from "./SetEntry";
@@ -17,27 +17,12 @@ export function LogSheet() {
   const id = useSearchParams().get("id");
   const data = useLogSheet(id);
   const now = useNow();
-  const router = useRouter();
 
   return (
     // Bottom padding keeps the last content clear of the pinned Log button.
     <div className="pb-56">
       <nav className="pb-4">
-        <Link
-          href="/"
-          onClick={(event) => {
-            // Coming from the board, going back reuses its cached page. A plain link to "/"
-            // would ask the server for it, which fails with no signal. With no history to
-            // go back to, the link's normal navigation applies.
-            if (window.history.length > 1) {
-              event.preventDefault();
-              router.back();
-            }
-          }}
-          className="inline-flex h-12 touch-manipulation items-center rounded-pill bg-card px-5 text-base font-semibold text-ink active:bg-line"
-        >
-          ‹ Board
-        </Link>
+        <BackLink href="/" label="‹ Board" />
       </nav>
 
       {data === undefined ? null : data.exercise === null ? (

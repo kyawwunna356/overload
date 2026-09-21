@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { elapsed, formatElapsed } from './timers';
+import { elapsed, formatDuration, formatElapsed } from './timers';
 
 const T0 = 1_000_000_000_000;
 
@@ -56,5 +56,28 @@ describe('formatElapsed', () => {
 
   it('rounds a fractional input down', () => {
     expect(formatElapsed(59.9)).toBe('0:59');
+  });
+});
+
+describe('formatDuration', () => {
+  it('says "under 1 min" for less than a minute, including zero', () => {
+    expect(formatDuration(0)).toBe('under 1 min');
+    expect(formatDuration(59_999)).toBe('under 1 min');
+  });
+
+  it('shows whole minutes under an hour, rounded down', () => {
+    expect(formatDuration(60_000)).toBe('1 min');
+    expect(formatDuration(42 * 60_000 + 59_000)).toBe('42 min');
+    expect(formatDuration(59 * 60_000 + 59_999)).toBe('59 min');
+  });
+
+  it('switches to hours at exactly one hour, padding the minutes', () => {
+    expect(formatDuration(60 * 60_000)).toBe('1h 00m');
+    expect(formatDuration(67 * 60_000)).toBe('1h 07m');
+    expect(formatDuration(150 * 60_000)).toBe('2h 30m');
+  });
+
+  it('reads "under 1 min" for a negative input', () => {
+    expect(formatDuration(-5_000)).toBe('under 1 min');
   });
 });
