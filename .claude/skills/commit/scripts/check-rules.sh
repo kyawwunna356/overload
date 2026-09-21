@@ -47,6 +47,19 @@ if [ ${#dirs[@]} -gt 0 ]; then
   [ -n "$hits" ] && review "Rule 4: setInterval may only trigger a repaint, never hold the timer's value" "$hits"
 fi
 
+# Theme: every color lives in frontend/app/theme.css, so the whole look can change from
+# one place. Anywhere else, use a semantic token (bg-card, text-ink, bg-primary…).
+if [ ${#dirs[@]} -gt 0 ]; then
+  themesrc=(--include='*.ts' --include='*.tsx' --include='*.css' --exclude-dir=node_modules --exclude-dir=.next --exclude=theme.css)
+  palette='white|black|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose'
+  hits=$(
+    grep -rnE "${themesrc[@]}" '(^|[^A-Za-z0-9_&/])#[0-9a-fA-F]{3,8}\b' "${dirs[@]}"
+    grep -rnE "${themesrc[@]}" '\b(rgba?|hsla?|oklch|oklab)\(' "${dirs[@]}"
+    grep -rnE "${themesrc[@]}" "\b(bg|text|border|ring|fill|stroke|from|to|via|divide|outline|shadow|accent|caret|decoration|placeholder)-($palette)(-[0-9]{2,3})?\b" "${dirs[@]}"
+  )
+  [ -n "$hits" ] && violation "Theme: raw color outside app/theme.css (use a semantic token like bg-card or text-ink)" "$hits"
+fi
+
 # Never mix package managers: pnpm-lock.yaml is the only lockfile.
 hits=$(git ls-files --cached --others --exclude-standard | grep -E '(^|/)(package-lock\.json|yarn\.lock|bun\.lockb?|npm-shrinkwrap\.json)$')
 [ -n "$hits" ] && violation "Convention: non-pnpm lockfile present" "$hits"

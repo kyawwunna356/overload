@@ -1,0 +1,62 @@
+/*
+ * THE LOOK OF THE APP LIVES HERE.
+ *
+ * Every color, font and corner radius is defined in this file and used everywhere else
+ * through the semantic names below (bg-page, bg-card, text-ink, bg-primary, rounded-card…).
+ * Change a value here and the whole app changes; nothing outside this file may use a raw
+ * color (the commit skill's check-rules.sh fails if one appears).
+ *
+ * Values follow frontend/DESIGN.md (the Wise-inspired design system). The comment after
+ * each token gives its DESIGN.md name.
+ *
+ * Two things live outside this file because they need code rather than CSS:
+ *  - the font FILE is loaded in app/layout.tsx via next/font; this file only picks which
+ *    loaded font each role uses;
+ *  - once the PWA manifest exists (milestone 5), its theme_color must be kept equal to
+ *    --color-page by hand.
+ */
+
+@theme {
+  /* Clear Tailwind's default palette so only the tokens below exist. A stray
+     `bg-zinc-100` or `text-white` then produces no color at all. */
+  --color-*: initial;
+
+  /* Surfaces */
+  --color-page: #e8ebe6; /* canvas-soft — the sage page behind everything */
+  --color-card: #ffffff; /* canvas — cards sit on the page */
+  --color-line: #e8ebe6; /* hairline dividers inside a card (same sage as the page) */
+
+  /* Text */
+  --color-ink: #0e0f0c; /* ink — primary text */
+  --color-body: #454745; /* body — secondary text; passes AA on card and page */
+  --color-mute: #868685; /* mute — non-essential text only; ~3.5:1 on white, below AA */
+
+  /* Brand — the single accent. Sits on neutral surfaces, never on another green. */
+  --color-primary: #9fe870; /* primary */
+  --color-on-primary: #0e0f0c; /* on-primary — text on a primary fill */
+  --color-primary-active: #cdffad; /* primary-active — pressed/hover fill */
+  --color-primary-neutral: #c5edab; /* primary-neutral */
+  --color-primary-pale: #e2f6d5; /* primary-pale — soft tints, badges */
+  --color-ink-deep: #163300; /* ink-deep — dark green text on pale green */
+
+  /* Status */
+  --color-positive: #2ead4b; /* positive */
+  --color-positive-deep: #054d28; /* positive-deep */
+  --color-warning: #ffd11a; /* warning */
+  --color-warning-deep: #b86700; /* warning-deep */
+  --color-negative: #d03238; /* negative */
+  --color-negative-deep: #a72027; /* negative-deep */
+
+  /* Corners — DESIGN.md: 24px cards and pills, never sharp */
+  --radius-card: 1.5rem; /* rounded-xl */
+  --radius-control: 0.75rem; /* rounded-md — inputs */
+  --radius-pill: 9999px; /* pill / full */
+}
+
+/* Fonts: --font-inter is provided by next/font in app/layout.tsx. `inline` makes the
+   utilities reference that variable directly. To use a different family, load it in
+   layout.tsx and point these two roles at it. */
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+}

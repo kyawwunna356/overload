@@ -9,8 +9,9 @@ A personal strength log. It does three things:
 It's a single-user app, installed as a PWA on an iPhone and used in a gym basement with
 no signal. Everything works offline; the network is only ever a background backup.
 
-> **Status: early development.** The data layer is in place (Dexie schema, types, seed
-> data). There is no UI yet — the app still shows the default Next.js page. See
+> **Status: early development.** The data layer (Dexie schema, seed data, the first
+> domain functions) and the board — the home screen showing your exercises by movement
+> pattern with the last set inline — are in place. Logging a set isn't built yet. See
 > [Roadmap](#roadmap).
 
 ## How it thinks
@@ -55,14 +56,23 @@ nutrition or bodyweight tracking, push notifications, and native app wrappers.
 
 ```
 frontend/                 Next.js app
-  app/                    routes (currently the create-next-app default)
+  DESIGN.md               the design system (Wise-inspired) the UI follows
+  app/
+    theme.css             every color, font and radius — the one place to change the look
+    (app)/                the app's screens (currently the board at /)
+  components/             Board, PatternGroup, ExerciseRow
   lib/
     db.ts                 Dexie schema, seeding, dev reset
     seed.ts               pure generator for ~6 weeks of realistic training data
+    format.ts             display helpers (weights, "days ago")
     uuid.ts               UUIDv7 ids
     constants.ts          local user id
+    hooks/                useBoard — reads Dexie live and feeds the domain layer
     domain/               pure functions over plain data — no db, sync, react or next
       types.ts            row types shared by everything
+      previous.ts         last working set of an exercise (prefill)
+      staleness.ts        days since an exercise was last performed
+      board.ts            groups and sorts exercises for the home screen
 backend/
   supabase/               Supabase project config (migrations arrive with sync)
 .claude/skills/commit/    the commit workflow and hard-rule checker used in this repo
@@ -83,8 +93,22 @@ Sync (lib/sync/)           flushes the outbox on `online` and on foreground
 Supabase Postgres          durable archive only
 ```
 
-`components/`, `lib/sync/`, `lib/hooks/` and the remaining `lib/domain/` modules
-(sessions, timers, PRs, coverage, staleness) don't exist yet.
+`lib/sync/` and the remaining `lib/domain/` modules (sessions, timers, PRs, coverage)
+don't exist yet.
+
+## Design
+
+The look follows [frontend/DESIGN.md](frontend/DESIGN.md), a Wise-inspired design system
+installed with `npx getdesign@latest add wise`: a sage page, white rounded cards, one lime
+accent, Inter type, and 48px-plus touch targets.
+
+**To change how the whole app looks, edit [frontend/app/theme.css](frontend/app/theme.css).**
+All colors, fonts and corner radii are defined there as named tokens (`bg-page`,
+`text-ink`, `bg-primary`, `rounded-card`…) and components use only those names. Tailwind's
+default palette is switched off, and the commit skill's rule check fails if a raw color
+(`#fff`, `rgb(…)`, `bg-zinc-100`) appears anywhere else. Two things sit outside the file
+because they need code: the font file is loaded in `app/layout.tsx`, and the PWA
+manifest's `theme_color` (milestone 5) has to be kept equal to the page color by hand.
 
 ## Getting started
 
@@ -158,8 +182,8 @@ template.
 Work goes strictly in this order, and a step isn't started until the previous one runs
 end to end on a real device.
 
-1. **Data and logging** *(in progress)* — Dexie schema and seed data ✅, then the board
-   and one-tap logging with previous-value prefill.
+1. **Data and logging** *(in progress)* — Dexie schema and seed data ✅, domain functions
+   ✅, the board ✅, then one-tap logging with previous-value prefill.
 2. **Sessions and timers** — the gap rule, both timers, and a session summary.
 3. **Patterns and coverage** — staleness sort, coverage strip, template as a view.
 4. **Rewards** — PR flash, weekly ring, mastery levels.

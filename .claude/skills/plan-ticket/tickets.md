@@ -11,8 +11,8 @@ first one. The milestone order itself comes from the build order in CLAUDE.md.
 |---|---|---|
 | 1 | Data foundation — Dexie schema, types, seed | done |
 | 2 | Domain layer — previous-set prefill and staleness | done |
-| 3 | Board — pattern groups, staleness sort, last weight inline | next |
-| 4 | Log sheet — ghost values, one-tap repeat, ± buttons, Dexie-then-outbox writes | not started |
+| 3 | Board — pattern groups, staleness sort, last weight inline (plus the Wise theme in `theme.css`) | done |
+| 4 | Log sheet — ghost values, one-tap repeat, ± buttons, Dexie-then-outbox writes | next |
 | 5 | On-device check — run milestone 1 on the iPhone | not started |
 
 Milestone 2 (gap-rule sessions, both timers, session summary) is broken into tickets when

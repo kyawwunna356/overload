@@ -27,6 +27,12 @@ Do this before writing a word of the plan.
 - For a ticket with UI, `frontend/AGENTS.md` warns that this Next.js version has breaking
   changes and points to `frontend/node_modules/next/dist/docs/`. Read the relevant guide
   and list it in the plan, so the plan doesn't rest on remembered APIs.
+- For a ticket with UI, also read `frontend/DESIGN.md` (the Wise-inspired design system)
+  and `frontend/app/theme.css`. Plan the UI from the semantic tokens defined in
+  `theme.css` (`bg-card`, `text-ink`, `rounded-card`…), never raw colors: that file is the
+  single place the app's look is changed from, and the commit skill's rule check fails on
+  a raw color anywhere else. If a ticket needs a token that doesn't exist, the plan adds
+  it to `theme.css`.
 
 ## 2. Name it
 

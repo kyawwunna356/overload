@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateSeed } from '../seed';
+import { buildBoard } from './board';
 import { previousSet } from './previous';
 import { staleness } from './staleness';
 
@@ -53,6 +54,19 @@ describe('domain functions on the seed data', () => {
     expect(front).toBeGreaterThan(24);
     expect(front).toBeLessThan(31);
     expect(bulgarian).toBeLessThan(8);
+  });
+
+  it('buildBoard orders the Squat group by recency with never-performed last', () => {
+    const groups = buildBoard(seed.exercises, seed.setLogs, NOW);
+    expect(groups.map((g) => g.pattern)).toEqual(['squat', 'hinge', 'push', 'pull', 'accessory', 'core']);
+    const squat = groups.find((g) => g.pattern === 'squat');
+    expect(squat?.rows.map((r) => r.exercise.name)).toEqual([
+      'Back Squat',
+      'Bulgarian Split Squat',
+      'Leg Press',
+      'Front Squat',
+      'Goblet Squat',
+    ]);
   });
 
   it('every performed exercise is within the seeded six weeks', () => {
