@@ -8,15 +8,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 ## Where we are
 
-- **Milestone 2 — Sessions and timers** is finished: Tickets 8–11 are committed and Ticket 12
-  (the on-device check) was confirmed by the user on the iPhone. Milestone 1 was checked the
-  same way. CLAUDE.md's "Current milestone" is the user's to bump to 3.
-- **Last commit:** the docs commit recording the milestone 2 device check (after Ticket 11:
-  End session — optional End button and Resume).
-- **Next:** milestone 3 (patterns, staleness sort, coverage strip, template-as-view). The board
-  already groups by pattern and sorts by staleness, so what's left is the coverage strip and
-  template-as-view. Plan its tickets when the user asks.
-- **Tests:** 162 Vitest tests, domain layer only.
+- **Milestone 3 — Patterns and coverage** is in progress (Tickets 13–17). Milestone 2 is finished
+  and was checked on the iPhone, like milestone 1. CLAUDE.md's "Current milestone" still says 2;
+  bumping it is the user's to do. The board already groups by pattern and sorts by recency, so
+  milestone 3 adds the coverage strip and template-as-view.
+- **Last commit:** Ticket 13: Coverage domain — which patterns a session has touched.
+- **Next:** Ticket 14: Coverage strip on the board. Then Ticket 15: Template-as-view domain,
+  Ticket 16: Board uses the template, and Ticket 17: On-device check for milestone 3.
+- **Tests:** 172 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -46,7 +45,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `entry`, `history`, `sessions`, `timers`. `useActiveSession` (in `lib/hooks/`)
+  `board`, `entry`, `history`, `sessions`, `timers`, `coverage`. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
   `formatDuration`. `writes.ts` now has `logSet`, `deleteSet`, `endSession` and `resumeSession`,
@@ -54,7 +53,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   `closingMarkers` behind the last two.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** coverage strip, template-as-view,
+**Not built yet:** coverage strip (its domain function exists), template-as-view,
 PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
 
 ## Decisions worth remembering
@@ -106,6 +105,9 @@ These aren't obvious from the code and shaped later work.
   ending is undoable. Ticket 12 will show whether two taps is too many.
 - `useSessionSummary` passes `deriveSessions` only the markers before the next set, so an older
   session never reads as ended because of a later one's marker.
+- **Coverage counts any kind of set** (warmups included, like `staleness`), takes no template, and
+  is never a target. It will show only while a session is active, so a row of untouched patterns
+  never reads as failure.
 - Tickets 7 and 12 (the on-device checks for milestones 1 and 2) have no code commit: the user
   confirmed them by hand on the iPhone.
 
@@ -113,6 +115,16 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 13: Coverage domain — which patterns a session has touched
+`feature: Add coverage domain function for session patterns` · 2026-09-22
+
+- `lib/domain/coverage.ts`: `coverage(sessionLogs, exercises)` returns a boolean per pattern
+  (`Record<Pattern, boolean>`, so a new pattern is a compile error until handled). Every kind of
+  set counts; a set with an unknown exercise is ignored; an archived exercise still counts.
+- No template or target is involved, so there is nothing to fail (Hard Rules 1, 3, 6).
+- 10 tests in `coverage.test.ts`. Nothing on screen yet; the strip is Ticket 14.
+- The milestone 3 tickets (13–17) were added to `tickets.md`.
 
 ### Ticket 12: On-device check — run milestone 2 on the iPhone
 `docs: Record the milestone 2 device check` · 2026-09-21
