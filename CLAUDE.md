@@ -23,14 +23,14 @@ the optional end marker in Rule 2, because it records a choice rather than a com
 
 There is **no "Start Workout" button.** A session is a run of sets with no gap larger than
 `SESSION_GAP_MINUTES` (90). The first set logged opens a session implicitly; an idle gap
-closes it.
+closes it, whether or not anything is tapped.
 
-Ending a session is **optional**. An idle gap always closes one, whether or not anything is
-tapped. An optional **End session** button can close it sooner by writing an end marker
-(`ended_at`) to `sessions`; the next set then opens a new session even within 90 minutes.
-Ending must **always** be possible, unconditionally: one tap, never a validation step, a
-confirmation dialog, or a cleanup task, and never required. A mistaken End can be undone
-(Resume), which deletes the marker.
+Ending it yourself is **optional**. On the session summary, **End session** opens a choice:
+**Resume session** (nothing changes) or a red **Finish session**, which writes an end marker
+(`ended_at`) to `sessions`. Finishing is final: nothing deletes the marker, and the next set
+opens a new session even within 90 minutes. End must **always** be available while a session
+is active, never conditional on what the session contains, and is never required: a forgotten
+session closes on its own after 90 minutes.
 
 ### 3. Templates are a view, never a constraint
 
@@ -229,7 +229,8 @@ end-to-end on a real device.
    prefill.** ← replaces SetGraph
 2. **Gap-rule sessions + both timers + session summary.** ← replaces Hevy
 3. Patterns, staleness sort, coverage strip, template-as-view
-4. PR flash, weekly ring, mastery levels
+4. PR flash, weekly ring, mastery levels, and a recap of the finished session (PRs, total
+   weight lifted)
 5. Supabase + outbox sync + PWA install + `navigator.storage.persist()`
 
 **Current milestone: 2**

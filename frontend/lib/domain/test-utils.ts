@@ -1,4 +1,4 @@
-import type { Exercise, Session, SetLog } from './types';
+import type { Exercise, SetLog } from './types';
 
 // Builds a valid Exercise; the default id follows the name so rows stay distinguishable.
 export function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -35,19 +35,5 @@ export function makeSet(overrides: Partial<SetLog> = {}): SetLog {
     ...base,
     id: overrides.id ?? `set-${base.exercise_id}-${base.logged_at}-${base.kind}`,
     updated_at: overrides.updated_at ?? base.logged_at,
-  };
-}
-
-// Builds a valid end-marker row (a `sessions` row). Deterministic: the default id follows
-// `ended_at`, and nothing reads the clock.
-export function makeMarker(ended_at: number, overrides: Partial<Session> = {}): Session {
-  return {
-    id: `marker-${ended_at}`,
-    user_id: 'test',
-    started_at: 0,
-    ended_at,
-    template_id: null,
-    updated_at: ended_at,
-    ...overrides,
   };
 }

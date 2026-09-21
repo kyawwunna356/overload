@@ -33,6 +33,14 @@ first one. The milestone order itself comes from the build order in CLAUDE.md.
 |---|---|---|
 | 13 | Coverage domain — which patterns a session has touched (pure, tested) | done |
 | 14 | Coverage strip — the row at the top of the board while a session is active | done |
-| 15 | Template-as-view domain — the board's visible picks come from a template (pure, tested) | next |
-| 16 | Board uses the template — reads the default template and folds the rest away | not started |
-| 17 | On-device check — run milestone 3 on the iPhone | not started |
+| 15 | Two-step End session — Resume or a final Finish (a fix to Ticket 11's ending flow) | done |
+| 16 | Template-as-view domain — the board's visible picks come from a template (pure, tested) | next |
+| 17 | Board uses the template — reads the default template and folds the rest away | not started |
+| 18 | On-device check — run milestone 3 on the iPhone | not started |
+
+## Milestone 4 — Rewards (to be broken down into tickets when it is planned)
+
+Planned scope, recorded now so it isn't lost: `detectPR` and the PR flash while logging, `weeklyRing`,
+`masteryLevel`, and a **session recap page** (`/recap?id=…`) that Finish opens: the PRs hit in the session, the
+total weight lifted (one number for the session, not a chart or trend), the weekly ring and any mastery
+level-ups.

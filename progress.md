@@ -8,14 +8,18 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 ## Where we are
 
-- **Milestone 3 — Patterns and coverage** is in progress (Tickets 13–17). Milestone 2 is finished
+- **Milestone 3 — Patterns and coverage** is in progress (Tickets 13–18). Milestone 2 is finished
   and was checked on the iPhone, like milestone 1. CLAUDE.md's "Current milestone" still says 2;
   bumping it is the user's to do. The board already groups by pattern and sorts by recency, so
   milestone 3 adds the coverage strip and template-as-view.
-- **Last commit:** Ticket 14: Coverage strip — the row at the top of the board.
-- **Next:** Ticket 15: Template-as-view domain (the board's visible picks come from a template).
-  Then Ticket 16: Board uses the template, and Ticket 17: On-device check for milestone 3.
-- **Tests:** 172 Vitest tests, domain layer only.
+- **Last commit:** Ticket 15: Two-step End session — Resume or a final Finish (a fix to
+  Ticket 11's ending flow, asked for by the user).
+- **Next:** Ticket 16: Template-as-view domain (the board's visible picks come from a template).
+  Then Ticket 17: Board uses the template, and Ticket 18: On-device check for milestone 3.
+  **Milestone 4 must also include a session recap page** (`/recap?id=…`, opened by Finish): PRs
+  hit in the session and the total weight lifted, plus the weekly ring and mastery level-ups.
+  It's recorded in `tickets.md`, the README roadmap and CLAUDE.md's build order.
+- **Tests:** 166 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -30,17 +34,18 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Coverage strip** (top of the board, only while a session is active): six pills, one per
   pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
   rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
-  session ends (idle gap or End) and returns on Resume.
+  session ends (the idle gap, or Finish).
 - **Session summary** (`/session?id=…`): one session's sets grouped by exercise (in the order
   first performed) with totals and the time span. Read-only apart from the bottom bar below.
   Tapping the session timer opens it; when no session is active, the board shows
   "Last session · <day> ›" instead, linking to the most recent one.
-- **End session and Resume** (a bar pinned to the bottom of the summary, latest session only):
-  while the session is active it says **End session**. One tap writes an end marker, no
-  dialog, and both timers disappear. The bar then reads `Session ended`, `Your next set
-  starts a new session.` and **Resume session**, which deletes the marker. Once a set is
-  logged after an End, that set opens a new session and the old summary offers neither.
-  A session closed by the 90-minute gap shows no bar.
+- **End session** (a bar pinned to the bottom of the summary, only for the active session):
+  **End session** writes nothing; it opens a sheet over a dimmed page: **End this session?**, a
+  red **Finish session** and, below it, **Resume session**. Resume (or tapping the dimmed page)
+  just goes back. Finish writes the end marker and is final: both timers disappear, the summary
+  shows `Finished · Your next set starts a new session.` with no bar, and nothing offers to undo
+  it. The next set opens a new session. A session the 90-minute gap closed shows no bar and no
+  `Finished` line, so forgetting to end still works.
 - **Timers** (only while a session is active, i.e. a set in the last 90 minutes): a small
   grey `Session 42:10` (time since the session's first set, a link to the summary) in the
   board header and on the log sheet, and a `Rest` timer (time since the last set, any
@@ -53,12 +58,11 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
-  `formatDuration`. `writes.ts` now has `logSet`, `deleteSet`, `endSession` and `resumeSession`,
-  each one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` and
-  `closingMarkers` behind the last two.
+  `formatDuration`. `writes.ts` has `logSet`, `deleteSet` and `endSession` (run by Finish), each
+  one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** template-as-view,
+**Not built yet:** template-as-view, the session recap page,
 PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
 
 ## Decisions worth remembering
@@ -68,10 +72,12 @@ These aren't obvious from the code and shaped later work.
 - **Sessions are derived at read time**, not stored (chosen in Ticket 8). A session's id is
   its first set's id. `set_logs.session_id` stays null and the `sessions` table holds only
   manual end markers.
-- **Hard Rule 2 was reworded in Ticket 8:** there's still no "Start Workout", but an
-  optional **End session** button is allowed. It writes an end marker (`ended_at`) to
-  `sessions`, is one tap with no dialog, is never required, and has a Resume that deletes
-  the marker. Built in Ticket 11.
+- **Hard Rule 2 was reworded twice.** Ticket 8: there's still no "Start Workout", but an
+  optional **End session** button is allowed, writing an end marker (`ended_at`) to `sessions`;
+  Ticket 11 built it as one tap with a Resume that deleted the marker. **Ticket 15 (the user's
+  choice) changed it:** End now only asks (Resume or a red Finish), Finish is final and nothing
+  deletes a marker any more. It must still always be available while a session is active and is
+  never required; the 90-minute idle rule still closes forgotten sessions.
 - **Screens that take an id use a query string** (`/exercise?id=…`, and later
   `/session?id=…`), not `[id]` routes, because dynamic routes aren't prefetched and would
   need the server to open — which fails with no signal.
@@ -102,12 +108,16 @@ These aren't obvious from the code and shaped later work.
 - **The End marker time is `max(now, last set)`** (`endMarkerTime`), so it always satisfies
   `last set <= T < next set`, even if a set is stamped in the future. Ending an ended session
   writes nothing, so a double tap is one row.
-- **Resume only applies to the latest session** and deletes every marker at or after its last
-  set. A marker that a later set has already split on is kept for good: an End that isn't undone
-  before the next set leaves two sessions. Merging older sessions is a history-page concern.
+- **A finished session can't be reopened.** Resume is "go back" before Finish. Nothing is lost by a
+  mistaken Finish: every set stays, and the only effect is that the next set opens a new session.
+- **The End sheet's safe button sits where End was.** Resume is the lower button, at the same spot
+  as End, and the red Finish is above it, so a double tap on End can't finish a session (Finish
+  never overlaps that spot during the slide-in either). The sheet uses the card colour; the dimmed
+  page (`bg-page/70`) and a shadow set it apart. The red is `--color-negative` `#c0392b`, a warning
+  red toned down from a bright one (text-ink on it is 4.9:1). The slide-in animations live in
+  `theme.css` and only run under `motion-safe:`.
 - **End lives only on the summary page** (two taps from the board via the session timer), never
-  beside the pinned Log button where a mis-tap would hurt. The button is neutral, not red:
-  ending is undoable. Ticket 12 will show whether two taps is too many.
+  beside the pinned Log button where a mis-tap would hurt.
 - `useSessionSummary` passes `deriveSessions` only the markers before the next set, so an older
   session never reads as ended because of a later one's marker.
 - **Coverage counts any kind of set** (warmups included, like `staleness`), takes no template, and
@@ -121,6 +131,21 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 15: Two-step End session — Resume or a final Finish
+`feature: Make End session a two-step choice with a final Finish` · 2026-09-22
+
+- The user asked for ending to be a real decision and for a recap of the day to follow. **End
+  session** now writes nothing and opens **Resume session** / a red **Finish session**; only Finish
+  writes the end marker, and it's final. The summary shows `Finished` for a session ended by hand.
+- Removed `resumeSession`, `closingMarkers` and `makeMarker`, since nothing deletes a marker (172
+  → 166 tests). The 90-minute rule is untouched.
+- Hard Rule 2 in CLAUDE.md and the README bullet were reworded (approved with the plan). CLAUDE.md's
+  build order and the README roadmap now list a recap page in milestone 4; `tickets.md` has a
+  "Milestone 4 — Rewards" note and the milestone 3 tickets are renumbered (16–18).
+- UI: a dimmed page behind a sheet that slides up (`motion-safe:` only), the safe button at End's
+  spot, a warning red token, and animations in `theme.css`. Checked in headless Chrome at 390px.
+  Not yet on the iPhone; that goes into Ticket 18.
 
 ### Ticket 14: Coverage strip — the row at the top of the board
 `feature: Add pattern coverage strip to the board` · 2026-09-22

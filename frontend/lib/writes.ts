@@ -1,6 +1,6 @@
 import { LOCAL_USER_ID } from './constants';
 import { db } from './db';
-import { closingMarkers, endMarkerTime, type DerivedSession } from './domain/sessions';
+import { endMarkerTime, type DerivedSession } from './domain/sessions';
 import type { OutboxRow, Session, SetKind, SetLog, SyncedRow, SyncedTable } from './domain/types';
 import { newId } from './uuid';
 
@@ -50,10 +50,12 @@ export async function deleteSet(id: string): Promise<void> {
   });
 }
 
-// Ends a session by writing an end marker (Hard Rule 2): one tap, no confirmation, and never
-// required. The marker is the one stored session fact; the session itself stays derived from
-// its sets. Ending a session that's already ended does nothing (returns null), so a double tap
-// writes one row: the second transaction runs after the first and finds its marker.
+// Finishes a session by writing an end marker (Hard Rule 2). The summary's End session button only
+// opens the Resume / Finish choice; this runs when you choose Finish, and it's final — nothing
+// deletes a marker. It's never required: an idle gap closes a forgotten session on its own. The
+// marker is the one stored session fact; the session itself stays derived from its sets. Ending a
+// session that's already ended does nothing (returns null), so a double tap writes one row: the
+// second transaction runs after the first and finds its marker.
 export async function endSession(
   session: Pick<DerivedSession, 'started_at' | 'last_set_at'>,
 ): Promise<Session | null> {
@@ -77,21 +79,6 @@ export async function endSession(
     await db.sessions.add(marker);
     await db.outbox.add(outboxRow('sessions', 'upsert', marker, now));
     return marker;
-  });
-}
-
-// Undoes End: deletes the marker(s) that closed the latest session, so it's active again and the
-// next set joins it. If a set has been logged since, that set already opened a new session and
-// the marker only records the split, so it's kept. Nothing to undo does nothing. As with
-// deleteSet, the outbox row carries the row as it was.
-export async function resumeSession(session: Pick<DerivedSession, 'last_set_at'>): Promise<void> {
-  const now = Date.now();
-  await db.transaction('rw', db.sessions, db.set_logs, db.outbox, async () => {
-    if ((await db.set_logs.where('logged_at').above(session.last_set_at).count()) > 0) return;
-    const closing = closingMarkers(session, await db.sessions.toArray());
-    if (closing.length === 0) return;
-    await db.sessions.bulkDelete(closing.map((row) => row.id));
-    await db.outbox.bulkAdd(closing.map((row) => outboxRow('sessions', 'delete', row, now)));
   });
 }
 

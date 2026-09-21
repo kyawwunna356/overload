@@ -48,6 +48,13 @@ export function SessionSummary() {
                 ...(summary.durationMs > 0 ? [formatDuration(summary.durationMs)] : []),
               ].join(" · ")}
             </p>
+            {/* Only a session you finished by hand; one the idle gap closed says nothing. */}
+            {summary.session.endedManually && (
+              <p className="pt-3 text-sm text-body">
+                <span className="font-semibold text-ink">Finished</span> · Your next set starts a new
+                session.
+              </p>
+            )}
           </header>
 
           {summary.groups.map((group) => (

@@ -23,7 +23,8 @@ full in [CLAUDE.md](CLAUDE.md); the short version:
   "previous weight" are all *derived* from the log of sets, never stored on their own.
 - **No "Start Workout".** A session is just a run of sets with no gap longer than 90
   minutes. The first set opens one; an idle gap closes it. An optional "End session" button
-  can close it sooner, in one tap. Nothing ever has to be confirmed, ended or cleaned up.
+  can close it sooner: it asks whether to resume or finish, and finishing is final. Nothing
+  ever has to be ended or cleaned up.
 - **Templates are a view, not a rule.** A template decides what appears on screen and in
   what order. It never limits what you can log, and there's nothing to "skip".
 - **Timers are timestamp arithmetic.** Session time is `now − first set`; rest time is
@@ -65,7 +66,7 @@ frontend/                 Next.js app
                           SessionSummary, SessionHeader, RestTimer, SessionEndBar, BackLink
   lib/
     db.ts                 Dexie schema, seeding, dev reset
-    writes.ts             the write path: logSet / deleteSet / endSession / resumeSession,
+    writes.ts             the write path: logSet / deleteSet / endSession,
                           each one Dexie + outbox transaction
     seed.ts               pure generator for ~6 weeks of realistic training data
     format.ts             display helpers (weights, "days ago", times)
@@ -81,7 +82,7 @@ frontend/                 Next.js app
       entry.ts            stepping and parsing for the log sheet's weight and reps
       history.ts          groups an exercise's sets by day (Today, Yesterday, weekday, date)
       sessions.ts         the gap rule: derives sessions, the active one, a session summary,
-                          and the end-marker helpers behind End session and Resume
+                          and the end-marker time used when a session is finished
       timers.ts           elapsed time for the session and rest timers, and duration labels
 backend/
   supabase/               Supabase project config (migrations arrive with sync)
@@ -200,7 +201,8 @@ end to end on a real device.
 2. **Sessions and timers** *(in progress)* — the gap rule, both timers, a session summary,
    and an optional End session button.
 3. **Patterns and coverage** — staleness sort, coverage strip, template as a view.
-4. **Rewards** — PR flash, weekly ring, mastery levels.
+4. **Rewards** — PR flash, weekly ring, mastery levels, and a recap page for a finished
+   session (PRs and the total weight lifted).
 5. **Sync and install** — Supabase, outbox sync, PWA install, persistent storage.
 
 Until step 5, the data lives only in the browser's IndexedDB, and Safari can evict it.
