@@ -34,13 +34,31 @@ first one. The milestone order itself comes from the build order in CLAUDE.md.
 | 13 | Coverage domain — which patterns a session has touched (pure, tested) | done |
 | 14 | Coverage strip — the row at the top of the board while a session is active | done |
 | 15 | Two-step End session — Resume or a final Finish (a fix to Ticket 11's ending flow) | done |
-| 16 | Template-as-view domain — the board's visible picks come from a template (pure, tested) | next |
-| 17 | Board uses the template — reads the default template and folds the rest away | not started |
-| 18 | On-device check — run milestone 3 on the iPhone | not started |
+| 16 | On-device check — run milestone 3 on the iPhone | done |
 
-## Milestone 4 — Rewards (to be broken down into tickets when it is planned)
+Template-as-view was dropped from this milestone: milestone 4 replaces it with a list you pick and order
+yourself, which is the same ground done properly. The two tickets planned for it were never built.
 
-Planned scope, recorded now so it isn't lost: `detectPR` and the PR flash while logging, `weeklyRing`,
-`masteryLevel`, and a **session recap page** (`/recap?id=…`) that Finish opens: the PRs hit in the session, the
-total weight lifted (one number for the session, not a chart or trend), the weekly ring and any mastery
-level-ups.
+## Milestone 4 — My exercises
+
+Pick your list from the catalogue, order it yourself, and the board shows that list in that order. Logging
+never reorders anything. See CLAUDE.md's UI rule for the board and Hard Rule 3.
+
+| # | Ticket | Status |
+|---|---|---|
+| 17 | Catalogue and empty list — ~73 exercises seeded, nothing picked, Dexie v2 migration | built — awaiting review |
+| 18 | Picks domain — the board is your list in your order (pure, tested) | built — awaiting review |
+| 19 | Add exercises from the board — the empty group's Add action and a link to the picker | next |
+| 20 | Exercise picker — browse the catalogue, add and remove | not started |
+| 21 | Reorder — put each group in the order you train it | not started |
+| 22 | On-device check — run milestone 4 on the iPhone | not started |
+
+## Milestone 5 — Rewards (to be broken down into tickets when it is planned)
+
+`detectPR` and the PR flash while logging, `weeklyRing`, `masteryLevel`, and a **session recap page**
+(`/recap?id=…`) that Finish opens: the PRs hit in the session, the total weight lifted (one number for the
+session, not a chart or trend), the weekly ring and any mastery level-ups.
+
+## Milestone 6 — Sync and install
+
+Supabase, outbox sync, PWA install, `navigator.storage.persist()`.

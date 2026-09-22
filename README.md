@@ -25,8 +25,9 @@ full in [CLAUDE.md](CLAUDE.md); the short version:
   minutes. The first set opens one; an idle gap closes it. An optional "End session" button
   can close it sooner: it asks whether to resume or finish, and finishing is final. Nothing
   ever has to be ended or cleaned up.
-- **Templates are a view, not a rule.** A template decides what appears on screen and in
-  what order. It never limits what you can log, and there's nothing to "skip".
+- **Templates are a view, not a rule.** Your list decides which exercises appear on the
+  board and in what order — you pick them from the catalogue and order them yourself. It
+  never limits what you can log, and there's nothing to "skip".
 - **Timers are timestamp arithmetic.** Session time is `now − first set`; rest time is
   `now − last set` and counts up with no target. They survive the phone locking or the
   app being killed because the truth is a timestamp in the database.
@@ -61,14 +62,14 @@ frontend/                 Next.js app
   app/
     theme.css             every color, font and radius — the one place to change the look
     (app)/                the app's screens: the board at /, the log sheet at /exercise?id=…,
-                          the session summary at /session?id=…
+                          the session summary at /session?id=…, the catalogue at /exercises
   components/             Board, PatternGroup, ExerciseRow, LogSheet, SetEntry, SetHistory,
                           SessionSummary, SessionHeader, RestTimer, SessionEndBar, BackLink
   lib/
     db.ts                 Dexie schema, seeding, dev reset
     writes.ts             the write path: logSet / deleteSet / endSession,
                           each one Dexie + outbox transaction
-    seed.ts               pure generator for ~6 weeks of realistic training data
+    seed.ts               the exercise catalogue plus ~6 weeks of realistic training data
     format.ts             display helpers (weights, "days ago", times)
     uuid.ts               UUIDv7 ids
     constants.ts          local user id
@@ -200,10 +201,12 @@ end to end on a real device.
    one-tap logging with previous-value prefill.
 2. **Sessions and timers** *(in progress)* — the gap rule, both timers, a session summary,
    and an optional End session button.
-3. **Patterns and coverage** — staleness sort, coverage strip, template as a view.
-4. **Rewards** — PR flash, weekly ring, mastery levels, and a recap page for a finished
+3. **Patterns and coverage** — staleness sort, coverage strip.
+4. **My exercises** — pick your list from a catalogue of ~70, order it yourself, and the
+   board shows that list in that order.
+5. **Rewards** — PR flash, weekly ring, mastery levels, and a recap page for a finished
    session (PRs and the total weight lifted).
-5. **Sync and install** — Supabase, outbox sync, PWA install, persistent storage.
+6. **Sync and install** — Supabase, outbox sync, PWA install, persistent storage.
 
 Until step 5, the data lives only in the browser's IndexedDB, and Safari can evict it.
 That risk is accepted for now.

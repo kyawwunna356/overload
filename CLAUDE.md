@@ -118,7 +118,7 @@ app/
   (app)/page.tsx                 board (home)
   (app)/exercise/page.tsx        log sheet (?id=… — a static page, so it opens offline)
   (app)/session/page.tsx         session summary (?id=… — a static page, so it opens offline)
-  (app)/manage/page.tsx          exercises + template
+  (app)/exercises/page.tsx       the catalogue — pick what's on your board
   (app)/history/page.tsx         sessions + per-exercise history
 lib/
   db.ts                          Dexie schema + migrations
@@ -143,7 +143,8 @@ exercises       (id, user_id, name, pattern, default_rest_sec, archived, updated
 
 templates       (id, user_id, name, is_default, updated_at)
 template_items  (id, template_id, exercise_id, pattern, sort_order)
-                -- set_logs NEVER references these
+                -- YOUR list: which exercises the board shows, and sort_order is the
+                -- order you put them in. set_logs NEVER references these
 
 set_logs        (id, user_id, exercise_id, session_id, logged_at,
                  weight, reps, rpe, kind, updated_at)
@@ -186,10 +187,11 @@ pass `now` as an argument so tests are deterministic.
 
 ## UI RULES
 
-**Board (home).** Grouped by movement pattern, each group sorted by **staleness**
-(days since last performed), never alphabetically. Each row shows its last-performed
-weight inline — value before any tap. Coverage strip at top. Session timer is small grey
-text in the header.
+**Board (home).** Grouped by movement pattern. Each group holds the exercises **you picked**,
+in the order **you put them in** — never alphabetically, never re-sorted by what you did last,
+and logging a set never moves a row. A group you haven't picked for is empty and offers to add.
+Each row still shows its last-performed weight inline — value before any tap — and how long ago.
+Coverage strip at top. Session timer is small grey text in the header.
 
 **Log sheet.** Previous set shown as large ghost values. One tap to repeat identical.
 Swipe or ± buttons for weight/reps. **Target: logging a set requires one tap and no
@@ -228,12 +230,14 @@ end-to-end on a real device.
 1. **Dexie schema + seeded exercises + board + one-tap logging with previous-value
    prefill.** ← replaces SetGraph
 2. **Gap-rule sessions + both timers + session summary.** ← replaces Hevy
-3. Patterns, staleness sort, coverage strip, template-as-view
-4. PR flash, weekly ring, mastery levels, and a recap of the finished session (PRs, total
+3. Patterns, staleness sort, coverage strip
+4. **My exercises**: pick your list from the catalogue, order it yourself, and the board
+   shows that list in that order
+5. PR flash, weekly ring, mastery levels, and a recap of the finished session (PRs, total
    weight lifted)
-5. Supabase + outbox sync + PWA install + `navigator.storage.persist()`
+6. Supabase + outbox sync + PWA install + `navigator.storage.persist()`
 
-**Current milestone: 2**
+**Current milestone: 3**
 
 Seed ~6 weeks of realistic full-body training data early, before building UI. Without it
 the board sorting and prefill behaviour can't be evaluated.

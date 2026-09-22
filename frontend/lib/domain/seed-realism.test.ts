@@ -56,17 +56,39 @@ describe('domain functions on the seed data', () => {
     expect(bulgarian).toBeLessThan(8);
   });
 
-  it('buildBoard orders the Squat group by recency with never-performed last', () => {
-    const groups = buildBoard(seed.exercises, seed.setLogs, NOW);
+  it('buildBoard shows a list of seeded exercises in the order picked, with their real values', () => {
+    // A list like one you'd build yourself: deliberately not in recency order.
+    const picked = ['Leg Press', 'Back Squat', 'Goblet Squat', 'Bench Press'];
+    const list = picked.map((name, i) => ({ exercise_id: idOf(name), sort_order: i }));
+    const groups = buildBoard(seed.exercises, seed.setLogs, NOW, list);
     expect(groups.map((g) => g.pattern)).toEqual(['squat', 'hinge', 'push', 'pull', 'accessory', 'core']);
+
     const squat = groups.find((g) => g.pattern === 'squat');
-    expect(squat?.rows.map((r) => r.exercise.name)).toEqual([
-      'Back Squat',
-      'Bulgarian Split Squat',
-      'Leg Press',
-      'Front Squat',
-      'Goblet Squat',
-    ]);
+    expect(squat?.rows.map((r) => r.exercise.name)).toEqual(['Leg Press', 'Back Squat', 'Goblet Squat']);
+    // Back Squat is the most recently trained of the three and still sits where it was put.
+    expect(squat?.rows[1].lastSet?.kind).toBe('working');
+    expect(squat?.rows[2].lastSet).toBeNull(); // Goblet Squat was never performed
+    expect(groups.find((g) => g.pattern === 'push')?.rows.map((r) => r.exercise.name)).toEqual(['Bench Press']);
+    // Patterns nothing was picked for still come back, empty.
+    expect(groups.find((g) => g.pattern === 'core')?.rows).toEqual([]);
+  });
+
+  it('seeds the whole catalogue but picks nothing: the default template starts empty', () => {
+    expect(seed.templates).toHaveLength(1);
+    expect(seed.templates[0].is_default).toBe(true);
+    expect(seed.templateItems).toEqual([]);
+    expect(seed.exercises.length).toBeGreaterThanOrEqual(60);
+    const names = seed.exercises.map((e) => e.name);
+    expect(new Set(names).size).toBe(names.length);
+    for (const pattern of ['squat', 'hinge', 'push', 'pull', 'accessory', 'core']) {
+      expect(seed.exercises.filter((e) => e.pattern === pattern).length).toBeGreaterThanOrEqual(8);
+    }
+  });
+
+  it('gives every seeded set an exercise that exists', () => {
+    const ids = new Set(seed.exercises.map((e) => e.id));
+    expect(seed.setLogs.every((log) => ids.has(log.exercise_id))).toBe(true);
+    expect(seed.setLogs.length).toBeGreaterThan(300);
   });
 
   it('every performed exercise is within the seeded six weeks', () => {

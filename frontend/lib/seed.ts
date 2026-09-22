@@ -1,6 +1,5 @@
 import { LOCAL_USER_ID } from './constants';
 import {
-  PATTERNS,
   type Exercise,
   type Pattern,
   type SetKind,
@@ -10,10 +9,13 @@ import {
 } from './domain/types';
 import { newId } from './uuid';
 
-// ~6 weeks of realistic full-body training so board sorting and prefill can be
-// judged by eye. Pure: a function of `now` and a fixed RNG seed, so a reset
-// always produces the same-looking history. `session_id` stays null — sessions
-// are derived by the gap rule in milestone 2.
+// The exercise catalogue, plus ~6 weeks of realistic full-body training so prefill and the
+// board can be judged by eye. Pure: a function of `now` and a fixed RNG seed, so a reset
+// always produces the same-looking history. `session_id` stays null — sessions are derived
+// by the gap rule.
+//
+// A fresh install picks NOTHING: the default template is created empty, so every pattern
+// group starts empty and the exercises you add are the only ones the board shows.
 
 export type SeedData = {
   exercises: Exercise[];
@@ -28,40 +30,91 @@ type CatalogueEntry = {
   rest: number; // default_rest_sec
   start: number; // starting working weight (kg); 0 = bodyweight
   step: number; // progression increment (kg); 0 = progresses by reps
-  inTemplate: boolean; // in the default template; the rest are still logged
 };
 
+// Every exercise the app knows about — what the picker offers. Nothing here is "yours"
+// until you add it to your list (template_items); the board shows only what you picked.
+// A new exercise can be appended at any time: the Dexie v2 migration adds the ones a device
+// hasn't got yet, matching on name.
 const CATALOGUE = {
-  back_squat: { name: 'Back Squat', pattern: 'squat', rest: 180, start: 80, step: 2.5, inTemplate: true },
-  front_squat: { name: 'Front Squat', pattern: 'squat', rest: 180, start: 60, step: 2.5, inTemplate: false },
-  bulgarian_split_squat: { name: 'Bulgarian Split Squat', pattern: 'squat', rest: 120, start: 16, step: 2, inTemplate: false },
-  leg_press: { name: 'Leg Press', pattern: 'squat', rest: 120, start: 140, step: 5, inTemplate: true },
-  goblet_squat: { name: 'Goblet Squat', pattern: 'squat', rest: 90, start: 20, step: 2, inTemplate: false },
+  back_squat: { name: 'Back Squat', pattern: 'squat', rest: 180, start: 80, step: 2.5 },
+  front_squat: { name: 'Front Squat', pattern: 'squat', rest: 180, start: 60, step: 2.5 },
+  box_squat: { name: 'Box Squat', pattern: 'squat', rest: 180, start: 70, step: 2.5 },
+  smith_squat: { name: 'Smith Machine Squat', pattern: 'squat', rest: 120, start: 60, step: 2.5 },
+  hack_squat: { name: 'Hack Squat', pattern: 'squat', rest: 120, start: 80, step: 5 },
+  leg_press: { name: 'Leg Press', pattern: 'squat', rest: 120, start: 140, step: 5 },
+  bulgarian_split_squat: { name: 'Bulgarian Split Squat', pattern: 'squat', rest: 120, start: 16, step: 2 },
+  walking_lunge: { name: 'Walking Lunge', pattern: 'squat', rest: 90, start: 20, step: 2 },
+  step_up: { name: 'Step-Up', pattern: 'squat', rest: 90, start: 16, step: 2 },
+  goblet_squat: { name: 'Goblet Squat', pattern: 'squat', rest: 90, start: 20, step: 2 },
+  leg_extension: { name: 'Leg Extension', pattern: 'squat', rest: 75, start: 40, step: 2.5 },
+  pistol_squat: { name: 'Pistol Squat', pattern: 'squat', rest: 90, start: 0, step: 0 },
 
-  deadlift: { name: 'Deadlift', pattern: 'hinge', rest: 210, start: 100, step: 5, inTemplate: true },
-  romanian_deadlift: { name: 'Romanian Deadlift', pattern: 'hinge', rest: 150, start: 80, step: 2.5, inTemplate: true },
-  hip_thrust: { name: 'Hip Thrust', pattern: 'hinge', rest: 120, start: 90, step: 5, inTemplate: true },
-  back_extension: { name: 'Back Extension', pattern: 'hinge', rest: 75, start: 10, step: 2.5, inTemplate: false },
+  deadlift: { name: 'Deadlift', pattern: 'hinge', rest: 210, start: 100, step: 5 },
+  sumo_deadlift: { name: 'Sumo Deadlift', pattern: 'hinge', rest: 210, start: 90, step: 5 },
+  trap_bar_deadlift: { name: 'Trap Bar Deadlift', pattern: 'hinge', rest: 180, start: 100, step: 5 },
+  romanian_deadlift: { name: 'Romanian Deadlift', pattern: 'hinge', rest: 150, start: 80, step: 2.5 },
+  single_leg_rdl: { name: 'Single-Leg RDL', pattern: 'hinge', rest: 90, start: 16, step: 2 },
+  good_morning: { name: 'Good Morning', pattern: 'hinge', rest: 120, start: 40, step: 2.5 },
+  hip_thrust: { name: 'Hip Thrust', pattern: 'hinge', rest: 120, start: 90, step: 5 },
+  kettlebell_swing: { name: 'Kettlebell Swing', pattern: 'hinge', rest: 75, start: 24, step: 4 },
+  cable_pull_through: { name: 'Cable Pull-Through', pattern: 'hinge', rest: 60, start: 30, step: 2.5 },
+  glute_ham_raise: { name: 'Glute-Ham Raise', pattern: 'hinge', rest: 90, start: 0, step: 0 },
+  back_extension: { name: 'Back Extension', pattern: 'hinge', rest: 75, start: 10, step: 2.5 },
 
-  bench_press: { name: 'Bench Press', pattern: 'push', rest: 180, start: 70, step: 2.5, inTemplate: true },
-  overhead_press: { name: 'Overhead Press', pattern: 'push', rest: 150, start: 42.5, step: 2.5, inTemplate: true },
-  incline_db_press: { name: 'Incline Dumbbell Press', pattern: 'push', rest: 120, start: 24, step: 2, inTemplate: true },
-  dips: { name: 'Dips', pattern: 'push', rest: 120, start: 0, step: 0, inTemplate: true },
+  bench_press: { name: 'Bench Press', pattern: 'push', rest: 180, start: 70, step: 2.5 },
+  incline_bench_press: { name: 'Incline Bench Press', pattern: 'push', rest: 150, start: 55, step: 2.5 },
+  close_grip_bench: { name: 'Close-Grip Bench Press', pattern: 'push', rest: 150, start: 60, step: 2.5 },
+  db_bench_press: { name: 'Dumbbell Bench Press', pattern: 'push', rest: 120, start: 28, step: 2 },
+  incline_db_press: { name: 'Incline Dumbbell Press', pattern: 'push', rest: 120, start: 24, step: 2 },
+  machine_chest_press: { name: 'Machine Chest Press', pattern: 'push', rest: 90, start: 45, step: 5 },
+  overhead_press: { name: 'Overhead Press', pattern: 'push', rest: 150, start: 42.5, step: 2.5 },
+  db_shoulder_press: { name: 'Dumbbell Shoulder Press', pattern: 'push', rest: 120, start: 20, step: 2 },
+  landmine_press: { name: 'Landmine Press', pattern: 'push', rest: 90, start: 25, step: 2.5 },
+  cable_fly: { name: 'Cable Fly', pattern: 'push', rest: 60, start: 15, step: 2.5 },
+  pec_deck: { name: 'Pec Deck', pattern: 'push', rest: 60, start: 35, step: 5 },
+  dips: { name: 'Dips', pattern: 'push', rest: 120, start: 0, step: 0 },
+  push_up: { name: 'Push-Up', pattern: 'push', rest: 60, start: 0, step: 0 },
 
-  barbell_row: { name: 'Barbell Row', pattern: 'pull', rest: 150, start: 60, step: 2.5, inTemplate: true },
-  pull_up: { name: 'Pull-Up', pattern: 'pull', rest: 120, start: 0, step: 0, inTemplate: true },
-  lat_pulldown: { name: 'Lat Pulldown', pattern: 'pull', rest: 90, start: 55, step: 2.5, inTemplate: true },
-  face_pull: { name: 'Face Pull', pattern: 'pull', rest: 60, start: 20, step: 2.5, inTemplate: false },
+  barbell_row: { name: 'Barbell Row', pattern: 'pull', rest: 150, start: 60, step: 2.5 },
+  t_bar_row: { name: 'T-Bar Row', pattern: 'pull', rest: 120, start: 45, step: 2.5 },
+  db_row: { name: 'Dumbbell Row', pattern: 'pull', rest: 90, start: 30, step: 2 },
+  chest_supported_row: { name: 'Chest-Supported Row', pattern: 'pull', rest: 90, start: 35, step: 2.5 },
+  seated_cable_row: { name: 'Seated Cable Row', pattern: 'pull', rest: 90, start: 50, step: 2.5 },
+  inverted_row: { name: 'Inverted Row', pattern: 'pull', rest: 75, start: 0, step: 0 },
+  pull_up: { name: 'Pull-Up', pattern: 'pull', rest: 120, start: 0, step: 0 },
+  chin_up: { name: 'Chin-Up', pattern: 'pull', rest: 120, start: 0, step: 0 },
+  lat_pulldown: { name: 'Lat Pulldown', pattern: 'pull', rest: 90, start: 55, step: 2.5 },
+  straight_arm_pulldown: { name: 'Straight-Arm Pulldown', pattern: 'pull', rest: 60, start: 25, step: 2.5 },
+  face_pull: { name: 'Face Pull', pattern: 'pull', rest: 60, start: 20, step: 2.5 },
+  shrug: { name: 'Barbell Shrug', pattern: 'pull', rest: 75, start: 60, step: 5 },
 
-  lateral_raise: { name: 'Lateral Raise', pattern: 'accessory', rest: 60, start: 8, step: 1, inTemplate: true },
-  bicep_curl: { name: 'Dumbbell Curl', pattern: 'accessory', rest: 75, start: 14, step: 2, inTemplate: true },
-  triceps_pushdown: { name: 'Triceps Pushdown', pattern: 'accessory', rest: 75, start: 25, step: 2.5, inTemplate: true },
-  leg_curl: { name: 'Leg Curl', pattern: 'accessory', rest: 75, start: 35, step: 2.5, inTemplate: false },
-  calf_raise: { name: 'Calf Raise', pattern: 'accessory', rest: 60, start: 60, step: 5, inTemplate: false },
+  bicep_curl: { name: 'Dumbbell Curl', pattern: 'accessory', rest: 75, start: 14, step: 2 },
+  barbell_curl: { name: 'Barbell Curl', pattern: 'accessory', rest: 75, start: 25, step: 2.5 },
+  hammer_curl: { name: 'Hammer Curl', pattern: 'accessory', rest: 75, start: 14, step: 2 },
+  preacher_curl: { name: 'Preacher Curl', pattern: 'accessory', rest: 75, start: 20, step: 2.5 },
+  cable_curl: { name: 'Cable Curl', pattern: 'accessory', rest: 60, start: 20, step: 2.5 },
+  triceps_pushdown: { name: 'Triceps Pushdown', pattern: 'accessory', rest: 75, start: 25, step: 2.5 },
+  overhead_triceps_ext: { name: 'Overhead Triceps Extension', pattern: 'accessory', rest: 75, start: 20, step: 2.5 },
+  skullcrusher: { name: 'Skullcrusher', pattern: 'accessory', rest: 75, start: 25, step: 2.5 },
+  lateral_raise: { name: 'Lateral Raise', pattern: 'accessory', rest: 60, start: 8, step: 1 },
+  rear_delt_fly: { name: 'Rear Delt Fly', pattern: 'accessory', rest: 60, start: 8, step: 1 },
+  front_raise: { name: 'Front Raise', pattern: 'accessory', rest: 60, start: 8, step: 1 },
+  upright_row: { name: 'Upright Row', pattern: 'accessory', rest: 75, start: 25, step: 2.5 },
+  leg_curl: { name: 'Leg Curl', pattern: 'accessory', rest: 75, start: 35, step: 2.5 },
+  calf_raise: { name: 'Calf Raise', pattern: 'accessory', rest: 60, start: 60, step: 5 },
+  seated_calf_raise: { name: 'Seated Calf Raise', pattern: 'accessory', rest: 60, start: 40, step: 5 },
 
-  cable_crunch: { name: 'Cable Crunch', pattern: 'core', rest: 60, start: 30, step: 2.5, inTemplate: true },
-  hanging_leg_raise: { name: 'Hanging Leg Raise', pattern: 'core', rest: 60, start: 0, step: 0, inTemplate: true },
-  ab_wheel: { name: 'Ab Wheel', pattern: 'core', rest: 60, start: 0, step: 0, inTemplate: false },
+  cable_crunch: { name: 'Cable Crunch', pattern: 'core', rest: 60, start: 30, step: 2.5 },
+  hanging_leg_raise: { name: 'Hanging Leg Raise', pattern: 'core', rest: 60, start: 0, step: 0 },
+  toes_to_bar: { name: 'Toes-to-Bar', pattern: 'core', rest: 75, start: 0, step: 0 },
+  decline_sit_up: { name: 'Decline Sit-Up', pattern: 'core', rest: 60, start: 0, step: 0 },
+  russian_twist: { name: 'Russian Twist', pattern: 'core', rest: 45, start: 10, step: 2 },
+  pallof_press: { name: 'Pallof Press', pattern: 'core', rest: 60, start: 15, step: 2.5 },
+  ab_wheel: { name: 'Ab Wheel', pattern: 'core', rest: 60, start: 0, step: 0 },
+  plank: { name: 'Plank', pattern: 'core', rest: 60, start: 0, step: 0 },
+  side_plank: { name: 'Side Plank', pattern: 'core', rest: 45, start: 0, step: 0 },
+  dead_bug: { name: 'Dead Bug', pattern: 'core', rest: 45, start: 0, step: 0 },
 } as const satisfies Record<string, CatalogueEntry>;
 
 type Key = keyof typeof CATALOGUE;
@@ -135,6 +188,20 @@ function roundTo(value: number, step: number): number {
   return Math.round(value / step) * step;
 }
 
+// Every catalogue entry as an Exercise row. Used by the first-run seed and by the Dexie v2
+// migration, which adds whichever of these a device hasn't got yet.
+export function catalogueExercises(createdAt: number): Exercise[] {
+  return Object.values(CATALOGUE).map((entry, i) => ({
+    id: newId(createdAt + i),
+    user_id: LOCAL_USER_ID,
+    name: entry.name,
+    pattern: entry.pattern,
+    default_rest_sec: entry.rest,
+    archived: false,
+    updated_at: createdAt + i,
+  }));
+}
+
 export function generateSeed(now: number): SeedData {
   const rng = mulberry32(RNG_SEED);
   const between = (lo: number, hi: number) => lo + rng() * (hi - lo);
@@ -142,49 +209,26 @@ export function generateSeed(now: number): SeedData {
 
   const createdAt = now - (SEED_WEEKS * 7 + 1) * DAY;
 
-  const exercises: Exercise[] = [];
-  const idByKey = new Map<string, string>();
-  Object.entries(CATALOGUE).forEach(([key, entry], i) => {
-    const at = createdAt + i;
-    const id = newId(at);
-    idByKey.set(key, id);
-    exercises.push({
-      id,
-      user_id: LOCAL_USER_ID,
-      name: entry.name,
-      pattern: entry.pattern,
-      default_rest_sec: entry.rest,
-      archived: false,
-      updated_at: at,
-    });
-  });
+  const exercises = catalogueExercises(createdAt);
+  const idByKey = new Map<string, string>(
+    Object.keys(CATALOGUE).map((key, i) => [key, exercises[i].id]),
+  );
   const exerciseId = (key: string): string => {
     const id = idByKey.get(key);
     if (id === undefined) throw new Error(`seed: unknown exercise key ${key}`);
     return id;
   };
 
-  // The template is a view over the catalogue: pattern order, then catalogue order.
+  // Your list starts empty: the template exists so there's something to add to, but it holds
+  // no items until you pick some (Hard Rule 3 — it decides what's shown, nothing else).
   const template: Template = {
     id: newId(createdAt),
     user_id: LOCAL_USER_ID,
-    name: 'Full Body',
+    name: 'My Exercises',
     is_default: true,
     updated_at: createdAt,
   };
   const templateItems: TemplateItem[] = [];
-  PATTERNS.forEach((pattern) => {
-    Object.entries(CATALOGUE).forEach(([key, entry]) => {
-      if (entry.pattern !== pattern || !entry.inTemplate) return;
-      templateItems.push({
-        id: newId(createdAt + 1 + templateItems.length),
-        template_id: template.id,
-        exercise_id: exerciseId(key),
-        pattern,
-        sort_order: templateItems.length,
-      });
-    });
-  });
 
   const weights = new Map<string, number>(
     Object.entries(CATALOGUE).map(([key, entry]) => [key, entry.start]),

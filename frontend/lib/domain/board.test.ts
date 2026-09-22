@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildBoard } from './board';
+import type { ListItem } from './list';
 import { makeExercise, makeSet } from './test-utils';
-import type { Exercise } from './types';
+import { PATTERNS, type Exercise } from './types';
 
 const DAY = 86_400_000;
 const NOW = 100 * DAY;
@@ -10,114 +11,148 @@ const NOW = 100 * DAY;
 const performed = (exerciseId: string, daysAgo: number, overrides = {}) =>
   makeSet({ exercise_id: exerciseId, logged_at: NOW - daysAgo * DAY, ...overrides });
 
+// Your list, in the order given.
+const listOf = (...exercises: Exercise[]): ListItem[] =>
+  exercises.map((exercise, i) => ({ exercise_id: exercise.id, sort_order: i }));
+
 const namesIn = (groups: ReturnType<typeof buildBoard>, pattern: string) =>
   groups.find((g) => g.pattern === pattern)?.rows.map((r) => r.exercise.name);
 
 describe('buildBoard', () => {
-  it('returns no groups when there are no exercises', () => {
-    expect(buildBoard([], [], NOW)).toEqual([]);
+  it('always returns all six patterns, in PATTERNS order, even with nothing picked', () => {
+    const groups = buildBoard([], [], NOW, []);
+    expect(groups.map((g) => g.pattern)).toEqual([...PATTERNS]);
+    expect(groups.every((g) => g.rows.length === 0)).toBe(true);
   });
 
-  it('groups in pattern order regardless of input order', () => {
-    const exercises = [
-      makeExercise({ name: 'Plank', pattern: 'core' }),
-      makeExercise({ name: 'Row', pattern: 'pull' }),
-      makeExercise({ name: 'Squat', pattern: 'squat' }),
-      makeExercise({ name: 'Bench', pattern: 'push' }),
+  it('shows a group for a pattern you have not picked for, so it can offer to add', () => {
+    const squat = makeExercise({ name: 'Back Squat', pattern: 'squat' });
+    const groups = buildBoard([squat], [], NOW, listOf(squat));
+    expect(namesIn(groups, 'squat')).toEqual(['Back Squat']);
+    expect(namesIn(groups, 'core')).toEqual([]);
+  });
+
+  it('shows only what you picked, not the whole catalogue', () => {
+    const picked = makeExercise({ id: 'a', name: 'Picked' });
+    const ignored = makeExercise({ id: 'b', name: 'Not picked' });
+    expect(namesIn(buildBoard([picked, ignored], [], NOW, listOf(picked)), 'squat')).toEqual(['Picked']);
+  });
+
+  it('keeps your order, not the order the rows came back in', () => {
+    const a = makeExercise({ id: 'a', name: 'A' });
+    const b = makeExercise({ id: 'b', name: 'B' });
+    const c = makeExercise({ id: 'c', name: 'C' });
+    const list = [
+      { exercise_id: 'c', sort_order: 0 },
+      { exercise_id: 'a', sort_order: 1 },
+      { exercise_id: 'b', sort_order: 2 },
     ];
-    const groups = buildBoard(exercises, [], NOW);
-    expect(groups.map((g) => g.pattern)).toEqual(['squat', 'push', 'pull', 'core']);
+    expect(namesIn(buildBoard([a, b, c], [], NOW, list), 'squat')).toEqual(['C', 'A', 'B']);
+    // The same list shuffled, and the exercises shuffled, give the same board.
+    expect(namesIn(buildBoard([b, c, a], [], NOW, [...list].reverse()), 'squat')).toEqual(['C', 'A', 'B']);
   });
 
-  it('omits patterns that have no exercises', () => {
-    const groups = buildBoard([makeExercise({ pattern: 'hinge' })], [], NOW);
-    expect(groups.map((g) => g.pattern)).toEqual(['hinge']);
+  it('never reorders by recency: the most recently performed stays where you put it', () => {
+    const first = makeExercise({ id: 'a', name: 'First' });
+    const second = makeExercise({ id: 'b', name: 'Second' });
+    const logs = [performed(first.id, 30), performed(second.id, 0)];
+    const groups = buildBoard([first, second], logs, NOW, listOf(first, second));
+    expect(namesIn(groups, 'squat')).toEqual(['First', 'Second']);
   });
 
-  it('excludes archived exercises, and drops a group that becomes empty', () => {
-    const exercises = [
-      makeExercise({ name: 'Kept', pattern: 'squat' }),
-      makeExercise({ name: 'Gone', pattern: 'core', archived: true }),
+  it('logging does not move a row: the same list gives the same order before and after', () => {
+    const a = makeExercise({ id: 'a', name: 'A' });
+    const b = makeExercise({ id: 'b', name: 'B' });
+    const list = listOf(a, b);
+    const before = buildBoard([a, b], [performed(a.id, 5)], NOW, list);
+    const after = buildBoard([a, b], [performed(a.id, 5), performed(b.id, 0)], NOW, list);
+    expect(namesIn(before, 'squat')).toEqual(namesIn(after, 'squat'));
+    // Only the row's own values change.
+    expect(after[0].rows[1].daysSince).toBe(0);
+  });
+
+  it('sorts by sort_order, whatever the numbers are', () => {
+    const a = makeExercise({ id: 'a', name: 'A' });
+    const b = makeExercise({ id: 'b', name: 'B' });
+    const list = [
+      { exercise_id: 'a', sort_order: 40 },
+      { exercise_id: 'b', sort_order: 7 },
     ];
-    const groups = buildBoard(exercises, [], NOW);
-    expect(groups.map((g) => g.pattern)).toEqual(['squat']);
-    expect(namesIn(groups, 'squat')).toEqual(['Kept']);
+    expect(namesIn(buildBoard([a, b], [], NOW, list), 'squat')).toEqual(['B', 'A']);
   });
 
-  it('sorts most recently performed first within a group', () => {
-    const a = makeExercise({ name: 'A' });
-    const b = makeExercise({ name: 'B' });
-    const c = makeExercise({ name: 'C' });
-    const logs = [performed(a.id, 6), performed(b.id, 1), performed(c.id, 3)];
-    expect(namesIn(buildBoard([a, b, c], logs, NOW), 'squat')).toEqual(['B', 'C', 'A']);
+  it('breaks an exact tie in sort_order by exercise id, independent of input order', () => {
+    const x = makeExercise({ id: 'x', name: 'X' });
+    const y = makeExercise({ id: 'y', name: 'Y' });
+    const list = [
+      { exercise_id: 'y', sort_order: 3 },
+      { exercise_id: 'x', sort_order: 3 },
+    ];
+    expect(namesIn(buildBoard([x, y], [], NOW, list), 'squat')).toEqual(['X', 'Y']);
+    expect(namesIn(buildBoard([y, x], [], NOW, [...list].reverse()), 'squat')).toEqual(['X', 'Y']);
   });
 
-  it('puts never-performed exercises last, ordered by name among themselves', () => {
-    const done = makeExercise({ name: 'Done' });
-    const zeta = makeExercise({ name: 'Zeta' });
-    const alpha = makeExercise({ name: 'Alpha' });
-    const groups = buildBoard([zeta, done, alpha], [performed(done.id, 20)], NOW);
-    expect(namesIn(groups, 'squat')).toEqual(['Done', 'Alpha', 'Zeta']);
+  it('groups by the exercise pattern, keeping your order within each group', () => {
+    const squatA = makeExercise({ id: 's1', name: 'Squat A', pattern: 'squat' });
+    const squatB = makeExercise({ id: 's2', name: 'Squat B', pattern: 'squat' });
+    const push = makeExercise({ id: 'p1', name: 'Push', pattern: 'push' });
+    const groups = buildBoard([squatA, squatB, push], [], NOW, listOf(squatB, push, squatA));
+    expect(namesIn(groups, 'squat')).toEqual(['Squat B', 'Squat A']);
+    expect(namesIn(groups, 'push')).toEqual(['Push']);
   });
 
-  it('breaks exact ties by name, then id, independent of input order', () => {
-    const x = makeExercise({ id: 'x', name: 'Same' });
-    const y = makeExercise({ id: 'y', name: 'Same' });
-    const first = makeExercise({ id: 'z', name: 'First' });
-    const logs = [performed(x.id, 2), performed(y.id, 2), performed(first.id, 2)];
-    const ids = (input: Exercise[]) =>
-      buildBoard(input, logs, NOW)[0].rows.map((r) => r.exercise.id);
-    expect(ids([x, y, first])).toEqual(['z', 'x', 'y']);
-    expect(ids([first, y, x])).toEqual(['z', 'x', 'y']);
+  it('skips a listed exercise that is archived, or that is not on this device', () => {
+    const kept = makeExercise({ id: 'a', name: 'Kept' });
+    const archived = makeExercise({ id: 'b', name: 'Archived', archived: true });
+    const list = [...listOf(kept, archived), { exercise_id: 'ghost', sort_order: 9 }];
+    expect(namesIn(buildBoard([kept, archived], [], NOW, list), 'squat')).toEqual(['Kept']);
   });
 
-  it("reports each row's last working set and days since", () => {
-    const ex = makeExercise({ name: 'Back Squat' });
-    const working = performed(ex.id, 4, { weight: 100, reps: 5 });
-    const [row] = buildBoard([ex], [working], NOW)[0].rows;
-    expect(row.lastSet).toBe(working);
-    expect(row.daysSince).toBe(4);
+  it('shows an exercise listed twice only once, at its first position', () => {
+    const a = makeExercise({ id: 'a', name: 'A' });
+    const b = makeExercise({ id: 'b', name: 'B' });
+    const list = [
+      { exercise_id: 'a', sort_order: 0 },
+      { exercise_id: 'b', sort_order: 1 },
+      { exercise_id: 'a', sort_order: 2 },
+    ];
+    expect(namesIn(buildBoard([a, b], [], NOW, list), 'squat')).toEqual(['A', 'B']);
   });
 
-  it('shows the last working set even when a newer warmup, drop or failure exists', () => {
+  it('shows the last working set and the days since any set', () => {
     const ex = makeExercise({ name: 'Bench' });
     const working = performed(ex.id, 5, { weight: 80 });
     const newerWarmup = performed(ex.id, 2, { kind: 'warmup', weight: 40 });
     const newerDrop = performed(ex.id, 1, { kind: 'drop', weight: 60 });
-    const [row] = buildBoard([ex], [newerDrop, working, newerWarmup], NOW)[0].rows;
+    const [row] = buildBoard([ex], [newerDrop, working, newerWarmup], NOW, listOf(ex))[0].rows;
     expect(row.lastSet).toBe(working);
-    expect(row.daysSince).toBe(1); // still counts as performed by the newest set of any kind
+    expect(row.daysSince).toBe(1); // any kind of set counts as performing it
   });
 
-  it('gives an exercise with only non-working sets no lastSet but still ranks it by recency', () => {
-    const warmupOnly = makeExercise({ name: 'Warmup only' });
+  it('gives a never-performed exercise no lastSet and no daysSince, and still shows it', () => {
     const never = makeExercise({ name: 'Never' });
-    const older = makeExercise({ name: 'Older' });
-    const logs = [
-      performed(warmupOnly.id, 2, { kind: 'warmup' }),
-      performed(older.id, 9),
-    ];
-    const rows = buildBoard([never, older, warmupOnly], logs, NOW)[0].rows;
-    expect(rows.map((r) => r.exercise.name)).toEqual(['Warmup only', 'Older', 'Never']);
-    expect(rows[0].lastSet).toBeNull();
-    expect(rows[0].daysSince).toBe(2);
+    const [row] = buildBoard([never], [], NOW, listOf(never))[0].rows;
+    expect(row.lastSet).toBeNull();
+    expect(row.daysSince).toBeNull();
   });
 
   it('ignores logs for other exercises', () => {
-    const mine = makeExercise({ name: 'Mine' });
-    const other = makeExercise({ name: 'Other' });
-    const [row] = buildBoard([mine], [performed(other.id, 1)], NOW)[0].rows;
+    const mine = makeExercise({ id: 'a', name: 'Mine' });
+    const other = makeExercise({ id: 'b', name: 'Other' });
+    const [row] = buildBoard([mine], [performed(other.id, 1)], NOW, listOf(mine))[0].rows;
     expect(row.lastSet).toBeNull();
     expect(row.daysSince).toBeNull();
   });
 
   it('does not mutate its inputs', () => {
-    const exercises = [makeExercise({ name: 'B' }), makeExercise({ name: 'A' })];
-    const logs = [performed(exercises[0].id, 3)];
-    const exercisesBefore = structuredClone(exercises);
-    const logsBefore = structuredClone(logs);
-    buildBoard(exercises, logs, NOW);
-    expect(exercises).toEqual(exercisesBefore);
-    expect(logs).toEqual(logsBefore);
+    const exercises = [makeExercise({ id: 'a', name: 'B' }), makeExercise({ id: 'b', name: 'A' })];
+    const logs = [performed('a', 3)];
+    const list = [
+      { exercise_id: 'b', sort_order: 5 },
+      { exercise_id: 'a', sort_order: 1 },
+    ];
+    const before = structuredClone({ exercises, logs, list });
+    buildBoard(exercises, logs, NOW, list);
+    expect({ exercises, logs, list }).toEqual(before);
   });
 });

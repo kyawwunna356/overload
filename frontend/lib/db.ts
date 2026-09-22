@@ -7,7 +7,7 @@ import type {
   Template,
   TemplateItem,
 } from './domain/types';
-import { generateSeed, type SeedData } from './seed';
+import { catalogueExercises, generateSeed, type SeedData } from './seed';
 
 // The single read path for the UI (Hard Rule 5). Every write goes here first,
 // then enqueues an outbox row.
@@ -34,6 +34,17 @@ class GymDB extends Dexie {
       set_logs: 'id, [exercise_id+logged_at], session_id, logged_at',
       sessions: 'id, started_at',
       outbox: 'id, created_at',
+    });
+
+    // No schema change: the catalogue grew, so a device that seeded earlier gets the
+    // exercises it's missing. Matched by name, because ids are generated per seed run.
+    // Nothing is removed and no history is touched — an exercise you no longer want is
+    // simply one you don't add to your list.
+    this.version(2).upgrade(async (tx) => {
+      const exercises = tx.table<Exercise, string>('exercises');
+      const known = new Set((await exercises.toArray()).map((row) => row.name));
+      const missing = catalogueExercises(Date.now()).filter((row) => !known.has(row.name));
+      if (missing.length > 0) await exercises.bulkAdd(missing);
     });
 
     // Fires once, when the database is first created — so a reload never reseeds.

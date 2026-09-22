@@ -8,24 +8,26 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 ## Where we are
 
-- **Milestone 3 — Patterns and coverage** is in progress (Tickets 13–18). Milestone 2 is finished
-  and was checked on the iPhone, like milestone 1. CLAUDE.md's "Current milestone" still says 2;
-  bumping it is the user's to do. The board already groups by pattern and sorts by recency, so
-  milestone 3 adds the coverage strip and template-as-view.
-- **Last commit:** Ticket 15: Two-step End session — Resume or a final Finish (a fix to
-  Ticket 11's ending flow, asked for by the user).
-- **Next:** Ticket 16: Template-as-view domain (the board's visible picks come from a template).
-  Then Ticket 17: Board uses the template, and Ticket 18: On-device check for milestone 3.
-  **Milestone 4 must also include a session recap page** (`/recap?id=…`, opened by Finish): PRs
-  hit in the session and the total weight lifted, plus the weekly ring and mastery level-ups.
-  It's recorded in `tickets.md`, the README roadmap and CLAUDE.md's build order.
-- **Tests:** 166 Vitest tests, domain layer only.
+- **Milestone 4 — My exercises** is in progress (Tickets 17–22): pick your list from the
+  catalogue, order it yourself, and the board shows that list in that order. Milestones 1–3 are
+  finished and each was checked on the iPhone; CLAUDE.md says milestone 3 because the user bumps
+  that line, and milestone 3 dropped template-as-view (milestone 4 replaces it properly).
+- **Last commit:** Tickets 17 and 18 together — the catalogue, and the board as your list.
+- **Next:** Ticket 19: the Add action on an empty group and the link to the picker. Then
+  Ticket 20: the picker itself, Ticket 21: reorder, and Ticket 22: the device check. **Rewards
+  are now milestone 5** (PR flash, weekly ring, mastery, and the `/recap?id=…` page Finish opens
+  with the session's PRs and total weight lifted); **sync and install are milestone 6.**
+- **Tests:** 186 Vitest tests, domain layer only.
 
 ## What works today
 
-- **Board** (`/`): six movement-pattern groups, each sorted most recently performed first
-  (never-performed last), collapsed to the top 3 with "Show N more". Every row shows the
-  last working set inline (`82.5 kg × 5`, `BW × 9`) and days ago.
+- **Board** (`/`): six movement-pattern groups, each holding **the exercises you picked, in the
+  order you put them in** — never re-sorted by what you did last, and logging never moves a row.
+  A group you haven't picked for says "No exercises yet." Every row shows the last working set
+  inline (`82.5 kg × 5`, `BW × 9`) and days ago. Nothing is folded away: you chose the list.
+- **The catalogue:** 73 exercises seeded across the six patterns. A fresh install picks none of
+  them, so the board starts empty. There's no picker UI yet (Ticket 20), so the list can only be
+  changed by hand in the database for now.
 - **Log sheet** (`/exercise?id=…`): last working set as large ghost values, ± buttons
   (2.5 kg, ±1 rep), tap a number to type, kind chips (warmup / working / drop / failure)
   that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
@@ -54,7 +56,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `entry`, `history`, `sessions`, `timers`, `coverage`. `useCoverage` combines the active
+  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
@@ -62,7 +64,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** template-as-view, the session recap page,
+**Not built yet:** the exercise picker, reordering, the session recap page,
 PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
 
 ## Decisions worth remembering
@@ -120,6 +122,17 @@ These aren't obvious from the code and shaped later work.
   beside the pinned Log button where a mis-tap would hurt.
 - `useSessionSummary` passes `deriveSessions` only the markers before the next set, so an older
   session never reads as ended because of a later one's marker.
+- **The board is your list, not a ranking** (milestone 4, the user's design). `template_items` is
+  that list: `exercise_id` for membership and `sort_order` for position, both per the default
+  template. `buildBoard` follows it and the recency sort is gone — `staleness` and `previousSet`
+  only fill in each row's "150 kg × 10 · 5d" now. CLAUDE.md's board UI rule was rewritten to say so.
+- **A fresh install picks nothing.** The default template is created empty, so the board starts
+  empty rather than guessing. Adding puts an exercise at the end of its group (`nextSortOrder`),
+  so it never disturbs an order you set.
+- **The catalogue grows by editing `CATALOGUE` in `lib/seed.ts`.** The Dexie v2 migration adds
+  whatever a device hasn't got, matched **by name** because ids are generated per seed run. It
+  never deletes: an exercise you don't want is just one you don't add. (Dexie numbers IndexedDB
+  versions ten times its own, so v2 reads as 20 in the browser.)
 - **Coverage counts any kind of set** (warmups included, like `staleness`), takes no template, and
   is never a target. It shows only while a session is active, so a row of untouched patterns
   never reads as failure. Untouched pills carry no dash or mark, by the user's choice: the ✓ and
@@ -131,6 +144,31 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Tickets 17 and 18: My exercises — the catalogue, and the board as your list
+`feature: Make the board show your own list of exercises, in your order` · 2026-09-23
+
+One commit, because the two halves only work together: an empty list means nothing until the board
+reads the list, and the board reading the list means nothing without a catalogue to pick from.
+
+- **Ticket 17 — catalogue and empty list.** `CATALOGUE` in `lib/seed.ts` grows from 25 to 73 (squat
+  12, hinge 11, push 13, pull 12, accessory 15, core 10); `inTemplate` is gone and the default
+  template ("My Exercises") is created **empty**. `catalogueExercises()` is exported so the seed and
+  the migration share one source. `lib/db.ts` gains Dexie **v2**: no schema change, just an upgrade
+  that adds the catalogue exercises a device is missing, matched **by name** because ids are
+  generated per seed run. Ids, history and existing list entries are untouched.
+- **Ticket 18 — the board is your list.** `lib/domain/list.ts` (`ListItem`, `nextSortOrder`,
+  `movePick`) holds the pure parts of the list for the write paths in Tickets 20–21. `buildBoard`
+  now takes your list and follows it; `byRecency` is deleted, all six groups always come back
+  (empty ones included), and an archived, missing or duplicated entry is skipped. `useBoard` reads
+  the default template's items and fetches history only for listed exercises. `PatternGroup` drops
+  "Show N more" and says "No exercises yet" for an empty group.
+- **Milestone restructure** (the user's plan): CLAUDE.md's board UI rule rewritten, My exercises is
+  milestone 4, rewards 5, sync 6; `tickets.md` rebuilt; README roadmap and layout updated.
+- 20 new tests (186 total). Checked in a real browser both ways: a fresh install (73 exercises,
+  empty board) and a hand-built v1 database upgrading in place with its history intact; a
+  hand-written list appearing in its own order; and logging the first and second rows leaving the
+  order untouched while their values updated in place.
 
 ### Ticket 15: Two-step End session — Resume or a final Finish
 `feature: Make End session a two-step choice with a final Finish` · 2026-09-22
