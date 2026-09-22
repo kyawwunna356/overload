@@ -51,7 +51,7 @@ never reorders anything. See CLAUDE.md's UI rule for the board and Hard Rule 3.
 | 19 | Add exercises from the board — an Add link in every group | done (built with Ticket 20) |
 | 20 | Exercise picker — browse the catalogue, add and remove | done |
 | 21 | Reorder — drag a row by its handle to move it | done |
-| 22 | On-device check — run milestone 4 on the iPhone | next |
+| 22 | On-device check — run milestone 4 on the iPhone | done |
 
 ## Milestone 5 — Rewards (to be broken down into tickets when it is planned)
 

@@ -8,11 +8,12 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 ## Where we are
 
-- **Milestone 4 — My exercises** is in progress (Tickets 17–22): pick your list from the
-  catalogue, order it yourself, and the board shows that list in that order. Milestones 1–3 are
-  finished and each was checked on the iPhone; CLAUDE.md says milestone 3 because the user bumps
-  that line, and milestone 3 dropped template-as-view (milestone 4 replaces it properly).
-- **Last commit:** Ticket 21: Reorder — drag a row by its handle (merged from `drag-reorder`).
+- **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone,
+  as milestones 1–3 were. **Next is milestone 5, rewards:** PR flash, weekly ring, mastery
+  levels, and the `/recap?id=…` page Finish opens (the session's PRs and total weight lifted).
+  Milestone 6 is sync and install. CLAUDE.md still says milestone 3 because the user bumps
+  that line.
+- **Last commit:** a docs commit recording the milestone 4 device check and refreshing the README.
 - **Next:** Ticket 22, the on-device check for milestone 4 — the last ticket of the milestone. **Rewards
   are now milestone 5** (PR flash, weekly ring, mastery, and the `/recap?id=…` page Finish opens
   with the session's PRs and total weight lifted); **sync and install are milestone 6.**
@@ -173,13 +174,23 @@ These aren't obvious from the code and shaped later work.
   is never a target. It shows only while a session is active, so a row of untouched patterns
   never reads as failure. Untouched pills carry no dash or mark, by the user's choice: the ✓ and
   the tint are the only signal. Six pills including Core wrap to two rows at phone width.
-- Tickets 7 and 12 (the on-device checks for milestones 1 and 2) have no code commit: the user
-  confirmed them by hand on the iPhone.
+- Tickets 7, 12, 16 and 22 (the on-device checks for milestones 1–4) have no code commit: the
+  user confirmed each by hand on the iPhone.
 
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 22: On-device check — milestone 4, and the README
+`docs: Record the milestone 4 device check and refresh the README` · 2026-09-23
+
+- The user ran the 25-point checklist on the iPhone — the empty state, adding and removing,
+  search, dragging (including the release, which was the earlier glitch), the order holding
+  across logging and an app kill, and offline — and confirmed it.
+- The README had gone stale by three milestones: it now opens with what the app does today,
+  marks steps 1–4 done, and lists the components, hooks, domain modules and write paths that
+  exist. The seed section says 73 exercises and an empty list.
 
 ### Ticket 21 (part two): drag to reorder
 `feature: Reorder your exercises by dragging them` · 2026-09-23
