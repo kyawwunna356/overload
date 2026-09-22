@@ -12,9 +12,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   catalogue, order it yourself, and the board shows that list in that order. Milestones 1–3 are
   finished and each was checked on the iPhone; CLAUDE.md says milestone 3 because the user bumps
   that line, and milestone 3 dropped template-as-view (milestone 4 replaces it properly).
-- **Last commit:** a bugfix — a finished session now counts to the moment you finished it.
-- **Next:** Ticket 21: reorder — put each group in the order you train it (`movePick` is already
-  written and tested). Then Ticket 22: the device check for milestone 4. **Rewards
+- **Last commit:** Ticket 21: Reorder — put each group in the order you train it.
+- **Next:** the `drag-reorder` branch replaces the chevrons with a drag handle (the user's call:
+  dragging is one gesture instead of a dozen taps). `main` keeps the working chevrons until that is
+  tried on the phone. Then Ticket 22: the device check for milestone 4. **Rewards
   are now milestone 5** (PR flash, weekly ring, mastery, and the `/recap?id=…` page Finish opens
   with the session's PRs and total weight lifted); **sync and install are milestone 6.**
 - **Tests:** 195 Vitest tests, domain layer only.
@@ -25,8 +26,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   order you put them in** — never re-sorted by what you did last, and logging never moves a row.
   A group you haven't picked for says "No exercises yet." Every row shows the last working set
   inline (`82.5 kg × 5`, `BW × 9`) and days ago. Nothing is folded away: you chose the list.
-- **The catalogue and picker** (`/exercises`, or `?pattern=…` for one group): 73 exercises across
-  the six patterns, with a search box. Tap a row to put it on your board, tap again to take it
+- **The catalogue and manage screen** (`/exercises`, or `?pattern=…` for one group, titled by that
+  pattern): 73 exercises across the six patterns, with a search box. With two or more picks in the
+  group it opens with **Your order** — your picks with a step up and a step down on each row, the
+  ends disabled — and the board follows that order. Tap a row to put it on your board, tap again to take it
   off — one tap, no save button, and removing keeps every set you ever logged. Each row says what
   it is now (`Add` / `On board ✓`). A group on the board reaches it by the `+` beside its heading,
   or by the full-width "Add exercises" button when the group is still empty.
@@ -69,7 +72,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** reordering, the session recap page,
+**Not built yet:** the session recap page,
 PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
 
 ## Decisions worth remembering
@@ -138,6 +141,9 @@ These aren't obvious from the code and shaped later work.
   that list: `exercise_id` for membership and `sort_order` for position, both per the default
   template. `buildBoard` follows it and the recency sort is gone — `staleness` and `previousSet`
   only fill in each row's "150 kg × 10 · 5d" now. CLAUDE.md's board UI rule was rewritten to say so.
+- **Reordering lives on the manage screen, not the board** (the user's choice): the board is what you
+  read mid-set, so it carries nothing extra to mis-tap. A move rewrites only its own pattern's rows,
+  and rewrites them dense (0, 1, 2 …), so positions never drift.
 - **Adding and removing are one tap, with no confirmation,** because nothing can be lost: removing
   an exercise from your list keeps all its sets, and re-adding brings the history straight back. The
   picker says so in a line under its title.
@@ -163,6 +169,22 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 21: Reorder — put each group in the order you train it
+`feature: Reorder the exercises in a group` · 2026-09-23
+
+- **Your order** at the top of the manage screen (`/exercises?pattern=…`), shown once a group has two
+  or more picks: each row has a step up and a step down, and the one that would do nothing at either
+  end is disabled rather than silently inert.
+- `moveInList` in `lib/writes.ts` uses the already-tested `movePick`, then writes the group back with
+  dense positions in one Dexie transaction, with an outbox row only for the rows that moved. Other
+  patterns are untouched.
+- `useCatalogue` also returns your list in order; the page is titled by its pattern now that it does
+  more than add.
+- Checked in a browser: moving both ways, walking a row to the top in two taps, the dense positions,
+  the board following, **logging the last exercise leaving it last**, a reload, removal keeping the
+  rest in order, and a re-added exercise going to the end.
+- Superseded on the `drag-reorder` branch by a drag handle; this stays on `main` as the fallback.
 
 ### Bugfix: a finished session counts to the moment you finished it
 `bugfix: Count a finished session to the moment you finished it` · 2026-09-23

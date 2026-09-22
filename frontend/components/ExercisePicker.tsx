@@ -5,7 +5,7 @@ import { useState } from "react";
 import { PATTERNS, type Exercise } from "@/lib/domain/types";
 import { patternLabel } from "@/lib/format";
 import { useCatalogue } from "@/lib/hooks/useCatalogue";
-import { addToList, removeFromList } from "@/lib/writes";
+import { addToList, moveInList, removeFromList } from "@/lib/writes";
 import { BackLink } from "./BackLink";
 
 // The catalogue: every exercise the app knows, and which ones are on your list. Tapping a row
@@ -23,6 +23,9 @@ export function ExercisePicker() {
   // back would leave "‹ Board" pointing at this page instead of the board.
   const [showAll, setShowAll] = useState(false);
   const only = showAll ? null : (PATTERNS.find((pattern) => pattern === requested) ?? null);
+
+  // Only the group being shown can be ordered: an order is per pattern.
+  const yours = (catalogue?.yours ?? []).filter((exercise) => exercise.pattern === only);
 
   const needle = query.trim().toLowerCase();
   const groups = (catalogue?.groups ?? [])
@@ -43,12 +46,31 @@ export function ExercisePicker() {
 
       <header className="px-2 pb-5">
         <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">
-          {only ? `Add ${patternLabel(only)}` : "Exercises"}
+          {only ? patternLabel(only) : "Exercises"}
         </h1>
         <p className="pt-2 text-body">
           Tap to put one on your board, or take it off. Your sets are always kept.
         </p>
       </header>
+
+      {only && yours.length > 1 && (
+        <section className="pb-6">
+          <h2 className="px-2 pb-2 text-xl font-semibold tracking-tight text-ink">Your order</h2>
+          <ul className="divide-y divide-line overflow-hidden rounded-card bg-card">
+            {yours.map((exercise, index) => (
+              <OrderRow
+                key={exercise.id}
+                exercise={exercise}
+                first={index === 0}
+                last={index === yours.length - 1}
+              />
+            ))}
+          </ul>
+          <p className="px-2 pt-2 text-sm text-body">
+            The board follows this order. Logging never changes it.
+          </p>
+        </section>
+      )}
 
       <div className="px-2 pb-5">
         <input
@@ -142,5 +164,94 @@ function CatalogueRow({ exercise, listed }: { exercise: Exercise; listed: boolea
         </span>
       </button>
     </li>
+  );
+}
+
+// One row of your order, with a step up and a step down. Both are full-height tap targets, and
+// the one that would do nothing at the end of the list is disabled rather than silently inert.
+function OrderRow({
+  exercise,
+  first,
+  last,
+}: {
+  exercise: Exercise;
+  first: boolean;
+  last: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  async function move(direction: "up" | "down") {
+    setFailed(false);
+    try {
+      await moveInList(exercise.id, direction);
+    } catch {
+      setFailed(true);
+    }
+  }
+
+  return (
+    <li className="flex min-h-16 items-center gap-2 py-2 pr-2 pl-6">
+      <span className="min-w-0 flex-1">
+        <span className="block text-base font-semibold text-ink">{exercise.name}</span>
+        {failed && (
+          <span role="alert" className="block text-sm font-semibold text-negative-deep">
+            Couldn&apos;t save that. Try again.
+          </span>
+        )}
+      </span>
+      <MoveButton label={`Move ${exercise.name} up`} disabled={first} onClick={() => void move("up")}>
+        <ChevronIcon up />
+      </MoveButton>
+      <MoveButton
+        label={`Move ${exercise.name} down`}
+        disabled={last}
+        onClick={() => void move("down")}
+      >
+        <ChevronIcon />
+      </MoveButton>
+    </li>
+  );
+}
+
+function MoveButton({
+  label,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-pill ${
+        disabled ? "text-line" : "text-ink active:bg-page"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ChevronIcon({ up = false }: { up?: boolean }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-6 w-6"
+    >
+      <path d={up ? "m6 15 6-6 6 6" : "m6 9 6 6 6-6"} />
+    </svg>
   );
 }

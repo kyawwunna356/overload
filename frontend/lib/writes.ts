@@ -1,6 +1,6 @@
 import { LOCAL_USER_ID } from './constants';
 import { db } from './db';
-import { nextSortOrder } from './domain/list';
+import { movePick, nextSortOrder } from './domain/list';
 import { endMarkerTime, type DerivedSession } from './domain/sessions';
 import type {
   OutboxRow,
@@ -127,6 +127,41 @@ export async function removeFromList(exerciseId: string): Promise<void> {
     if (listed.length === 0) return;
     await db.template_items.bulkDelete(listed.map((item) => item.id));
     await db.outbox.bulkAdd(listed.map((item) => outboxRow('template_items', 'delete', item, now)));
+  });
+}
+
+// Moves one exercise a step up or down within its own group, and writes the group back with dense
+// positions (0, 1, 2 …). Only this group's rows are rewritten, so the other patterns are untouched.
+// Moving at either end, or an exercise that isn't listed, does nothing — the control is always safe
+// to tap. Order is the one thing on the board you set by hand, so it's stored, never inferred.
+export async function moveInList(exerciseId: string, direction: 'up' | 'down'): Promise<void> {
+  const now = Date.now();
+  await db.transaction('rw', db.templates, db.template_items, db.outbox, async () => {
+    const template = await db.templates.filter((row) => row.is_default).first();
+    if (!template) return;
+
+    const items = await db.template_items.where('template_id').equals(template.id).toArray();
+    const moving = items.find((item) => item.exercise_id === exerciseId);
+    if (!moving) return;
+
+    // A group is the exercises sharing this one's pattern, in the order you set.
+    const group = items
+      .filter((item) => item.pattern === moving.pattern)
+      .sort((a, b) => a.sort_order - b.sort_order || (a.exercise_id < b.exercise_id ? -1 : 1));
+    const moved = movePick(
+      group.map((item) => item.exercise_id),
+      exerciseId,
+      direction,
+    );
+    if (moved.every((id, i) => id === group[i].exercise_id)) return;
+
+    const byExercise = new Map(group.map((item) => [item.exercise_id, item]));
+    const rewritten = moved.flatMap((id, index) => {
+      const item = byExercise.get(id);
+      return item === undefined || item.sort_order === index ? [] : [{ ...item, sort_order: index }];
+    });
+    await db.template_items.bulkPut(rewritten);
+    await db.outbox.bulkAdd(rewritten.map((item) => outboxRow('template_items', 'upsert', item, now)));
   });
 }
 
