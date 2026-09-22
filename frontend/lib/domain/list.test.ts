@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { movePick, nextSortOrder, type ListItem } from './list';
+import { dropIndex, movePick, nextSortOrder, type ListItem } from './list';
 
 const item = (exercise_id: string, sort_order: number): ListItem => ({ exercise_id, sort_order });
 
@@ -81,5 +81,62 @@ describe('movePick', () => {
     const moved = movePick(ids, 'b', 'up');
     expect(ids).toEqual(before);
     expect(moved).not.toBe(ids);
+  });
+});
+
+describe('dropIndex', () => {
+  // Four rows of the same height, as a group of picks usually is.
+  const even = [64, 64, 64, 64];
+
+  it('stays put when the row has not moved', () => {
+    expect(dropIndex(even, 1, 0)).toBe(1);
+  });
+
+  it('stays put until half of the next row is passed', () => {
+    expect(dropIndex(even, 1, 31)).toBe(1);
+    expect(dropIndex(even, 1, 33)).toBe(2);
+    expect(dropIndex(even, 1, -31)).toBe(1);
+    expect(dropIndex(even, 1, -33)).toBe(0);
+  });
+
+  it('moves a row at a time as the drag goes on', () => {
+    expect(dropIndex(even, 0, 64 + 33)).toBe(2);
+    expect(dropIndex(even, 0, 2 * 64 + 33)).toBe(3);
+    expect(dropIndex(even, 3, -(64 + 33))).toBe(1);
+  });
+
+  it('stops at the end of the list however far the drag goes', () => {
+    expect(dropIndex(even, 0, 10_000)).toBe(3);
+    expect(dropIndex(even, 3, -10_000)).toBe(0);
+  });
+
+  it('follows the real heights when rows differ, e.g. a wrapped name', () => {
+    const uneven = [64, 96, 64];
+    // The tall row in the middle takes more of a drag to pass.
+    expect(dropIndex(uneven, 0, 47)).toBe(0);
+    expect(dropIndex(uneven, 0, 49)).toBe(1);
+    // Past the tall row, then half of the short one below it.
+    expect(dropIndex(uneven, 0, 96 + 33)).toBe(2);
+  });
+
+  it('never leaves the list, and a single row has nowhere to go', () => {
+    expect(dropIndex([64], 0, 500)).toBe(0);
+    expect(dropIndex([64], 0, -500)).toBe(0);
+    for (const dy of [-500, -70, -1, 0, 1, 70, 500]) {
+      const index = dropIndex(even, 2, dy);
+      expect(index).toBeGreaterThanOrEqual(0);
+      expect(index).toBeLessThan(even.length);
+    }
+  });
+
+  it('returns the index unchanged when it is not in the list', () => {
+    expect(dropIndex(even, 9, 100)).toBe(9);
+    expect(dropIndex([], 0, 100)).toBe(0);
+  });
+
+  it('does not mutate the heights', () => {
+    const heights = [...even];
+    dropIndex(heights, 0, 200);
+    expect(heights).toEqual(even);
   });
 });

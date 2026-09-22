@@ -1,11 +1,12 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { dropIndex } from "@/lib/domain/list";
 import { PATTERNS, type Exercise } from "@/lib/domain/types";
 import { patternLabel } from "@/lib/format";
 import { useCatalogue } from "@/lib/hooks/useCatalogue";
-import { addToList, moveInList, removeFromList } from "@/lib/writes";
+import { addToList, moveInList, removeFromList, setListOrder } from "@/lib/writes";
 import { BackLink } from "./BackLink";
 
 // The catalogue: every exercise the app knows, and which ones are on your list. Tapping a row
@@ -56,18 +57,9 @@ export function ExercisePicker() {
       {only && yours.length > 1 && (
         <section className="pb-6">
           <h2 className="px-2 pb-2 text-xl font-semibold tracking-tight text-ink">Your order</h2>
-          <ul className="divide-y divide-line overflow-hidden rounded-card bg-card">
-            {yours.map((exercise, index) => (
-              <OrderRow
-                key={exercise.id}
-                exercise={exercise}
-                first={index === 0}
-                last={index === yours.length - 1}
-              />
-            ))}
-          </ul>
+          <OrderList exercises={yours} />
           <p className="px-2 pt-2 text-sm text-body">
-            The board follows this order. Logging never changes it.
+            Drag a row by its handle. The board follows this order, and logging never changes it.
           </p>
         </section>
       )}
@@ -167,79 +159,146 @@ function CatalogueRow({ exercise, listed }: { exercise: Exercise; listed: boolea
   );
 }
 
-// One row of your order, with a step up and a step down. Both are full-height tap targets, and
-// the one that would do nothing at the end of the list is disabled rather than silently inert.
-function OrderRow({
-  exercise,
-  first,
-  last,
-}: {
-  exercise: Exercise;
-  first: boolean;
-  last: boolean;
-}) {
+// Your order, dragged into shape. The fiddly arithmetic — which row a drag has landed on — is
+// `dropIndex` in the domain; this measures the rows and moves them.
+//
+// Only the handle starts a drag (`touch-action: none` on it alone), so a finger anywhere else on
+// the list scrolls the page as it always did. Nothing is written until you let go, so one gesture
+// is one write, and a drag you abandon costs nothing.
+function OrderList({ exercises }: { exercises: Exercise[] }) {
+  const [drag, setDrag] = useState<{ id: string; from: number; dy: number; heights: number[] } | null>(
+    null,
+  );
   const [failed, setFailed] = useState(false);
+  // The order you just dropped, shown until the database read catches up. Without it the list snaps
+  // back to the old order for a frame on release, and the row you dropped jumps twice. `basedOn` is
+  // the order the read was still showing at that moment, so the override expires by itself the
+  // instant the read changes — whether that's this write landing or anything else moving a row.
+  const [dropped, setDropped] = useState<{ order: string[]; basedOn: string } | null>(null);
+  const rows = useRef(new Map<string, HTMLLIElement>());
+  const startY = useRef(0);
 
-  async function move(direction: "up" | "down") {
+  const liveOrder = exercises.map((exercise) => exercise.id).join();
+  const ordered = useMemo(() => {
+    if (dropped === null || dropped.basedOn !== liveOrder) return exercises;
+    const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+    const rearranged = dropped.order.flatMap((id) => {
+      const exercise = byId.get(id);
+      return exercise ? [exercise] : [];
+    });
+    return rearranged.length === exercises.length ? rearranged : exercises;
+  }, [dropped, liveOrder, exercises]);
+
+  const ids = ordered.map((exercise) => exercise.id);
+  const to = drag ? dropIndex(drag.heights, drag.from, drag.dy) : -1;
+
+  function begin(event: React.PointerEvent, id: string, from: number) {
+    const heights = ids.map((rowId) => rows.current.get(rowId)?.getBoundingClientRect().height ?? 0);
+    startY.current = event.clientY;
     setFailed(false);
+    setDrag({ id, from, dy: 0, heights });
+    // Capture keeps the moves coming to this handle even when the finger wanders off it. A
+    // synthetic pointer has nothing to capture, so it can throw; the drag then still works as long
+    // as the finger stays over the handle, which is enough for the tests that do that.
     try {
-      await moveInList(exercise.id, direction);
+      event.currentTarget.setPointerCapture(event.pointerId);
     } catch {
-      setFailed(true);
+      /* nothing to capture */
     }
   }
 
+  // `id` is the row whose handle was let go: with two fingers down, only the one being dragged
+  // may finish the drag, or lifting the other finger would drop it wherever it happened to be.
+  async function end(id: string) {
+    if (drag === null || drag.id !== id) return;
+    const target = dropIndex(drag.heights, drag.from, drag.dy);
+    setDrag(null);
+    if (target === drag.from) return; // back where it started: nothing to store
+
+    const moved = [...ids];
+    moved.splice(target, 0, ...moved.splice(drag.from, 1));
+    setDropped({ order: moved, basedOn: liveOrder });
+    try {
+      await setListOrder(moved);
+    } catch {
+      setFailed(true);
+      setDropped(null); // nothing was stored, so show what really is stored
+    }
+  }
+
+  // Where a row sits while another is being dragged over it: the ones it has passed step aside by
+  // exactly the dragged row's height, so the gap is always where the row will land.
+  function shift(index: number): number {
+    if (!drag || index === drag.from) return 0;
+    const height = drag.heights[drag.from];
+    if (drag.from < to && index > drag.from && index <= to) return -height;
+    if (to < drag.from && index >= to && index < drag.from) return height;
+    return 0;
+  }
+
   return (
-    <li className="flex min-h-16 items-center gap-2 py-2 pr-2 pl-6">
-      <span className="min-w-0 flex-1">
-        <span className="block text-base font-semibold text-ink">{exercise.name}</span>
-        {failed && (
-          <span role="alert" className="block text-sm font-semibold text-negative-deep">
-            Couldn&apos;t save that. Try again.
-          </span>
-        )}
-      </span>
-      <MoveButton label={`Move ${exercise.name} up`} disabled={first} onClick={() => void move("up")}>
-        <ChevronIcon up />
-      </MoveButton>
-      <MoveButton
-        label={`Move ${exercise.name} down`}
-        disabled={last}
-        onClick={() => void move("down")}
+    <>
+      {failed && (
+        <p role="alert" className="px-2 pb-2 text-sm font-semibold text-negative-deep">
+          Couldn&apos;t save that order. Try again.
+        </p>
+      )}
+      <ul
+        // select-none always: a finger resting on a row should never start selecting its text.
+        className="divide-y divide-line select-none overflow-hidden rounded-card bg-card"
       >
-        <ChevronIcon />
-      </MoveButton>
-    </li>
+        {ordered.map((exercise, index) => {
+          const dragging = drag?.id === exercise.id;
+          return (
+            <li
+              key={exercise.id}
+              ref={(el) => {
+                if (el) rows.current.set(exercise.id, el);
+                else rows.current.delete(exercise.id);
+              }}
+              style={{ transform: `translateY(${dragging ? drag.dy : shift(index)}px)` }}
+              className={`relative flex min-h-16 items-center gap-2 py-2 pr-2 pl-6 ${
+                dragging
+                  ? "z-10 bg-line shadow-2xl"
+                  : drag
+                    ? "transition-transform duration-150"
+                    : ""
+              }`}
+            >
+              <span className="min-w-0 flex-1 text-base font-semibold text-ink">{exercise.name}</span>
+              <button
+                type="button"
+                aria-label={`Reorder ${exercise.name}`}
+                style={{ touchAction: "none" }}
+                onPointerDown={(event) => begin(event, exercise.id, index)}
+                onPointerMove={(event) =>
+                  setDrag((current) =>
+                    current && current.id === exercise.id
+                      ? { ...current, dy: event.clientY - startY.current }
+                      : current,
+                  )
+                }
+                onPointerUp={() => void end(exercise.id)}
+                onPointerCancel={() => void end(exercise.id)}
+                // Without a pointer: the arrow keys do the same one step at a time.
+                onKeyDown={(event) => {
+                  if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                  event.preventDefault();
+                  void moveInList(exercise.id, event.key === "ArrowUp" ? "up" : "down");
+                }}
+                className="flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-pill text-body active:bg-line"
+              >
+                <GripIcon />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
 
-function MoveButton({
-  label,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className={`flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-pill ${
-        disabled ? "text-line" : "text-ink active:bg-page"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function ChevronIcon({ up = false }: { up?: boolean }) {
+function GripIcon() {
   return (
     <svg
       aria-hidden
@@ -248,10 +307,9 @@ function ChevronIcon({ up = false }: { up?: boolean }) {
       stroke="currentColor"
       strokeWidth={2}
       strokeLinecap="round"
-      strokeLinejoin="round"
       className="h-6 w-6"
     >
-      <path d={up ? "m6 15 6-6 6 6" : "m6 9 6 6 6-6"} />
+      <path d="M4 9h16M4 15h16" />
     </svg>
   );
 }

@@ -38,3 +38,27 @@ export function movePick(
   moved[to] = orderedIds[from];
   return moved;
 }
+
+// Where a dragged row lands: the index it should take after being dragged `dy` pixels from `from`,
+// given the rows' heights as they were when the drag began. A row claims a neighbour's place once
+// it has passed half of it, which is what makes dragging feel like it follows the finger. Positive
+// `dy` is downward. The result is always a real index, so dragging past either end simply stops
+// there. Pure: the caller measures the DOM and this does the arithmetic.
+export function dropIndex(heights: readonly number[], from: number, dy: number): number {
+  if (from < 0 || from >= heights.length) return from;
+
+  let index = from;
+  let travelled = dy;
+  if (travelled > 0) {
+    while (index < heights.length - 1 && travelled > heights[index + 1] / 2) {
+      travelled -= heights[index + 1];
+      index += 1;
+    }
+  } else {
+    while (index > 0 && -travelled > heights[index - 1] / 2) {
+      travelled += heights[index - 1];
+      index -= 1;
+    }
+  }
+  return index;
+}

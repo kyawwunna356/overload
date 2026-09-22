@@ -12,13 +12,11 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   catalogue, order it yourself, and the board shows that list in that order. Milestones 1–3 are
   finished and each was checked on the iPhone; CLAUDE.md says milestone 3 because the user bumps
   that line, and milestone 3 dropped template-as-view (milestone 4 replaces it properly).
-- **Last commit:** Ticket 21: Reorder — put each group in the order you train it.
-- **Next:** the `drag-reorder` branch replaces the chevrons with a drag handle (the user's call:
-  dragging is one gesture instead of a dozen taps). `main` keeps the working chevrons until that is
-  tried on the phone. Then Ticket 22: the device check for milestone 4. **Rewards
+- **Last commit:** Ticket 21: Reorder — drag a row by its handle (merged from `drag-reorder`).
+- **Next:** Ticket 22, the on-device check for milestone 4 — the last ticket of the milestone. **Rewards
   are now milestone 5** (PR flash, weekly ring, mastery, and the `/recap?id=…` page Finish opens
   with the session's PRs and total weight lifted); **sync and install are milestone 6.**
-- **Tests:** 195 Vitest tests, domain layer only.
+- **Tests:** 203 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -28,8 +26,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   inline (`82.5 kg × 5`, `BW × 9`) and days ago. Nothing is folded away: you chose the list.
 - **The catalogue and manage screen** (`/exercises`, or `?pattern=…` for one group, titled by that
   pattern): 73 exercises across the six patterns, with a search box. With two or more picks in the
-  group it opens with **Your order** — your picks with a step up and a step down on each row, the
-  ends disabled — and the board follows that order. Tap a row to put it on your board, tap again to take it
+  group it opens with **Your order** — your picks, each with a grip handle you drag to move it — and
+  the board follows that order. Only the handle starts a drag, so the list still scrolls under a
+  finger, and the arrow keys on a focused handle do the same thing without a pointer. Tap a row to put it on your board, tap again to take it
   off — one tap, no save button, and removing keeps every set you ever logged. Each row says what
   it is now (`Add` / `On board ✓`). A group on the board reaches it by the `+` beside its heading,
   or by the full-width "Add exercises" button when the group is still empty.
@@ -144,6 +143,18 @@ These aren't obvious from the code and shaped later work.
 - **Reordering lives on the manage screen, not the board** (the user's choice): the board is what you
   read mid-set, so it carries nothing extra to mis-tap. A move rewrites only its own pattern's rows,
   and rewrites them dense (0, 1, 2 …), so positions never drift.
+- **Dragging is hand-rolled on pointer events, with no library** — the app has six runtime
+  dependencies and dnd-kit is ~40 kB for one list. `dropIndex` in `lib/domain/list.ts` does the
+  arithmetic (which row a drag has landed on) and is pure and tested; the component only measures
+  the DOM. A drag needs three things that each cost a bug if missed: `touch-action: none` on the
+  handle **alone** (so the list still scrolls), pointer capture (so moves keep coming when the finger
+  leaves the handle), and showing the dropped order immediately — clearing the drag before the write
+  lands makes the list snap back for a frame and the row jump twice. That optimistic order must
+  expire the moment the read changes, or a later move writes correctly but never appears.
+- **Only the handle that started a drag may finish it.** Without that, a second finger on another
+  handle drops the wrong row wherever it happens to be.
+- **There is no auto-scroll while dragging:** with a list taller than the screen a row moves only as
+  far as the screen reaches in one gesture. Ten rows fit on a phone; fifteen would take two drags.
 - **Adding and removing are one tap, with no confirmation,** because nothing can be lost: removing
   an exercise from your list keeps all its sets, and re-adding brings the history straight back. The
   picker says so in a line under its title.
@@ -170,7 +181,27 @@ These aren't obvious from the code and shaped later work.
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
 
-### Ticket 21: Reorder — put each group in the order you train it
+### Ticket 21 (part two): drag to reorder
+`feature: Reorder your exercises by dragging them` · 2026-09-23
+
+Built on the `drag-reorder` branch so `main` kept a working reorder throughout, then merged. The
+chevrons it replaces are the commit below.
+
+- A grip handle on each row of **Your order**: press, drag, and the other rows part to show where it
+  lands. `dropIndex` (pure, 8 tests) turns the row heights and the distance dragged into a target
+  index; `setListOrder` stores the result in one Dexie transaction, with an outbox row only for the
+  rows that moved. Dropping a row back where it started writes nothing.
+- The arrow keys still work on a focused handle, reusing `moveInList`, so nothing is lost without a
+  pointer. No new dependency.
+- Two bugs found and fixed while checking: the list snapped back for a frame on release (the drag
+  state was cleared before the write landed), and the optimistic order that fixed it had no expiry,
+  so a later keyboard move wrote correctly but never showed. A second finger on another handle could
+  also drop the wrong row.
+- Checked with real touch events: dragging to the top and bottom, a too-small drag writing nothing,
+  one gesture writing once, dragging while the page is scrolled, a ten-row list, two drags back to
+  back, and a finger on a row scrolling the page instead of reordering.
+
+### Ticket 21 (part one): step up and step down
 `feature: Reorder the exercises in a group` · 2026-09-23
 
 - **Your order** at the top of the manage screen (`/exercises?pattern=…`), shown once a group has two
