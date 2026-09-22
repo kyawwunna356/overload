@@ -12,9 +12,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   catalogue, order it yourself, and the board shows that list in that order. Milestones 1–3 are
   finished and each was checked on the iPhone; CLAUDE.md says milestone 3 because the user bumps
   that line, and milestone 3 dropped template-as-view (milestone 4 replaces it properly).
-- **Last commit:** Tickets 17 and 18 together — the catalogue, and the board as your list.
-- **Next:** Ticket 19: the Add action on an empty group and the link to the picker. Then
-  Ticket 20: the picker itself, Ticket 21: reorder, and Ticket 22: the device check. **Rewards
+- **Last commit:** Tickets 19 and 20 — the exercise picker, and the way into it from the board.
+- **Next:** Ticket 21: reorder — put each group in the order you train it (`movePick` is already
+  written and tested). Then Ticket 22: the device check for milestone 4. **Rewards
   are now milestone 5** (PR flash, weekly ring, mastery, and the `/recap?id=…` page Finish opens
   with the session's PRs and total weight lifted); **sync and install are milestone 6.**
 - **Tests:** 186 Vitest tests, domain layer only.
@@ -25,9 +25,11 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   order you put them in** — never re-sorted by what you did last, and logging never moves a row.
   A group you haven't picked for says "No exercises yet." Every row shows the last working set
   inline (`82.5 kg × 5`, `BW × 9`) and days ago. Nothing is folded away: you chose the list.
-- **The catalogue:** 73 exercises seeded across the six patterns. A fresh install picks none of
-  them, so the board starts empty. There's no picker UI yet (Ticket 20), so the list can only be
-  changed by hand in the database for now.
+- **The catalogue and picker** (`/exercises`, or `?pattern=…` for one group): 73 exercises across
+  the six patterns, with a search box. Tap a row to put it on your board, tap again to take it
+  off — one tap, no save button, and removing keeps every set you ever logged. Each row says what
+  it is now (`Add` / `On board ✓`). A group on the board reaches it by the `+` beside its heading,
+  or by the full-width "Add exercises" button when the group is still empty.
 - **Log sheet** (`/exercise?id=…`): last working set as large ghost values, ± buttons
   (2.5 kg, ±1 rep), tap a number to type, kind chips (warmup / working / drop / failure)
   that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
@@ -64,7 +66,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** the exercise picker, reordering, the session recap page,
+**Not built yet:** reordering, the session recap page,
 PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
 
 ## Decisions worth remembering
@@ -126,6 +128,13 @@ These aren't obvious from the code and shaped later work.
   that list: `exercise_id` for membership and `sort_order` for position, both per the default
   template. `buildBoard` follows it and the recency sort is gone — `staleness` and `previousSet`
   only fill in each row's "150 kg × 10 · 5d" now. CLAUDE.md's board UI rule was rewritten to say so.
+- **Adding and removing are one tap, with no confirmation,** because nothing can be lost: removing
+  an exercise from your list keeps all its sets, and re-adding brings the history straight back. The
+  picker says so in a line under its title.
+- **The Add control is quiet once a group has exercises:** a `+` icon beside the heading (an inline
+  SVG, `currentColor`, 44px tap area), not a full-width button — that's kept for an empty group,
+  where it's the only thing to do. The heading row centres rather than aligning on the baseline,
+  because an SVG's baseline is its bottom edge and the icon would otherwise float above the title.
 - **A fresh install picks nothing.** The default template is created empty, so the board starts
   empty rather than guessing. Adding puts an exercise at the end of its group (`nextSortOrder`),
   so it never disturbs an order you set.
@@ -144,6 +153,23 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Tickets 19 and 20: Exercise picker, and the way into it from the board
+`feature: Add the exercise picker and the board's way into it` · 2026-09-23
+
+- `/exercises` (a static page, `?pattern=` filters to one group): the catalogue grouped by pattern
+  with a search box; tapping a row adds or removes it. `useCatalogue` reads the catalogue and your
+  list live, so a tapped row updates itself.
+- `addToList` / `removeFromList` in `lib/writes.ts`, each one Dexie transaction over
+  `template_items` and `outbox`. Adding one already listed does nothing, so a double tap can't
+  duplicate it; a new pick lands at the end of its group (`nextSortOrder`).
+- `PatternGroup` gains the way in: a `+` icon beside the heading for a group that has exercises, and
+  the full-width "Add exercises" button for one that doesn't.
+- Fixed while checking: "Show every pattern" was a plain link, so it did a full page load and left
+  "‹ Board" going back to the filtered picker instead of the board. It now widens the view in place.
+- Checked in headless Chrome end to end: adding, the outbox rows, sort_order 0 then 1, double-tap
+  toggling, search in both scopes, the board reflecting the picks in order with their seeded
+  history, and removal keeping all 376 sets. Not yet on the iPhone; that is Ticket 22.
 
 ### Tickets 17 and 18: My exercises — the catalogue, and the board as your list
 `feature: Make the board show your own list of exercises, in your order` · 2026-09-23

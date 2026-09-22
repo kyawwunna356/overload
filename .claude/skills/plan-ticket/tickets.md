@@ -48,9 +48,9 @@ never reorders anything. See CLAUDE.md's UI rule for the board and Hard Rule 3.
 |---|---|---|
 | 17 | Catalogue and empty list — ~73 exercises seeded, nothing picked, Dexie v2 migration | built — awaiting review |
 | 18 | Picks domain — the board is your list in your order (pure, tested) | built — awaiting review |
-| 19 | Add exercises from the board — the empty group's Add action and a link to the picker | next |
-| 20 | Exercise picker — browse the catalogue, add and remove | not started |
-| 21 | Reorder — put each group in the order you train it | not started |
+| 19 | Add exercises from the board — an Add link in every group | done (built with Ticket 20) |
+| 20 | Exercise picker — browse the catalogue, add and remove | done |
+| 21 | Reorder — put each group in the order you train it | next |
 | 22 | On-device check — run milestone 4 on the iPhone | not started |
 
 ## Milestone 5 — Rewards (to be broken down into tickets when it is planned)

@@ -1,7 +1,18 @@
 import { LOCAL_USER_ID } from './constants';
 import { db } from './db';
+import { nextSortOrder } from './domain/list';
 import { endMarkerTime, type DerivedSession } from './domain/sessions';
-import type { OutboxRow, Session, SetKind, SetLog, SyncedRow, SyncedTable } from './domain/types';
+import type {
+  OutboxRow,
+  Pattern,
+  Session,
+  SetKind,
+  SetLog,
+  SyncedRow,
+  SyncedTable,
+  Template,
+  TemplateItem,
+} from './domain/types';
 import { newId } from './uuid';
 
 // The write path (Hard Rule 5). Every write goes to Dexie first and enqueues an outbox
@@ -80,6 +91,61 @@ export async function endSession(
     await db.outbox.add(outboxRow('sessions', 'upsert', marker, now));
     return marker;
   });
+}
+
+// Adds an exercise to your list, at the end of its group so it never disturbs an order you set
+// (Hard Rule 3: this decides what the board shows, nothing about what can be logged). Adding one
+// that's already listed does nothing, so a double tap is one row.
+export async function addToList(exerciseId: string, pattern: Pattern): Promise<void> {
+  const now = Date.now();
+  await db.transaction('rw', db.templates, db.template_items, db.outbox, async () => {
+    const template = await defaultTemplate(now);
+    const items = await db.template_items.where('template_id').equals(template.id).toArray();
+    if (items.some((item) => item.exercise_id === exerciseId)) return;
+
+    const item: TemplateItem = {
+      id: newId(now),
+      template_id: template.id,
+      exercise_id: exerciseId,
+      // A label, copied from the exercise; the board groups by the exercise's own pattern.
+      pattern,
+      sort_order: nextSortOrder(items),
+    };
+    await db.template_items.add(item);
+    await db.outbox.add(outboxRow('template_items', 'upsert', item, now));
+  });
+}
+
+// Takes an exercise off your list. Its sets are untouched — history is never a casualty of
+// tidying the board, and adding it back brings the history straight with it. Removing one that
+// isn't listed does nothing. Remaining positions are left as they are: they only have to be in
+// the right order, not dense.
+export async function removeFromList(exerciseId: string): Promise<void> {
+  const now = Date.now();
+  await db.transaction('rw', db.template_items, db.outbox, async () => {
+    const listed = await db.template_items.where('exercise_id').equals(exerciseId).toArray();
+    if (listed.length === 0) return;
+    await db.template_items.bulkDelete(listed.map((item) => item.id));
+    await db.outbox.bulkAdd(listed.map((item) => outboxRow('template_items', 'delete', item, now)));
+  });
+}
+
+// The list's owner. Seeded on first run; created here only if a database somehow has none, so
+// adding an exercise can never fail for want of it.
+async function defaultTemplate(now: number): Promise<Template> {
+  const existing = await db.templates.filter((row) => row.is_default).first();
+  if (existing) return existing;
+
+  const template: Template = {
+    id: newId(now),
+    user_id: LOCAL_USER_ID,
+    name: 'My Exercises',
+    is_default: true,
+    updated_at: now,
+  };
+  await db.templates.add(template);
+  await db.outbox.add(outboxRow('templates', 'upsert', template, now));
+  return template;
 }
 
 function outboxRow(
