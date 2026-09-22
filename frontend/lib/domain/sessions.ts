@@ -18,6 +18,10 @@ export type DerivedSession = {
   last_set_at: number;
   // Oldest first.
   sets: SetLog[];
+  // When you finished it yourself: the end marker that closed it. Null when the gap closed it, or
+  // it hasn't closed yet. This is the end of the WORKOUT, which is later than the last set — the
+  // time between your last set and tapping Finish still counts.
+  ended_at: number | null;
   // A marker closed it, as opposed to the gap rule (or it simply hasn't closed yet).
   endedManually: boolean;
 };
@@ -47,12 +51,17 @@ export function deriveSessions(
     const first = sets[0];
     const last = sets[sets.length - 1];
     const nextStart = runs[index + 1]?.[0].logged_at ?? Infinity;
+    // Every marker that closes this run. The earliest is when you finished: a second one can only
+    // come from another device, and the first tap is the one that ended the workout.
+    const closing = endMarkers.filter((marker) => marker >= last.logged_at && marker < nextStart);
+    const ended_at = closing.length > 0 ? Math.min(...closing) : null;
     return {
       id: first.id,
       started_at: first.logged_at,
       last_set_at: last.logged_at,
       sets,
-      endedManually: endMarkers.some((marker) => marker >= last.logged_at && marker < nextStart),
+      ended_at,
+      endedManually: ended_at !== null,
     };
   });
 }
@@ -109,7 +118,8 @@ export type SessionSummary = {
   groups: SessionGroup[];
   setCount: number;
   exerciseCount: number;
-  // First set to last set. Zero for a session of one set.
+  // How long the session lasted: the first set to the end of it — the moment you finished, or the
+  // last set when the gap closed it. Zero only for a single set the gap closed.
   durationMs: number;
 };
 
@@ -132,7 +142,7 @@ export function summarizeSession(
     groups: [...groups.values()],
     setCount: session.sets.length,
     exerciseCount: groups.size,
-    durationMs: session.last_set_at - session.started_at,
+    durationMs: (session.ended_at ?? session.last_set_at) - session.started_at,
   };
 }
 

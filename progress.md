@@ -12,12 +12,12 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   catalogue, order it yourself, and the board shows that list in that order. Milestones 1–3 are
   finished and each was checked on the iPhone; CLAUDE.md says milestone 3 because the user bumps
   that line, and milestone 3 dropped template-as-view (milestone 4 replaces it properly).
-- **Last commit:** Tickets 19 and 20 — the exercise picker, and the way into it from the board.
+- **Last commit:** a bugfix — a finished session now counts to the moment you finished it.
 - **Next:** Ticket 21: reorder — put each group in the order you train it (`movePick` is already
   written and tested). Then Ticket 22: the device check for milestone 4. **Rewards
   are now milestone 5** (PR flash, weekly ring, mastery, and the `/recap?id=…` page Finish opens
   with the session's PRs and total weight lifted); **sync and install are milestone 6.**
-- **Tests:** 186 Vitest tests, domain layer only.
+- **Tests:** 195 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -40,7 +40,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
   session ends (the idle gap, or Finish).
 - **Session summary** (`/session?id=…`): one session's sets grouped by exercise (in the order
-  first performed) with totals and the time span. Read-only apart from the bottom bar below.
+  first performed), with totals and the time span. The span runs from the first set to **the end of
+  the session** — the moment you tapped Finish, or the last set when the gap closed it — so the
+  length is the whole workout. While the session is still running the page counts up live
+  (`Today 6:20 PM · 42:10`) instead of showing a frozen length. Read-only apart from the bottom bar below.
   Tapping the session timer opens it; when no session is active, the board shows
   "Last session · <day> ›" instead, linking to the most recent one.
 - **End session** (a bar pinned to the bottom of the summary, only for the active session):
@@ -112,6 +115,13 @@ These aren't obvious from the code and shaped later work.
 - **The End marker time is `max(now, last set)`** (`endMarkerTime`), so it always satisfies
   `last set <= T < next set`, even if a set is stamped in the future. Ending an ended session
   writes nothing, so a double tap is one row.
+- **A session's end is the marker, not its last set.** `DerivedSession.ended_at` carries the end
+  marker's timestamp (the earliest, if two ever exist), so `summarizeSession` counts the rest after
+  your last set. Before that fix the summary reported a finished workout as ending at its last set,
+  which showed as "1:40 – 1:40" when the sets were minutes apart. A session the gap closed keeps
+  `ended_at: null` and honestly reads first set to last set.
+- **Times are hours and minutes,** so a short session's two ends print the same; the summary shows
+  one time rather than repeating it, and says "under 1 min" rather than dropping the length.
 - **A finished session can't be reopened.** Resume is "go back" before Finish. Nothing is lost by a
   mistaken Finish: every set stays, and the only effect is that the next set opens a new session.
 - **The End sheet's safe button sits where End was.** Resume is the lower button, at the same spot
@@ -153,6 +163,19 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Bugfix: a finished session counts to the moment you finished it
+`bugfix: Count a finished session to the moment you finished it` · 2026-09-23
+
+- Reported from the phone as "1:40 – 1:40" on the summary. Two causes: `deriveSessions` kept only
+  `endedManually: boolean` and threw the marker's timestamp away, so the end of a workout was always
+  its last **set**; and a same-minute span printed the same time twice with a zero length.
+- `DerivedSession.ended_at` now carries the marker (earliest wins), `summarizeSession` counts to it,
+  and the summary shows one time when both ends fall in the same minute.
+- The summary also counts up live while the session is running (`SessionElapsed`, its own clock, so
+  only that text repaints), because it was the one page that couldn't tell you how long you'd been in.
+- 9 new tests. Checked in a browser against a built hour-long workout: last set 3:00, finished 3:20,
+  reads `02:00 AM – 03:20 AM · 1h 20m`; a gap-closed session still reads first set to last set.
 
 ### Tickets 19 and 20: Exercise picker, and the way into it from the board
 `feature: Add the exercise picker and the board's way into it` · 2026-09-23

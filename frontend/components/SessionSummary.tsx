@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { dayLabel } from "@/lib/domain/history";
-import { formatDuration } from "@/lib/domain/timers";
+import { elapsed, formatDuration, formatElapsed } from "@/lib/domain/timers";
 import { countLabel, formatSet, formatTime, kindLabel, patternLabel } from "@/lib/format";
+import { useActiveSession } from "@/lib/hooks/useActiveSession";
 import { useNow } from "@/lib/hooks/useNow";
 import { useSessionSummary } from "@/lib/hooks/useSessionSummary";
+import {
+  SESSION_GAP_MINUTES,
+  activeSession,
+  type DerivedSession,
+} from "@/lib/domain/sessions";
 import { BackLink } from "./BackLink";
 import { SessionEndBar } from "./SessionEndBar";
 
@@ -38,14 +44,17 @@ export function SessionSummary() {
               {dayLabel(summary.session.started_at, now)}
             </h1>
             <p className="pt-2 text-body tabular-nums">
-              {formatTime(summary.session.started_at)} – {formatTime(summary.session.last_set_at)}
+              <SpanOf session={summary.session} />
+              <SessionElapsed sessionId={summary.session.id} startedAt={summary.session.started_at} />
             </p>
             <p className="pt-1 text-body">
               {[
                 countLabel(summary.setCount, "set"),
                 countLabel(summary.exerciseCount, "exercise"),
-                // A one-set session has no span worth showing.
-                ...(summary.durationMs > 0 ? [formatDuration(summary.durationMs)] : []),
+                // While it's still running the elapsed above is the live answer, so no frozen length.
+                ...(activeSession([summary.session], now, SESSION_GAP_MINUTES) === null
+                  ? [formatDuration(summary.durationMs)]
+                  : []),
               ].join(" · ")}
             </p>
             {/* Only a session you finished by hand; one the idle gap closed says nothing. */}
@@ -90,4 +99,21 @@ export function SessionSummary() {
       )}
     </div>
   );
+}
+
+// A session's clock time: first set to the end of it. Both ends land in the same minute for a
+// short session, and "1:40 – 1:40" reads like a bug, so one time is shown instead.
+function SpanOf({ session }: { session: DerivedSession }) {
+  const start = formatTime(session.started_at);
+  const end = formatTime(session.ended_at ?? session.last_set_at);
+  return <>{start === end ? start : `${start} – ${end}`}</>;
+}
+
+// How long you've been training, while this is the session you're in — the summary is the page you
+// open to see the workout, so it shouldn't be the one page that can't tell you. It owns its own
+// clock, so only this text repaints each tick, and it's `now − started_at` every time (Hard Rule 4).
+function SessionElapsed({ sessionId, startedAt }: { sessionId: string; startedAt: number }) {
+  const state = useActiveSession();
+  if (state?.session?.id !== sessionId) return null;
+  return <> · {formatElapsed(elapsed(startedAt, state.now))}</>;
 }

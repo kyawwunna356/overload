@@ -26,7 +26,14 @@ describe('deriveSessions — the gap rule', () => {
   it('makes one session of one set', () => {
     const set = at(0);
     expect(deriveSessions([set], GAP, [])).toEqual([
-      { id: set.id, started_at: set.logged_at, last_set_at: set.logged_at, sets: [set], endedManually: false },
+      {
+        id: set.id,
+        started_at: set.logged_at,
+        last_set_at: set.logged_at,
+        sets: [set],
+        ended_at: null,
+        endedManually: false,
+      },
     ]);
   });
 
@@ -307,5 +314,63 @@ describe('endMarkerTime', () => {
     expect(deriveSessions(sets, GAP, markers)[0].endedManually).toBe(true);
     const next = at(30, { logged_at: T0 + 31 * MIN + 1 });
     expect(deriveSessions([...sets, next], GAP, markers)).toHaveLength(2);
+  });
+});
+
+describe('deriveSessions — when a session ended', () => {
+  it('keeps the marker timestamp, so a finished session knows when it ended', () => {
+    const finishedAt = T0 + 75 * MIN;
+    const [session] = deriveSessions([at(0), at(30)], GAP, [finishedAt]);
+    expect(session.ended_at).toBe(finishedAt);
+    expect(session.endedManually).toBe(true);
+  });
+
+  it('leaves ended_at null when the gap closed it, or when it is still open', () => {
+    const [closedByGap, stillOpen] = deriveSessions([at(0), at(200)], GAP, []);
+    expect(closedByGap.ended_at).toBeNull();
+    expect(closedByGap.endedManually).toBe(false);
+    expect(stillOpen.ended_at).toBeNull();
+  });
+
+  it('takes the earliest marker when two close the same session', () => {
+    const first = T0 + 40 * MIN;
+    const [session] = deriveSessions([at(0), at(30)], GAP, [first + 10 * MIN, first]);
+    expect(session.ended_at).toBe(first);
+  });
+
+  it('takes a marker exactly at the last set', () => {
+    const [session] = deriveSessions([at(0), at(30)], GAP, [T0 + 30 * MIN]);
+    expect(session.ended_at).toBe(T0 + 30 * MIN);
+  });
+
+  it("does not let a later session's marker leak into an earlier one", () => {
+    const sessions = deriveSessions([at(0), at(200)], GAP, [T0 + 210 * MIN]);
+    expect(sessions[0].ended_at).toBeNull();
+    expect(sessions[1].ended_at).toBe(T0 + 210 * MIN);
+  });
+});
+
+describe('summarizeSession — how long the session lasted', () => {
+  const squat = makeExercise({ id: 'ex-1', name: 'Back Squat' });
+
+  it('counts to the moment you finished, not to your last set', () => {
+    const finishedAt = T0 + 75 * MIN;
+    const [session] = deriveSessions([at(0), at(30)], GAP, [finishedAt]);
+    expect(summarizeSession(session, [squat]).durationMs).toBe(75 * MIN);
+  });
+
+  it('counts to the last set when the gap closed it', () => {
+    const [session] = deriveSessions([at(0), at(45)], GAP, []);
+    expect(summarizeSession(session, [squat]).durationMs).toBe(45 * MIN);
+  });
+
+  it('gives a one-set session a real length once it is finished', () => {
+    const [session] = deriveSessions([at(0)], GAP, [T0 + 12 * MIN]);
+    expect(summarizeSession(session, [squat]).durationMs).toBe(12 * MIN);
+  });
+
+  it('is still zero for a single set the gap closed: nothing happened after it', () => {
+    const [session] = deriveSessions([at(0)], GAP, []);
+    expect(summarizeSession(session, [squat]).durationMs).toBe(0);
   });
 });
