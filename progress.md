@@ -8,15 +8,15 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 ## Where we are
 
-- **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone,
-  as milestones 1–3 were. **Next is milestone 5, rewards:** PR flash, weekly ring, mastery
-  levels, and the `/recap?id=…` page Finish opens (the session's PRs and total weight lifted).
-  Milestone 6 is sync and install. CLAUDE.md still says milestone 3 because the user bumps
-  that line.
-- **Last commit:** a docs commit recording the milestone 4 device check and refreshing the README.
-- **Next:** Ticket 22, the on-device check for milestone 4 — the last ticket of the milestone. **Rewards
-  are now milestone 5** (PR flash, weekly ring, mastery, and the `/recap?id=…` page Finish opens
-  with the session's PRs and total weight lifted); **sync and install are milestone 6.**
+- **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
+  milestones 1–3 were. Everything is committed and pushed; the working tree is clean.
+- **Last commit:** `fe942b1` — a docs commit recording the milestone 4 device check and
+  refreshing the README, which had gone stale by three milestones.
+- **Next: milestone 5, rewards.** It has no tickets yet — break it down when planning the first
+  one. Scope: `detectPR` and a PR flash while logging, `weeklyRing`, `masteryLevel`, and a
+  **session recap page** (`/recap?id=…`) that **Finish** opens, showing the session's PRs and the
+  total weight lifted (one number, not a chart — charts are a non-goal). Milestone 6 is sync and
+  install (Supabase, outbox flush, PWA install, `navigator.storage.persist()`).
 - **Tests:** 203 Vitest tests, domain layer only.
 
 ## What works today

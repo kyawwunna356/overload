@@ -237,7 +237,7 @@ end-to-end on a real device.
    weight lifted)
 6. Supabase + outbox sync + PWA install + `navigator.storage.persist()`
 
-**Current milestone: 3**
+**Current milestone: 5**
 
 Seed ~6 weeks of realistic full-body training data early, before building UI. Without it
 the board sorting and prefill behaviour can't be evaluated.

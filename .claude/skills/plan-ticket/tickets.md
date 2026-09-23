@@ -46,8 +46,8 @@ never reorders anything. See CLAUDE.md's UI rule for the board and Hard Rule 3.
 
 | # | Ticket | Status |
 |---|---|---|
-| 17 | Catalogue and empty list — ~73 exercises seeded, nothing picked, Dexie v2 migration | built — awaiting review |
-| 18 | Picks domain — the board is your list in your order (pure, tested) | built — awaiting review |
+| 17 | Catalogue and empty list — 73 exercises seeded, nothing picked, Dexie v2 migration | done |
+| 18 | Picks domain — the board is your list in your order (pure, tested) | done |
 | 19 | Add exercises from the board — an Add link in every group | done (built with Ticket 20) |
 | 20 | Exercise picker — browse the catalogue, add and remove | done |
 | 21 | Reorder — drag a row by its handle to move it | done |
