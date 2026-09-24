@@ -10,12 +10,12 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
-  Ticket 23 (the PR domain) is built.
-- **Last commit:** `feature: Add the PR domain — weight, reps and e1RM records` (this one).
-- **Next: Ticket 24, the PR flash while logging.** `detectPR` exists; nothing calls it from the UI
-  yet. After that: PR pills in history (25), the week's ring (26), mastery levels (27), the session
-  recap page (28, `/recap?id=…`, opened by Finish), then the milestone 5 device check (29).
-  Milestone 6 is sync and install (Supabase, outbox flush, PWA install,
+  23 (the PR domain) and 24 (the PR flash) are built.
+- **Last commit:** `feature: Add the PR flash while logging` (this one).
+- **Next: Ticket 25, a durable PR pill in the exercise's history.** The flash is only the moment
+  it happens; nothing marks a record set afterwards yet. After that: the week's ring (26), mastery
+  levels (27), the session recap page (28, `/recap?id=…`, opened by Finish), then the milestone 5
+  device check (29). Milestone 6 is sync and install (Supabase, outbox flush, PWA install,
   `navigator.storage.persist()`).
 - **Tests:** 244 Vitest tests, domain layer only.
 
@@ -60,11 +60,15 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   grey `Session 42:10` (time since the session's first set, a link to the summary) in the
   board header and on the log sheet, and a `Rest` timer (time since the last set, any
   exercise, counts up) at the top right of the log sheet. There's no start button: your first set opens the session.
+- **PR flash** (log sheet, above the pinned Log button): logging a working set that breaks a
+  weight, rep-at-that-weight, or e1RM record shows a lime "New record" card with one line per
+  kind broken. It closes itself after 4 seconds, on a tap, or the moment you log the next set;
+  nothing about it is stored — the lasting mark is Ticket 25's job.
 - **Local data:** Dexie database seeded once with 25 exercises, a default "Full Body"
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`. `useCoverage` combines the active
+  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
@@ -72,7 +76,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** the PR flash and pills, the session recap page, weekly ring, mastery,
+**Not built yet:** durable PR pills in history, the session recap page, weekly ring, mastery,
 Supabase sync, PWA install, and the history page.
 
 ## Decisions worth remembering
@@ -192,6 +196,23 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 24: PR flash — the reward the moment you log a record
+`feature: Add the PR flash while logging` · 2026-09-24
+
+- `components/PRFlash.tsx`: logging a working set that breaks a record shows a lime "New record"
+  card, one line per kind (`prKindLabel` / `prValues` in `lib/format.ts`), anchored just above the
+  pinned Log button so the button never moves under a thumb. It closes itself after 4 seconds, on
+  a tap, or the moment the next set is logged (keyed by set id, so back-to-back records each get
+  their own entrance); nothing about it is stored.
+- `SetEntry` calls `detectPR(set, history)` right after `logSet` returns, judging the new set
+  against the history the log sheet already held **before** the tap — `useLogSheet`'s `history`
+  prop is passed down for this, so no extra Dexie read is needed and the timing can't race the
+  live query's own refresh.
+- Checked in headless Chrome at 390px: a heavier set flashing, repeating it flashing nothing, an
+  extra rep at the same weight flashing reps + e1RM, the flash going by itself after 4s, a heavier
+  **warmup** never flashing, and a tap dismissing it early.
+- Not yet on the iPhone; that's Ticket 29.
 
 ### Ticket 23: PR domain — weight, reps and e1RM records
 `feature: Add the PR domain — weight, reps and e1RM records` · 2026-09-24

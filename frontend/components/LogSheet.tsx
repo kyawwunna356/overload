@@ -46,7 +46,12 @@ export function LogSheet() {
               <SessionHeader />
             </div>
           </header>
-          <SetEntry exerciseId={data.exercise.id} previous={data.previous} now={now} />
+          <SetEntry
+            exerciseId={data.exercise.id}
+            previous={data.previous}
+            history={data.history}
+            now={now}
+          />
           <SetHistory history={data.history} now={now} />
         </div>
       )}

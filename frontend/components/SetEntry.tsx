@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { detectPR, type PR } from "@/lib/domain/prs";
 import {
   parseReps,
   parseWeight,
@@ -12,6 +13,7 @@ import {
 import { SET_KINDS, type SetKind, type SetLog } from "@/lib/domain/types";
 import { formatDaysAgo, formatNumber, formatSet, kindLabel } from "@/lib/format";
 import { logSet } from "@/lib/writes";
+import { PRFlash } from "./PRFlash";
 
 // A second tap this soon after a log is almost certainly a double-tap, not another set.
 const DOUBLE_TAP_GUARD_MS = 600;
@@ -24,16 +26,22 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function SetEntry({
   exerciseId,
   previous,
+  history,
   now,
 }: {
   exerciseId: string;
   previous: SetLog | null;
+  // This exercise's sets as they stood before the tap — what a new set is judged against.
+  history: readonly SetLog[];
   now: number;
 }) {
   const [edit, setEdit] = useState<Entry | null>(null); // null = untouched, follows `previous`
   const [kind, setKind] = useState<SetKind>("working");
   const [failed, setFailed] = useState(false);
+  const [flash, setFlash] = useState<{ setId: string; prs: PR[] } | null>(null);
   const lastLogAt = useRef(0);
+  // Stable, so the page's clock repaints don't restart the flash's countdown.
+  const hideFlash = useCallback(() => setFlash(null), []);
 
   const entry = edit ?? prefillFrom(previous);
   const ghost = edit === null;
@@ -45,8 +53,11 @@ export function SetEntry({
     // Drop focus so a half-typed value isn't left on screen and the keypad closes.
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     setFailed(false);
+    setFlash(null);
     try {
-      await logSet({ exercise_id: exerciseId, weight: entry.weight, reps: entry.reps, kind });
+      const set = await logSet({ exercise_id: exerciseId, weight: entry.weight, reps: entry.reps, kind });
+      const prs = detectPR(set, history);
+      if (prs.length > 0) setFlash({ setId: set.id, prs });
       // Back to Working, so a forgotten chip can't turn working sets into warmups.
       setKind("working");
     } catch {
@@ -90,7 +101,9 @@ export function SetEntry({
 
       {/* Pinned to the bottom of the screen: the primary action lives in the thumb zone. */}
       <div className="fixed inset-x-0 bottom-0 z-10 rounded-t-card bg-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex max-w-md flex-col gap-3">
+        <div className="relative mx-auto flex max-w-md flex-col gap-3">
+          {/* Keyed by set, so back-to-back records each get their own entrance. */}
+          {flash && <PRFlash key={flash.setId} prs={flash.prs} onDone={hideFlash} />}
           <div role="radiogroup" aria-label="Set type" className="flex gap-2">
             {SET_KINDS.map((option) => {
               const selected = option === kind;

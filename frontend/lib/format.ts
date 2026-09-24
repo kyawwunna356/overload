@@ -1,3 +1,4 @@
+import type { PR, PRKind } from './domain/prs';
 import type { Pattern, SetKind, SetLog } from './domain/types';
 
 // Display helpers only — no logic that decides anything belongs here.
@@ -47,6 +48,23 @@ export function formatDaysAgo(days: number): string {
 // Local time of day, e.g. "18:42" or "6:42 PM" depending on the phone's locale.
 export function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+const PR_KIND_LABELS: Record<PRKind, string> = {
+  weight: 'Heaviest',
+  reps: 'Most reps at this weight',
+  e1rm: 'Est. 1RM',
+};
+
+export function prKindLabel(kind: PRKind): string {
+  return PR_KIND_LABELS[kind];
+}
+
+// "100 kg · was 97.5 kg", "6 · was 5".
+export function prValues(pr: PR): string {
+  const show = (value: number) =>
+    pr.kind === 'reps' ? String(value) : `${formatNumber(Math.round(value * 10) / 10)} kg`;
+  return `${show(pr.value)} · was ${show(pr.previous)}`;
 }
 
 // "1 set", "12 sets", "0 exercises" — every word used here pluralises with an "s".
