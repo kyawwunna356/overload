@@ -2,21 +2,12 @@ import { LOCAL_USER_ID } from './constants';
 import { db } from './db';
 import { movePick, nextSortOrder } from './domain/list';
 import { endMarkerTime, type DerivedSession } from './domain/sessions';
-import type {
-  OutboxRow,
-  Pattern,
-  Session,
-  SetKind,
-  SetLog,
-  SyncedRow,
-  SyncedTable,
-  Template,
-  TemplateItem,
-} from './domain/types';
+import type { Pattern, Session, SetKind, SetLog, Template, TemplateItem } from './domain/types';
+import { outboxRow } from './outbox';
 import { newId } from './uuid';
 
 // The write path (Hard Rule 5). Every write goes to Dexie first and enqueues an outbox
-// row for the sync layer (milestone 5) to push later. Both happen inside ONE transaction,
+// row for the sync layer (milestone 6) to push later. Both happen inside ONE transaction,
 // so a set can never exist without its outbox row or the reverse — and nothing here ever
 // waits on the network.
 
@@ -105,11 +96,13 @@ export async function addToList(exerciseId: string, pattern: Pattern): Promise<v
 
     const item: TemplateItem = {
       id: newId(now),
+      user_id: LOCAL_USER_ID,
       template_id: template.id,
       exercise_id: exerciseId,
       // A label, copied from the exercise; the board groups by the exercise's own pattern.
       pattern,
       sort_order: nextSortOrder(items),
+      updated_at: now,
     };
     await db.template_items.add(item);
     await db.outbox.add(outboxRow('template_items', 'upsert', item, now));
@@ -170,7 +163,9 @@ async function writeOrder(
   const byExercise = new Map(items.map((item) => [item.exercise_id, item]));
   const rewritten = orderedExerciseIds.flatMap((id, index) => {
     const item = byExercise.get(id);
-    return item === undefined || item.sort_order === index ? [] : [{ ...item, sort_order: index }];
+    return item === undefined || item.sort_order === index
+      ? []
+      : [{ ...item, sort_order: index, updated_at: now }];
   });
   if (rewritten.length === 0) return;
 
@@ -201,13 +196,4 @@ async function defaultTemplate(now: number): Promise<Template> {
   await db.templates.add(template);
   await db.outbox.add(outboxRow('templates', 'upsert', template, now));
   return template;
-}
-
-function outboxRow(
-  table: SyncedTable,
-  op: OutboxRow['op'],
-  payload: SyncedRow,
-  at: number,
-): OutboxRow {
-  return { id: newId(at), table, op, payload, created_at: at };
 }

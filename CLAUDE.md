@@ -219,6 +219,11 @@ sweaty-fingered, mid-set.
 - Prefer `useLiveQuery` over manual state sync with Dexie.
 - No `any`. No `as` casts to silence the compiler.
 - Dexie schema changes require a version bump + migration, never a silent edit.
+- **Schema changes are additive only**, locally and in Supabase: add tables and optional
+  columns; never rename, drop or retype one, or change what a value means. A new field gets its
+  default in its table's reader (`lib/domain/rows.ts`), so old rows are never rewritten, and
+  each schema version adds a frozen `lib/domain/fixtures/history-vN.json` that must keep
+  passing. History must stay readable through every future change.
 - Commit per milestone with a descriptive message, so reverting is cheap.
 
 ---

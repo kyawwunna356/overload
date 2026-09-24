@@ -109,7 +109,7 @@ frontend/                 Next.js app
       timers.ts           elapsed time for the session and rest timers, and duration labels
       staleness / previous are still used for each row's "82.5 kg × 5 · 3d"
 backend/
-  supabase/               Supabase project config (migrations arrive with sync)
+  supabase/               Supabase project config and migrations (the synced tables, RLS)
 .claude/skills/commit/    the commit workflow and hard-rule checker used in this repo
 CLAUDE.md                 architecture, hard rules and build order
 ```
@@ -176,10 +176,11 @@ The repo uses **pnpm only**; don't commit any other lockfile.
 
 ### Seed data
 
-On first launch the local database seeds itself with the catalogue of 73 exercises, an
-**empty** list (so the board starts empty and every exercise on it is one you chose), and
-about six weeks of full-body sessions, so prefill and the board can be judged against
-something realistic. The data is deterministic, and it deliberately includes stale
+On first launch the local database seeds itself with the catalogue of 73 exercises and an
+**empty** list (so the board starts empty and every exercise on it is one you chose). In
+**development only**, it also adds about six weeks of full-body sessions, so prefill and the
+board can be judged against something realistic. A production install starts with no history,
+and the Dexie v3 upgrade removed the fake sets from devices seeded before then. The data is deterministic, and it deliberately includes stale
 exercises, never-performed ones, and warmup, drop and failure sets alongside working ones.
 
 The catalogue grows by editing `CATALOGUE` in `lib/seed.ts`; a Dexie migration adds whatever
@@ -189,6 +190,20 @@ Seeding happens once, when the database is first created — a reload never rese
 start over in development, delete the `gym-tracker` database from your browser's devtools
 (Application → IndexedDB) and reload, or call `resetAndSeed()` from `lib/db.ts`, which
 refuses to run in production.
+
+### Supabase (backup)
+
+The app runs fully without a backend; Supabase is the durable copy. To set one up:
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Run `backend/supabase/migrations/*.sql` in order, either in the dashboard's SQL editor
+   or with `pnpm dlx supabase link --project-ref <ref>` then `pnpm dlx supabase db push`
+   from `backend/`.
+3. Copy `frontend/.env.example` to `frontend/.env.local` and fill in the project URL and
+   anon key (Project Settings → API).
+
+Migrations are **additive only**: a later one adds tables or nullable/defaulted columns and
+never renames, drops or retypes, so history stored today always stays readable.
 
 ### Trying it on a phone
 

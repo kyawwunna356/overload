@@ -37,3 +37,10 @@ export function makeSet(overrides: Partial<SetLog> = {}): SetLog {
     updated_at: overrides.updated_at ?? base.logged_at,
   };
 }
+
+// A copy of a row without some fields, as an older version of the app would have stored it.
+export function without<T extends object>(row: T, ...keys: (keyof T)[]): Partial<T> {
+  const copy: Partial<T> = { ...row };
+  for (const key of keys) delete copy[key];
+  return copy;
+}

@@ -30,12 +30,16 @@ export type Template = {
 };
 
 // A template is a view only: set_logs never reference these rows (Hard Rule 3).
+// `user_id` and `updated_at` arrived in Dexie v3 for sync (RLS and last-write-wins); rows
+// stored before then are filled in on read by `readTemplateItem`.
 export type TemplateItem = {
   id: string;
+  user_id: string;
   template_id: string;
   exercise_id: string;
   pattern: Pattern;
   sort_order: number;
+  updated_at: number;
 };
 
 // The single source of truth (Hard Rule 1). `session_id` is derived by the gap

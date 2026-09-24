@@ -12,12 +12,13 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   2026-09-24 (Ticket 32), as milestones 1–4 were: PR flash and pills, week strip, mastery levels,
   the recap, swipe to delete, the one-list picker, the finish moment with confetti and the muscle
   star. **CLAUDE.md now says milestone 6.**
-- **Last commit:** `feature: Show the session's muscle balance as a six-point star` (this one,
-  Ticket 34 — built on a `muscles` branch, kept, merged into main).
-- **Next: milestone 6 — Sync and install** (Supabase, outbox flush, PWA install,
-  `navigator.storage.persist()`). It has no tickets yet: start by planning the breakdown with the
-  plan-ticket skill (Tickets 35 onward).
-- **Tests:** 321 Vitest tests, domain layer only.
+- **Milestone 6 — Sync and install is under way** (Tickets 35–39 in `tickets.md`).
+- **Last commit:** `feature: Lay the sync foundation — Supabase schema and a clean local store`
+  (this one, Ticket 35). The Supabase project exists, the migration has been run, and all five
+  tables refuse anonymous access. The user was given an SQL check for RLS and last write wins, but
+  hasn't reported its results yet.
+- **Next: Ticket 36 — Back up:** sign in with an email code and push the outbox.
+- **Tests:** 362 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -87,9 +88,17 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **PR pills** (log sheet history): every set that broke a record carries a small green `PR` pill,
   for good — beating it later doesn't take it away. Derived with `historyPRs` on each read, so it
   always agrees with the flash; a screen reader hears which records it broke.
-- **Local data:** Dexie database seeded once with 25 exercises, a default "Full Body"
-  template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
-  and `outbox`. Nothing syncs yet.
+- **Local data:**
+  - The Dexie database (v3) is seeded once with the 73-exercise catalogue and an empty list.
+    Only dev also gets ~6 weeks of fake training.
+  - Every write is one Dexie transaction with its outbox row.
+  - Every row that exists is queued in the outbox, catalogue and list included.
+  - Every read passes through its table's reader (`lib/domain/rows.ts`) via Dexie's `reading`
+    hook.
+  - Nothing is pushed yet.
+- **Supabase:** the five synced tables with RLS, a last-write-wins trigger and a server-set
+  `synced_at` (`backend/supabase/migrations/`). The client is `lib/sync/supabase.ts`, which nothing
+  uses yet. The URL and publishable key live in `frontend/.env.local` (not committed).
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
   `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`, `recap`, `swipe`, `muscles`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
@@ -100,7 +109,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`. No text
   selection or long-press callout (inputs excepted) and no visible scrollbars, app-wide.
 
-**Not built yet:** Supabase sync, PWA install, and the history page.
+**Not built yet:** sign-in and push (Ticket 36), pull and restore (Ticket 37), PWA install
+(Ticket 38), and the history page.
 
 ## Decisions worth remembering
 
@@ -235,10 +245,56 @@ These aren't obvious from the code and shaped later work.
   being heavier or higher-rep. `historyPRs` does one oldest-first pass per exercise so the flash
   (Ticket 24) and the history pills (Ticket 25) can't disagree — both come from `judge()`.
 
+- **History is forward compatible** (the user's requirement, now in CLAUDE.md's conventions):
+  - Schema changes are additive only.
+  - A field added later gets its default in its table's reader, so old rows are never rewritten.
+  - An unknown pattern or kind falls back (`accessory` / `working`) instead of dropping the row.
+  - Pushes send only known columns, so an old app can't blank a newer column.
+  - Frozen `fixtures/history-vN.json` files must keep reading with nothing lost.
+- **Milestone 6 decisions (the user's):** Vercel as a static export, sign-in by an email plus a
+  6-digit code (iOS opens magic links in Safari, not the home-screen app), and the fake seeded sets
+  dropped before the first backup. Sync comes before install because the installed app is a new
+  origin with empty storage: history crosses only through Supabase.
+- **Seeded sets were found through the outbox.** Every real set got an outbox upsert in the same
+  transaction, and the seed never wrote one. That test (`seededSetIds`) holds only because nothing
+  had flushed the outbox yet, which is why it runs in the v3 upgrade and nowhere else.
+- **No foreign keys between the Supabase tables.** The outbox pushes in write order, and the
+  catalogue was queued after the sets that use it, so an FK would block the queue.
+- **`synced_at` is the pull cursor, not `updated_at`,** because a late push carries an old
+  `updated_at`. The server sets it on every accepted write. Deletes don't travel between two
+  devices in use at once (there are no tombstones), which is fine with one phone.
+- **The pure sync module is `lib/domain/replica.ts`,** not `domain/sync.ts`: the rule check (and a
+  reader) would take it for the forbidden `lib/sync` layer.
+
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 35: Sync foundation — Supabase schema, RLS, and a local store ready to back up
+`feature: Lay the sync foundation — Supabase schema and a clean local store` · 2026-09-24
+
+- Milestone 6 is broken into Tickets 35–39 in `tickets.md`, with the user's decisions (Vercel,
+  email code, drop fake sets, forward compatibility).
+- Dexie v3 upgrade:
+  - `template_items` gain `user_id` / `updated_at`;
+  - production deletes the seeded sets (those with no outbox upsert);
+  - the catalogue, template and list are queued.
+- Fresh production installs seed no fake sets.
+- `lib/domain/rows.ts` holds a reader per table (defaults, fallbacks, ISO or ms times), run on
+  every Dexie read.
+- `lib/domain/replica.ts` holds `toRemote` / `toLocal`, `newerWins`, `seededSetIds` and
+  `unqueuedRows`. `lib/outbox.ts` is shared by writes and migrations.
+- Supabase migration: five tables, RLS per user, the `sync_stamp` trigger (last write wins plus
+  `synced_at`), and the set_logs index. `@supabase/supabase-js` is added. `lib/sync/supabase.ts`
+  returns null when unconfigured.
+- 41 new tests, including the frozen `history-v1.json` fixture.
+- Checked against a fake IndexedDB:
+  - v2 → v3 keeps the logged sets, drops the seeded ones and queues each row once, and a reopen
+    changes nothing;
+  - a fresh production install has no sets;
+  - the reading hook fills pre-v3 items on `get`, `where`, `bulkGet` and `toArray`.
+- Checked in Supabase: all five tables exist and refuse anonymous access.
 
 ### Milestone 5 closed
 `docs: Close milestone 5 and move on to sync and install` · 2026-09-24

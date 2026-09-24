@@ -1,0 +1,117 @@
+{
+  "_note": "FROZEN. Rows exactly as the app stored them up to Dexie v2 (September 2026). Never edit this file: a later schema adds history-vN.json beside it, and every fixture must keep reading with nothing lost.",
+  "exercises": [
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000001",
+      "user_id": "local",
+      "name": "Back Squat",
+      "pattern": "squat",
+      "default_rest_sec": 180,
+      "archived": false,
+      "updated_at": 1723000000000
+    },
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000002",
+      "user_id": "local",
+      "name": "Pull-Up",
+      "pattern": "pull",
+      "default_rest_sec": 120,
+      "archived": false,
+      "updated_at": 1723000000001
+    },
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000003",
+      "user_id": "local",
+      "name": "Plank",
+      "pattern": "core",
+      "default_rest_sec": 60,
+      "archived": true,
+      "updated_at": 1723000000002
+    }
+  ],
+  "templates": [
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000010",
+      "user_id": "local",
+      "name": "My Exercises",
+      "is_default": true,
+      "updated_at": 1723000000000
+    }
+  ],
+  "template_items": [
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000020",
+      "template_id": "0191d2a0-0000-7000-8000-000000000010",
+      "exercise_id": "0191d2a0-0000-7000-8000-000000000001",
+      "pattern": "squat",
+      "sort_order": 0
+    },
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000021",
+      "template_id": "0191d2a0-0000-7000-8000-000000000010",
+      "exercise_id": "0191d2a0-0000-7000-8000-000000000002",
+      "pattern": "pull",
+      "sort_order": 1
+    }
+  ],
+  "set_logs": [
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000030",
+      "user_id": "local",
+      "exercise_id": "0191d2a0-0000-7000-8000-000000000001",
+      "session_id": null,
+      "logged_at": 1726160400000,
+      "weight": 40,
+      "reps": 8,
+      "rpe": null,
+      "kind": "warmup",
+      "updated_at": 1726160400000
+    },
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000031",
+      "user_id": "local",
+      "exercise_id": "0191d2a0-0000-7000-8000-000000000001",
+      "session_id": null,
+      "logged_at": 1726160640000,
+      "weight": 82.5,
+      "reps": 5,
+      "rpe": 8.5,
+      "kind": "working",
+      "updated_at": 1726160640000
+    },
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000032",
+      "user_id": "local",
+      "exercise_id": "0191d2a0-0000-7000-8000-000000000001",
+      "session_id": null,
+      "logged_at": 1726160900000,
+      "weight": 65,
+      "reps": 8,
+      "rpe": null,
+      "kind": "drop",
+      "updated_at": 1726160900000
+    },
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000033",
+      "user_id": "local",
+      "exercise_id": "0191d2a0-0000-7000-8000-000000000002",
+      "session_id": null,
+      "logged_at": 1726161300000,
+      "weight": 0,
+      "reps": 11,
+      "rpe": null,
+      "kind": "failure",
+      "updated_at": 1726161300000
+    }
+  ],
+  "sessions": [
+    {
+      "id": "0191d2a0-0000-7000-8000-000000000040",
+      "user_id": "local",
+      "started_at": 1726160400000,
+      "ended_at": 1726162000000,
+      "template_id": null,
+      "updated_at": 1726162000000
+    }
+  ]
+}

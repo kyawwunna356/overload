@@ -78,5 +78,28 @@ flashed, which a set's record status allows because it is only ever judged again
 
 ## Milestone 6 — Sync and install
 
-Supabase, outbox sync, PWA install, `navigator.storage.persist()`. Not broken into tickets yet:
-the first milestone 6 session plans the breakdown.
+Supabase becomes the durable copy, and the app becomes an installed PWA that opens offline. The
+user's decisions:
+- **Hosting:** Vercel, as a static export.
+- **Sign-in:** an email plus a 6-digit code, not a magic link, since iOS opens links in Safari
+  rather than the home-screen app.
+- **Seed data:** the fake seeded sets are dropped before the first backup.
+- **History must stay forward compatible:** schema changes are additive only, new fields get a
+  default on read, an unknown value never drops a row, and a frozen fixture of today's data is
+  tested forever.
+
+**Why sync comes before install.** The installed app lives at a new origin (Vercel) with its own
+storage, so it opens empty. Your real history can only cross over by pushing it from today's app
+and pulling it into the installed one.
+
+**Two limits, accepted.** Deletes don't travel between two devices that are both in use, because
+there are no tombstones. A fresh device's untouched catalogue is replaced by the remote one on
+restore, so no exercise is duplicated.
+
+| # | Ticket | Status |
+|---|---|---|
+| 35 | Sync foundation — Supabase schema, RLS, and a local store ready to back up (fake sets dropped, forward-compatibility contract, every row queued) | done |
+| 36 | Back up — sign in with an email code and push the outbox (on `online` and on returning to the app) | next |
+| 37 | Restore — pull from Supabase into a fresh device (last write wins on `updated_at`, `synced_at` cursor) | not started |
+| 38 | Install — static export on Vercel, manifest, icons, service worker, `storage.persist()` | not started |
+| 39 | On-device check — run milestone 6 on the iPhone, moving to the installed app without losing a set | not started |
