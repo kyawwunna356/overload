@@ -12,11 +12,11 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–32 in `tickets.md`;
   23–31 (the PR domain, flash, history marks, week calendar, mastery levels, the recap, swipe
   to delete, the one-list picker and the finish moment) are built.
-- **Last commit:** `feature: Celebrate Finish with a confetti burst and a rolling total` (this
-  one, Ticket 33 — tried on a `confetti` branch, kept, merged into main).
+- **Last commit:** `feature: Show the session's muscle balance as a six-point star` (this one,
+  Ticket 34 — built on a `muscles` branch, kept, merged into main).
 - **Next: the milestone 5 device check** (Ticket 32). Milestone 6 is sync and install (Supabase,
   outbox flush, PWA install, `navigator.storage.persist()`).
-- **Tests:** 312 Vitest tests, domain layer only.
+- **Tests:** 321 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -56,11 +56,13 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   strip**: the session's week, Monday to Sunday, with trained days (any set) filled green; the
   session's own day is a green outline while it's still going and fills in once it's over. Days off are plain grey; no count, no target. Once the
   session is over (Finish, or the 90-minute gap), a **recap card** sits above the strip: the total
-  weight lifted (`8,508 kg`, every set, warmups included), then **Records · 5** and **Levels · 2**
-  as folded rows you tap to open. Empty parts are left out. Level-ups show the exercise and a
+  weight lifted (`8,508 kg`, every set, warmups included), then **Muscles · Legs** (the group leaned on most), **Records · 5** and
+  **Levels · 2** as folded rows you tap to open; Muscles opens the same star as the deck. Empty parts are left out. Level-ups show the exercise and a
   gold badge with a double up-arrow and the level.
 - **The finish moment** (only right after tapping Finish): the page dims and a deck of cards pops
-  up — a dark "Workout done" card with the total and counts in bold lime, then Records (3 per card)
+  up — a dark "Workout done" card with the total and counts in bold lime, then a **Muscles** card (a
+  six-point star — Chest, Shoulders, Arms, Core, Legs, Back — each axis reaching out by that group's
+  working sets, the busiest touching the rim; counts at each corner, 0 in grey), then Records (3 per card)
   and Levels (5 per card), spread over more cards when long. Swipe between them (CSS scroll-snap)
   or tap the dots; Done, the dimmed page or Escape closes it and returns to the top. As it opens,
   confetti bursts from the bottom corners (lime, yellow, off-white; gone in ~2 s, never blocks a
@@ -88,7 +90,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`, `recap`, `swipe`. `useCoverage` combines the active
+  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`, `recap`, `swipe`, `muscles`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
@@ -122,6 +124,12 @@ These aren't obvious from the code and shaped later work.
   set is a working set, so the log sheet always logs `kind: 'working'`. `SET_KINDS`, `kindLabel`,
   the `kind` column and every rule that reads it (prefill, PRs) are untouched, and old non-working
   sets still show their label in the history, so bringing the chips back is a UI-only change.
+- **One chart, by the user's choice.** CLAUDE.md's no-charts non-goal was reworded to allow a
+  single session's muscle-balance star; nothing across sessions. Groups are **derived**: `muscleOf`
+  maps pattern → group plus a `BY_NAME` table of exceptions (presses, raises, face pull → shoulders;
+  calf raises, leg curl → legs), so there's no schema change. A test walks the whole catalogue, so
+  a new exercise fails until it's placed. It counts **working sets**, not kilos, so legs don't
+  dwarf everything; six axes because the user added Shoulders.
 - **Celebration tricks are visual only.** Confetti is a hand-rolled canvas (`Confetti.tsx`, colours
   read from the theme's CSS variables), no dependency. Haptics were ruled out (iOS web has no
   vibration API) and so was sound (headphones in, and Safari blocks audio without a tap).
@@ -230,6 +238,19 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 34: Muscle balance — a six-point star of what the session leaned on
+`feature: Show the session's muscle balance as a six-point star` · 2026-09-24
+
+- The user wanted to see which muscle groups a session leaned on, as a star. Charts were a
+  non-goal; the user chose a one-session exception, now written into CLAUDE.md.
+- `lib/domain/muscles.ts` (pure, 9 tests): `muscleOf`, `muscleBalance` (working sets per group from
+  `SessionSummary.groups`, no new reads) and `topMuscle`. `recapCards` takes `withMuscles` and puts
+  the Muscles card second.
+- `MuscleStar` is a hand-drawn SVG (hexagon rings, spokes, a lime polygon that grows from the centre
+  under `motion-safe:`); labels stack the name over the count so "Shoulders" fits at phone width.
+  The summary's `Fold` takes a `detail` string so the row can read "Muscles · Legs".
+- Checked with CDP: the deck order, the star's counts against the sets logged, and the fold.
 
 ### Ticket 33: Celebrate the finish — confetti burst and a rolling total
 `feature: Celebrate Finish with a confetti burst and a rolling total` · 2026-09-24

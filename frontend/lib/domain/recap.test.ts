@@ -111,8 +111,10 @@ describe('recapCards', () => {
     levelUps: Array.from({ length: ups }, (_, i) => up(`e${i}`)),
   });
   const PER = { records: 3, levels: 5 };
-  const shape = (r: Recap) =>
-    recapCards(r, PER).map((card) => (card.kind === 'total' ? 'total' : `${card.kind} ${card.page}/${card.of}`));
+  const shape = (r: Recap, withMuscles = false) =>
+    recapCards(r, PER, withMuscles).map((card) =>
+      card.kind === 'total' || card.kind === 'muscles' ? card.kind : `${card.kind} ${card.page}/${card.of}`,
+    );
 
   it('is one card for a session with no records or level-ups', () => {
     expect(shape(recap(0, 0))).toEqual(['total']);
@@ -123,7 +125,7 @@ describe('recapCards', () => {
   });
 
   it('spreads a longer list over more cards', () => {
-    const cards = recapCards(recap(4, 0), PER);
+    const cards = recapCards(recap(4, 0), PER, false);
     expect(shape(recap(4, 0))).toEqual(['total', 'records 1/2', 'records 2/2']);
     expect(cards[1].kind === 'records' && cards[1].prs.map((entry) => entry.set.id)).toEqual(['p0', 'p1', 'p2']);
     expect(cards[2].kind === 'records' && cards[2].prs.map((entry) => entry.set.id)).toEqual(['p3']);
@@ -135,5 +137,10 @@ describe('recapCards', () => {
 
   it('gives level-ups their own cards when there are no records', () => {
     expect(shape(recap(0, 2))).toEqual(['total', 'levels 1/1']);
+  });
+
+  it('puts the muscle star second, before records and levels', () => {
+    expect(shape(recap(1, 1), true)).toEqual(['total', 'muscles', 'records 1/1', 'levels 1/1']);
+    expect(shape(recap(0, 0), true)).toEqual(['total', 'muscles']);
   });
 });

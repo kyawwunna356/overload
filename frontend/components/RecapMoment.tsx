@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { muscleBalance, topMuscle, type MuscleBalance } from "@/lib/domain/muscles";
 import { recapCards, type Recap, type RecapCard } from "@/lib/domain/recap";
 import type { SessionSummary } from "@/lib/domain/sessions";
 import { formatDuration } from "@/lib/domain/timers";
 import { countLabel, formatKg } from "@/lib/format";
 import { useCountUp } from "@/lib/hooks/useCountUp";
 import { Confetti } from "./Confetti";
+import { MuscleStar } from "./MuscleStar";
 import { LevelLine, RecordLine, exerciseNames } from "./SessionRecap";
 
 const PER_CARD = { records: 3, levels: 5 };
@@ -31,7 +33,8 @@ export function RecapMoment({
   dayText: string;
   onClose: () => void;
 }) {
-  const cards = recapCards(recap, PER_CARD);
+  const balance = muscleBalance(summary.groups);
+  const cards = recapCards(recap, PER_CARD, topMuscle(balance) !== null);
   const nameOf = exerciseNames(summary);
   const deck = useRef<HTMLDivElement>(null);
   const done = useRef<HTMLButtonElement>(null);
@@ -85,7 +88,14 @@ export function RecapMoment({
               aria-label={`Card ${index + 1} of ${cards.length}`}
               className="w-full shrink-0 snap-center px-4"
             >
-              <Card card={card} summary={summary} recap={recap} dayText={dayText} nameOf={nameOf} />
+              <Card
+                card={card}
+                summary={summary}
+                recap={recap}
+                balance={balance}
+                dayText={dayText}
+                nameOf={nameOf}
+              />
             </div>
           ))}
         </div>
@@ -132,12 +142,14 @@ function Card({
   card,
   summary,
   recap,
+  balance,
   dayText,
   nameOf,
 }: {
   card: RecapCard;
   summary: SessionSummary;
   recap: Recap;
+  balance: MuscleBalance;
   dayText: string;
   nameOf: (id: string) => string;
 }) {
@@ -165,6 +177,18 @@ function Card({
             ].join(" · ")}
           />
         </p>
+      </article>
+    );
+  }
+
+  if (card.kind === "muscles") {
+    return (
+      <article className={`${frame} bg-card`}>
+        <p className="font-display text-3xl font-black tracking-tight text-ink">Muscles</p>
+        <p className="pt-1 text-sm text-body">Working sets by muscle group</p>
+        <div className="flex flex-1 items-center pt-2">
+          <MuscleStar balance={balance} />
+        </div>
       </article>
     );
   }

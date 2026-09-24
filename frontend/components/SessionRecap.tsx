@@ -3,13 +3,15 @@
 import type { LevelUp, Recap } from "@/lib/domain/recap";
 import type { SetPRs } from "@/lib/domain/prs";
 import type { SessionSummary } from "@/lib/domain/sessions";
-import { formatKg, formatSet, prKindLabel } from "@/lib/format";
+import { muscleBalance, topMuscle } from "@/lib/domain/muscles";
+import { formatKg, formatSet, muscleLabel, prKindLabel } from "@/lib/format";
 import { useActiveSession } from "@/lib/hooks/useActiveSession";
+import { MuscleStar } from "./MuscleStar";
 import { PRPill } from "./PRPill";
 
 // What the workout was worth, at the top of a session's summary once it's over — finished by hand
-// or closed by the 90-minute gap. The total is always in view; Records and Levels are folded rows
-// you tap to open, so the summary stays compact after the finish moment has had its say. Empty
+// or closed by the 90-minute gap. The total is always in view; Muscles, Records and Levels are folded
+// rows you tap to open, so the summary stays compact after the finish moment has had its say. Empty
 // parts are left out, and nothing compares you with another day.
 //
 // "Over" comes from useActiveSession, the same live clock the End bar uses, so the card appears
@@ -20,6 +22,8 @@ export function SessionRecap({ summary, recap }: { summary: SessionSummary; reca
   if (state.session?.id === summary.session.id) return null;
 
   const nameOf = exerciseNames(summary);
+  const balance = muscleBalance(summary.groups);
+  const top = topMuscle(balance);
 
   return (
     <section aria-label="Recap" className="rounded-card bg-card px-6 py-5">
@@ -28,8 +32,14 @@ export function SessionRecap({ summary, recap }: { summary: SessionSummary; reca
       </p>
       <p className="pt-1 text-body">lifted</p>
 
+      {top !== null && (
+        <Fold title="Muscles" detail={muscleLabel(top)}>
+          <MuscleStar balance={balance} />
+        </Fold>
+      )}
+
       {recap.prs.length > 0 && (
-        <Fold title="Records" count={recap.prs.length}>
+        <Fold title="Records" detail={String(recap.prs.length)}>
           <ul className="flex flex-col gap-3">
             {recap.prs.map((entry) => (
               <RecordLine key={entry.set.id} entry={entry} name={nameOf(entry.set.exercise_id)} />
@@ -39,7 +49,7 @@ export function SessionRecap({ summary, recap }: { summary: SessionSummary; reca
       )}
 
       {recap.levelUps.length > 0 && (
-        <Fold title="Levels" count={recap.levelUps.length}>
+        <Fold title="Levels" detail={String(recap.levelUps.length)}>
           <ul className="flex flex-col gap-1">
             {recap.levelUps.map((up) => (
               <LevelLine key={up.exerciseId} up={up} name={nameOf(up.exerciseId)} />
@@ -51,14 +61,15 @@ export function SessionRecap({ summary, recap }: { summary: SessionSummary; reca
   );
 }
 
-// A folded row: tap the title to open the list, tap again to close it. Native <details>, so it
-// works with the keyboard and VoiceOver and needs no state.
-function Fold({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+// A folded row: tap the title to open it, tap again to close it. Native <details>, so it works
+// with the keyboard and VoiceOver and needs no state. `detail` follows the title in grey — a
+// count, or for Muscles the group the session leaned on most.
+function Fold({ title, detail, children }: { title: string; detail: string; children: React.ReactNode }) {
   return (
     <details className="group mt-4 border-t border-line pt-3">
       <summary className="flex min-h-11 cursor-pointer touch-manipulation list-none items-center justify-between font-semibold text-ink [&::-webkit-details-marker]:hidden">
         <span>
-          {title} <span className="text-body">· {count}</span>
+          {title} <span className="text-body">· {detail}</span>
         </span>
         <span aria-hidden className="text-2xl leading-none text-mute transition-transform group-open:rotate-90">
           ›

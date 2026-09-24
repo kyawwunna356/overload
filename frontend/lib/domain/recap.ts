@@ -47,19 +47,24 @@ export function sessionRecap(session: DerivedSession, history: readonly SetLog[]
 // several cards; `page` counts from 1 and `of` is how many cards that section has.
 export type RecapCard =
   | { kind: 'total' }
+  | { kind: 'muscles' }
   | { kind: 'records'; prs: SetPRs[]; page: number; of: number }
   | { kind: 'levels'; levelUps: LevelUp[]; page: number; of: number };
 
-// The deck, in order: the total, then the records, then the level-ups. A section with nothing in
-// it has no card, so a quiet session is one card — never an empty "0 records".
+// The deck, in order: the total, the muscle-balance star (when the session has working sets to
+// draw — the caller knows, since it takes the exercises), then the records, then the level-ups. A
+// section with nothing in it has no card, so a quiet session is one card — never an empty
+// "0 records".
 export function recapCards(
   recap: Recap,
   perCard: { records: number; levels: number },
+  withMuscles: boolean,
 ): RecapCard[] {
   const records = chunk(recap.prs, perCard.records);
   const levels = chunk(recap.levelUps, perCard.levels);
   return [
     { kind: 'total' },
+    ...(withMuscles ? [{ kind: 'muscles' } as const] : []),
     ...records.map((prs, i): RecapCard => ({ kind: 'records', prs, page: i + 1, of: records.length })),
     ...levels.map((levelUps, i): RecapCard => ({ kind: 'levels', levelUps, page: i + 1, of: levels.length })),
   ];

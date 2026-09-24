@@ -75,7 +75,8 @@ portable. Enforce it in review; if it's awkward, the function is in the wrong fo
 
 Do not build these, do not suggest them, do not leave hooks for them:
 
-- Charts, graphs, analytics dashboards, volume trends
+- Charts, graphs, analytics dashboards, volume trends — **one exception, the user's choice:**
+  a single session's muscle-balance star on the recap. Nothing across sessions.
 - Workout programs, AI-generated workouts, periodisation
 - Social features, sharing, feeds, following
 - Nutrition, bodyweight, measurements, photos

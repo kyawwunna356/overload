@@ -1,4 +1,5 @@
 import type { Mastery } from './domain/mastery';
+import type { Muscle } from './domain/muscles';
 import type { PR, PRKind } from './domain/prs';
 import type { Pattern, SetKind, SetLog } from './domain/types';
 
@@ -15,6 +16,19 @@ const PATTERN_LABELS: Record<Pattern, string> = {
 
 export function patternLabel(pattern: Pattern): string {
   return PATTERN_LABELS[pattern];
+}
+
+const MUSCLE_LABELS: Record<Muscle, string> = {
+  chest: 'Chest',
+  back: 'Back',
+  legs: 'Legs',
+  shoulders: 'Shoulders',
+  arms: 'Arms',
+  core: 'Core',
+};
+
+export function muscleLabel(muscle: Muscle): string {
+  return MUSCLE_LABELS[muscle];
 }
 
 const KIND_LABELS: Record<SetKind, string> = {
