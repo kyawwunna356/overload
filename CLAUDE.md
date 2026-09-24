@@ -238,7 +238,7 @@ end-to-end on a real device.
    of a session's summary once it's over (total weight lifted, PRs, level-ups)
 6. Supabase + outbox sync + PWA install + `navigator.storage.persist()`
 
-**Current milestone: 5**
+**Current milestone: 6**
 
 Seed ~6 weeks of realistic full-body training data early, before building UI. Without it
 the board sorting and prefill behaviour can't be evaluated.

@@ -8,14 +8,15 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 ## Where we are
 
-- **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
-  milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–32 in `tickets.md`;
-  23–31 (the PR domain, flash, history marks, week calendar, mastery levels, the recap, swipe
-  to delete, the one-list picker and the finish moment) are built.
+- **Milestone 5 — Rewards is finished** (Tickets 23–34) and was checked on the iPhone on
+  2026-09-24 (Ticket 32), as milestones 1–4 were: PR flash and pills, week strip, mastery levels,
+  the recap, swipe to delete, the one-list picker, the finish moment with confetti and the muscle
+  star. **CLAUDE.md now says milestone 6.**
 - **Last commit:** `feature: Show the session's muscle balance as a six-point star` (this one,
   Ticket 34 — built on a `muscles` branch, kept, merged into main).
-- **Next: the milestone 5 device check** (Ticket 32). Milestone 6 is sync and install (Supabase,
-  outbox flush, PWA install, `navigator.storage.persist()`).
+- **Next: milestone 6 — Sync and install** (Supabase, outbox flush, PWA install,
+  `navigator.storage.persist()`). It has no tickets yet: start by planning the breakdown with the
+  plan-ticket skill (Tickets 35 onward).
 - **Tests:** 321 Vitest tests, domain layer only.
 
 ## What works today
@@ -238,6 +239,12 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Milestone 5 closed
+`docs: Close milestone 5 and move on to sync and install` · 2026-09-24
+
+- The user ran the milestone 5 checklist on the iPhone (Ticket 32) and everything passed. CLAUDE.md's
+  current milestone is now 6; milestone 6 has no tickets yet.
 
 ### Ticket 34: Muscle balance — a six-point star of what the session leaned on
 `feature: Show the session's muscle balance as a six-point star` · 2026-09-24
