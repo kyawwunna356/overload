@@ -10,8 +10,8 @@ import {
   stepWeight,
   type Entry,
 } from "@/lib/domain/entry";
-import { SET_KINDS, type SetKind, type SetLog } from "@/lib/domain/types";
-import { formatDaysAgo, formatNumber, formatSet, kindLabel } from "@/lib/format";
+import type { SetLog } from "@/lib/domain/types";
+import { formatDaysAgo, formatNumber, formatSet } from "@/lib/format";
 import { logSet } from "@/lib/writes";
 import { PRFlash } from "./PRFlash";
 
@@ -36,7 +36,6 @@ export function SetEntry({
   now: number;
 }) {
   const [edit, setEdit] = useState<Entry | null>(null); // null = untouched, follows `previous`
-  const [kind, setKind] = useState<SetKind>("working");
   const [failed, setFailed] = useState(false);
   const [flash, setFlash] = useState<{ setId: string; prs: PR[] } | null>(null);
   const lastLogAt = useRef(0);
@@ -55,11 +54,16 @@ export function SetEntry({
     setFailed(false);
     setFlash(null);
     try {
-      const set = await logSet({ exercise_id: exerciseId, weight: entry.weight, reps: entry.reps, kind });
+      // Every set logged here is a working set. The set type stays in the data (kind), with no
+      // picker on screen for now; bringing the chips back needs no data change.
+      const set = await logSet({
+        exercise_id: exerciseId,
+        weight: entry.weight,
+        reps: entry.reps,
+        kind: "working",
+      });
       const prs = detectPR(set, history);
       if (prs.length > 0) setFlash({ setId: set.id, prs });
-      // Back to Working, so a forgotten chip can't turn working sets into warmups.
-      setKind("working");
     } catch {
       setFailed(true);
     }
@@ -104,27 +108,6 @@ export function SetEntry({
         <div className="relative mx-auto flex max-w-md flex-col gap-3">
           {/* Keyed by set, so back-to-back records each get their own entrance. */}
           {flash && <PRFlash key={flash.setId} prs={flash.prs} onDone={hideFlash} />}
-          <div role="radiogroup" aria-label="Set type" className="flex gap-2">
-            {SET_KINDS.map((option) => {
-              const selected = option === kind;
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setKind(option)}
-                  className={`h-11 flex-1 touch-manipulation rounded-pill text-sm font-semibold ${
-                    selected
-                      ? "bg-primary-pale text-ink-deep ring-2 ring-inset ring-ink-deep"
-                      : "bg-page text-ink"
-                  }`}
-                >
-                  {kindLabel(option)}
-                </button>
-              );
-            })}
-          </div>
           {failed && (
             <p role="alert" className="text-center text-sm font-semibold text-negative-deep">
               Couldn&apos;t save that set. Try again.
@@ -178,9 +161,7 @@ function Stepper({
 
   return (
     <div className="flex items-center gap-3">
-      <RoundButton label={`Decrease ${label.toLowerCase()}`} onClick={() => nudge(-1)}>
-        −
-      </RoundButton>
+      <RoundButton label={`Decrease ${label.toLowerCase()}`} onClick={() => nudge(-1)} sign="minus" />
       <label className="flex min-w-0 flex-1 flex-col items-center">
         <input
           type="text"
@@ -215,30 +196,40 @@ function Stepper({
         />
         <span className="text-sm text-body">{unit}</span>
       </label>
-      <RoundButton label={`Increase ${label.toLowerCase()}`} onClick={() => nudge(1)}>
-        +
-      </RoundButton>
+      <RoundButton label={`Increase ${label.toLowerCase()}`} onClick={() => nudge(1)} sign="plus" />
     </div>
   );
 }
 
+// The sign is drawn, not typed: a text "+" sits wherever the font's baseline puts it, which is
+// visibly off-centre in a circle this size.
 function RoundButton({
   label,
   onClick,
-  children,
+  sign,
 }: {
   label: string;
   onClick: () => void;
-  children: string;
+  sign: "plus" | "minus";
 }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="h-14 w-14 shrink-0 touch-manipulation rounded-pill bg-page text-3xl font-semibold text-ink active:bg-line"
+      className="flex h-14 w-14 shrink-0 touch-manipulation items-center justify-center rounded-pill bg-page text-ink active:bg-line"
     >
-      {children}
+      <svg
+        aria-hidden
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        className="h-6 w-6"
+      >
+        <path d={sign === "plus" ? "M12 5v14M5 12h14" : "M5 12h14"} />
+      </svg>
     </button>
   );
 }

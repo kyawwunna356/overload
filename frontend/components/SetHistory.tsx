@@ -44,11 +44,11 @@ export function SetHistory({ history, now }: { history: SetLog[]; now: number })
                         {formatSet(set)}
                         <PRPill prs={records.get(set.id)} />
                       </p>
-                      <p className="text-sm text-body">
-                        {formatTime(set.logged_at)}
-                        {set.kind !== "working" && ` · ${kindLabel(set.kind)}`}
-                      </p>
+                      {set.kind !== "working" && (
+                        <p className="text-sm text-body">{kindLabel(set.kind)}</p>
+                      )}
                     </div>
+                    <p className="shrink-0 text-xs tabular-nums text-mute">{formatTime(set.logged_at)}</p>
                     {/* Swiping is for fingers; this is the same delete for VoiceOver and keyboards,
                         out of sight until it has focus. */}
                     <button

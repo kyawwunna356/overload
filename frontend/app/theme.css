@@ -61,6 +61,11 @@
   --color-level: #ffd11a; /* the level-up badge's arrow and number */
   --color-level-pale: #33290a; /* the level-up badge's fill */
 
+  /* The "New record" flash — a yellow tint so the moment stands out from the green Log button
+     under it. On record-pale: text-record 11.6:1, text-body 8.9:1, text-mute 4.7:1. */
+  --color-record: #ffd11a; /* the new value and the heading */
+  --color-record-pale: #211c0a; /* the flash's fill */
+
   /* Corners — DESIGN.md: 24px cards and pills, never sharp */
   --radius-card: 1.5rem; /* rounded-xl */
   --radius-control: 0.75rem; /* rounded-md — inputs */
@@ -87,6 +92,18 @@
   @keyframes card-in {
     from {
       transform: scale(0.94);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  /* The "New record" flash drops in from the top of the screen. */
+  --animate-drop-in: drop-in 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  @keyframes drop-in {
+    from {
+      transform: translateY(-2rem);
       opacity: 0;
     }
     to {

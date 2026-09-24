@@ -7,7 +7,6 @@ import { useNow } from "@/lib/hooks/useNow";
 import { BackLink } from "./BackLink";
 import { LevelBadge } from "./LevelBadge";
 import { RestTimer } from "./RestTimer";
-import { SessionHeader } from "./SessionHeader";
 import { SetEntry } from "./SetEntry";
 import { SetHistory } from "./SetHistory";
 
@@ -49,10 +48,10 @@ export function LogSheet() {
                 )}
               </p>
             </div>
-            {/* The rest timer is the prominent counter; the session timer is the quiet one. */}
-            <div className="flex shrink-0 flex-col items-end gap-1">
+            {/* Only the rest timer here: mid-set it's the one number that matters. The session
+                timer, and the way into the summary, live on the board. */}
+            <div className="flex shrink-0 flex-col items-end">
               <RestTimer />
-              <SessionHeader />
             </div>
           </header>
           <SetEntry

@@ -12,7 +12,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–32 in `tickets.md`;
   23–31 (the PR domain, flash, history marks, week calendar, mastery levels, the recap, swipe
   to delete, the one-list picker and the finish moment) are built.
-- **Last commit:** `feature: Celebrate Finish with swipeable recap cards` (this one).
+- **Last commit:** `bugfix: Quieten the log sheet and make the record flash readable` (this one).
+  A confetti-and-rolling-total experiment (Ticket 33) is being tried on a `confetti` branch.
 - **Next: the milestone 5 device check** (Ticket 32). Milestone 6 is sync and install (Supabase,
   outbox flush, PWA install, `navigator.storage.persist()`).
 - **Tests:** 312 Vitest tests, domain layer only.
@@ -34,13 +35,13 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   handle reorder without a pointer. Handles hide while searching. A group on the board reaches it by the `+` beside its heading,
   or by the full-width "Add exercises" button when the group is still empty.
 - **Log sheet** (`/exercise?id=…`): last working set as large ghost values, ± buttons
-  (2.5 kg, ±1 rep), tap a number to type (the field empties with the value as a faint placeholder — no selection, no focus box; leave it empty and nothing changes), kind chips (warmup / working / drop / failure)
-  that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
+  (2.5 kg, ±1 rep, drawn signs centred in round buttons), tap a number to type (the field empties with the value as a faint placeholder — no selection, no focus box; leave it empty and nothing changes), and a "Log set" button pinned to the bottom.
+  There is no set-type picker: every set logged is `working` (`kind` stays in the data; see Decisions). One tap repeats the
   last set. Below it, the full history grouped by day (Today, Yesterday, weekday, then short
-  dates like "13 Sep"). Swipe a set left to delete it: past halfway or a flick deletes, less
+  dates like "13 Sep"); each row's time is small and grey on the right. Swipe a set left to delete it: past halfway or a flick deletes, less
   springs back, and scrolling never deletes; a Delete button appears only on keyboard/VoiceOver
   focus. The header reads `Squat · Level 3`; tapping the dotted
-  "Level 3" shows a small label, `6 sessions · 4 more to level 4`, and a tap anywhere hides it.
+  "Level 3" shows a small label, `6 sessions · 4 to Level 4`, and a tap anywhere hides it.
 - **Coverage strip** (top of the board, only while a session is active): six pills, one per
   pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
   rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
@@ -66,18 +67,18 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **End session** (a bar pinned to the bottom of the summary, only for the active session):
   **End session** writes nothing; it opens a sheet over a dimmed page: **End this session?**, a
   red **Finish session** and, below it, **Resume session**. Resume (or tapping the dimmed page)
-  just goes back. Finish writes the end marker and is final: both timers disappear, the summary
-  shows `Finished · Your next set starts a new session.` with no bar, and nothing offers to undo
-  it. The next set opens a new session. A session the 90-minute gap closed shows no bar and no
-  `Finished` line, so forgetting to end still works.
+  just goes back. Finish writes the end marker and is final: both timers disappear, the bar goes, and
+  nothing offers to undo it. The next set opens a new session. A session the 90-minute gap closed
+  looks the same, so forgetting to end still works.
 - **Timers** (only while a session is active, i.e. a set in the last 90 minutes): a small
   grey `Session 42:10` (time since the session's first set, a link to the summary) in the
-  board header and on the log sheet, and a `Rest` timer (time since the last set, any
-  exercise, counts up) at the top right of the log sheet. There's no start button: your first set opens the session.
-- **PR flash** (log sheet, above the pinned Log button): logging a working set that breaks a
-  weight, rep-at-that-weight, or e1RM record shows a lime "New record" card with one line per
-  kind broken. It closes itself after 4 seconds, on a tap, or the moment you log the next set;
-  nothing about it is stored.
+  board header only, and a `Rest` timer (time since the last set, any exercise, counts up) at the
+  top right of the log sheet — the only counter there. There's no start button: your first set opens the session.
+- **PR flash** (log sheet): logging a working set that breaks a weight, rep-at-that-weight, or
+  e1RM record drops a dark-yellow "New record" card in at the top of the screen and dims the page.
+  One line per kind broken, `85 kg → 87.5 kg`: the old value small and grey, the new one large in
+  yellow (`record` / `record-pale` tokens). It closes itself after 4 seconds or on a tap anywhere
+  (a tap while it's up only closes it); nothing about it is stored.
 - **PR pills** (log sheet history): every set that broke a record carries a small green `PR` pill,
   for good — beating it later doesn't take it away. Derived with `historyPRs` on each read, so it
   always agrees with the flash; a screen reader hears which records it broke.
@@ -91,7 +92,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
   `formatDuration`. `writes.ts` has `logSet`, `deleteSet` and `endSession` (run by Finish), each
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
-- **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
+- **Look:** dark only; every color, font and radius is a token in `app/theme.css`. No text
+  selection or long-press callout (inputs excepted) and no visible scrollbars, app-wide.
 
 **Not built yet:** Supabase sync, PWA install, and the history page.
 
@@ -114,6 +116,12 @@ These aren't obvious from the code and shaped later work.
 - **The "‹ Board" link goes back through history**, since a plain link to `/` needs the
   server.
 - **Secondary text uses `text-body`, not `text-mute`,** which is too faint in a dim gym.
+- **The set-type picker is hidden, not removed from the data** (the user's choice): almost every
+  set is a working set, so the log sheet always logs `kind: 'working'`. `SET_KINDS`, `kindLabel`,
+  the `kind` column and every rule that reads it (prefill, PRs) are untouched, and old non-working
+  sets still show their label in the history, so bringing the chips back is a UI-only change.
+- **The session timer lives on the board only.** The log sheet shows just the rest timer; the way
+  into the summary (and End) is the board's timer.
 - **Neutral buttons press to `line`,** and only the Log button presses to the lime.
 - **`pnpm` isn't on the PATH in Claude's shell:** use `corepack pnpm …` (or the binaries
   in `frontend/node_modules/.bin`).
@@ -216,6 +224,19 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Log sheet and record flash polish
+`bugfix: Quieten the log sheet and make the record flash readable` · 2026-09-24
+
+- Log sheet: the set-type chips are gone (every set is `working`; `kind` stays in the data) and the
+  session timer is gone (board only), leaving the rest timer as the one counter. History times
+  are small and grey on the right; the ± signs are drawn SVGs so they sit centred.
+- The PR flash was hard to read as a lime card. It's now a dark-yellow card (new `record` /
+  `record-pale` tokens, every text on it ≥ 4.5:1) that drops in at the top over a dimmed page,
+  portalled to `<body>`. Each line reads `old → new`, with "was" dropped and the new value loudest;
+  `prValues` became `prAmount`.
+- The level label is shorter (`5 to Level 6`); the summary drops the cramped "Finished" line; text
+  selection, the long-press callout and scrollbars are off app-wide.
 
 ### Ticket 31: The finish moment — swipeable recap cards when you tap Finish
 `feature: Celebrate Finish with swipeable recap cards` · 2026-09-24

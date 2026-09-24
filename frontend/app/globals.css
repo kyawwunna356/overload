@@ -13,4 +13,26 @@
   body {
     @apply bg-page font-sans text-ink;
   }
+
+  /* An app, not a page: no text selection and no long-press callout, so a thumb resting on a
+     row mid-set never starts selecting words. Fields you type in stay selectable — iOS Safari
+     won't take typing in an input that inherits user-select: none. */
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* No visible scrollbars anywhere: every list scrolls by touch, so the bar is only noise. */
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
 }

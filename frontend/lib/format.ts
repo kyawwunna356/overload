@@ -61,17 +61,15 @@ export function prKindLabel(kind: PRKind): string {
   return PR_KIND_LABELS[kind];
 }
 
-// "100 kg · was 97.5 kg", "6 · was 5".
-export function prValues(pr: PR): string {
-  const show = (value: number) =>
-    pr.kind === 'reps' ? String(value) : `${formatNumber(Math.round(value * 10) / 10)} kg`;
-  return `${show(pr.value)} · was ${show(pr.previous)}`;
+// One side of a record in its own unit: "102.5 kg" for weight and e1RM, "6" for reps.
+export function prAmount(pr: PR, value: number): string {
+  return pr.kind === 'reps' ? String(value) : `${formatNumber(Math.round(value * 10) / 10)} kg`;
 }
 
-// "16 sessions · 5 more to level 6", "1 session · 2 more to level 2".
+// "16 sessions · 5 to Level 6", "1 session · 2 to Level 2".
 export function masteryLine(mastery: Mastery): string {
   const toGo = mastery.nextLevelAt - mastery.sessions;
-  return `${countLabel(mastery.sessions, 'session')} · ${toGo} more to level ${mastery.level + 1}`;
+  return `${countLabel(mastery.sessions, 'session')} · ${toGo} to Level ${mastery.level + 1}`;
 }
 
 // "4,215 kg": whole kilos with fixed en-US grouping, so the phone's locale can't change it.
