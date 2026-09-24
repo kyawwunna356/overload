@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sessionPRs } from './prs';
-import { sessionRecap } from './recap';
+import { recapCards, sessionRecap, type Recap } from './recap';
 import { deriveSessions, SESSION_GAP_MINUTES } from './sessions';
 import { makeSet } from './test-utils';
 import type { SetLog } from './types';
@@ -99,5 +99,41 @@ describe('sessionRecap', () => {
     ];
     const session = sessionOf([makeSet({ id: 's', logged_at: at(8, 3), weight: 100, reps: 5 })]);
     expect(sessionRecap(session, [...history].reverse())).toEqual(sessionRecap(session, history));
+  });
+});
+
+describe('recapCards', () => {
+  const pr = (id: string) => ({ set: makeSet({ id }), prs: [{ kind: 'weight' as const, value: 1, previous: 0 }] });
+  const up = (exerciseId: string) => ({ exerciseId, level: 2 });
+  const recap = (prs: number, ups: number): Recap => ({
+    totalKg: 1000,
+    prs: Array.from({ length: prs }, (_, i) => pr(`p${i}`)),
+    levelUps: Array.from({ length: ups }, (_, i) => up(`e${i}`)),
+  });
+  const PER = { records: 3, levels: 5 };
+  const shape = (r: Recap) =>
+    recapCards(r, PER).map((card) => (card.kind === 'total' ? 'total' : `${card.kind} ${card.page}/${card.of}`));
+
+  it('is one card for a session with no records or level-ups', () => {
+    expect(shape(recap(0, 0))).toEqual(['total']);
+  });
+
+  it('fits up to a page of records on one card', () => {
+    expect(shape(recap(3, 0))).toEqual(['total', 'records 1/1']);
+  });
+
+  it('spreads a longer list over more cards', () => {
+    const cards = recapCards(recap(4, 0), PER);
+    expect(shape(recap(4, 0))).toEqual(['total', 'records 1/2', 'records 2/2']);
+    expect(cards[1].kind === 'records' && cards[1].prs.map((entry) => entry.set.id)).toEqual(['p0', 'p1', 'p2']);
+    expect(cards[2].kind === 'records' && cards[2].prs.map((entry) => entry.set.id)).toEqual(['p3']);
+  });
+
+  it('orders the deck total, records, levels', () => {
+    expect(shape(recap(1, 6))).toEqual(['total', 'records 1/1', 'levels 1/2', 'levels 2/2']);
+  });
+
+  it('gives level-ups their own cards when there are no records', () => {
+    expect(shape(recap(0, 2))).toEqual(['total', 'levels 1/1']);
   });
 });

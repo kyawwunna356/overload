@@ -42,3 +42,32 @@ export function sessionRecap(session: DerivedSession, history: readonly SetLog[]
     levelUps,
   };
 }
+
+// One card of the finish moment's deck. Records and level-ups are paged, so a long list becomes
+// several cards; `page` counts from 1 and `of` is how many cards that section has.
+export type RecapCard =
+  | { kind: 'total' }
+  | { kind: 'records'; prs: SetPRs[]; page: number; of: number }
+  | { kind: 'levels'; levelUps: LevelUp[]; page: number; of: number };
+
+// The deck, in order: the total, then the records, then the level-ups. A section with nothing in
+// it has no card, so a quiet session is one card — never an empty "0 records".
+export function recapCards(
+  recap: Recap,
+  perCard: { records: number; levels: number },
+): RecapCard[] {
+  const records = chunk(recap.prs, perCard.records);
+  const levels = chunk(recap.levelUps, perCard.levels);
+  return [
+    { kind: 'total' },
+    ...records.map((prs, i): RecapCard => ({ kind: 'records', prs, page: i + 1, of: records.length })),
+    ...levels.map((levelUps, i): RecapCard => ({ kind: 'levels', levelUps, page: i + 1, of: levels.length })),
+  ];
+}
+
+function chunk<T>(items: readonly T[], size: number): T[][] {
+  const step = Math.max(1, size);
+  const pages: T[][] = [];
+  for (let i = 0; i < items.length; i += step) pages.push(items.slice(i, i + step));
+  return pages;
+}

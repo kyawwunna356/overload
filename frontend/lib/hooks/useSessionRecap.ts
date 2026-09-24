@@ -9,9 +9,13 @@ import type { DerivedSession } from '../domain/sessions';
 // The recap of one session, read from Dexie only (Hard Rule 5). One indexed read per exercise in
 // the session, over [exercise_id+logged_at] up to the session's last set — records and levels only
 // ever look backwards, so nothing later is needed. Returns undefined until the reads complete.
-export function useSessionRecap(session: DerivedSession): Recap | undefined {
+//
+// `session` may be null (the summary hasn't loaded, or there's no such session), so the page can
+// call this unconditionally; it then returns undefined.
+export function useSessionRecap(session: DerivedSession | null): Recap | undefined {
   return useLiveQuery(
     async () => {
+      if (session === null) return undefined;
       const exerciseIds = [...new Set(session.sets.map((set) => set.exercise_id))];
       const histories = await Promise.all(
         exerciseIds.map((id) =>
@@ -24,6 +28,6 @@ export function useSessionRecap(session: DerivedSession): Recap | undefined {
       return sessionRecap(session, histories.flat());
     },
     // The session object is rebuilt on every read; these say when it actually changed.
-    [session.id, session.last_set_at, session.sets.length],
+    [session?.id, session?.last_set_at, session?.sets.length],
   );
 }

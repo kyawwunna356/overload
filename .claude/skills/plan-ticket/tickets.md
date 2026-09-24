@@ -71,7 +71,8 @@ flashed, which a set's record status allows because it is only ever judged again
 | 28 | Session recap — what the workout was worth, on the summary once it's over | done |
 | 29 | Swipe to delete — swipe a set left in the history to delete it | done |
 | 30 | One list — pick and order your exercises in the same list | done |
-| 31 | On-device check — run milestone 5 on the iPhone | next |
+| 31 | The finish moment — swipeable recap cards when you tap Finish | done |
+| 32 | On-device check — run milestone 5 on the iPhone | next |
 
 ## Milestone 6 — Sync and install
 

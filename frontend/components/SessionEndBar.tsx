@@ -14,7 +14,14 @@ import { endSession } from "@/lib/writes";
 // at the bottom where End was, so a double tap on End lands on Resume, never on Finish. Only the
 // active session gets the bar: once it's finished or closed by the gap there is nothing to end.
 // It owns its own clock (through useActiveSession), so only this bar repaints each tick.
-export function SessionEndBar({ sessionId }: { sessionId: string }) {
+export function SessionEndBar({
+  sessionId,
+  onFinished,
+}: {
+  sessionId: string;
+  // Runs once the end marker is written — the summary opens the recap cards.
+  onFinished: () => void;
+}) {
   const state = useActiveSession();
   // Throwaway UI state: whether the choice is showing. Never stored.
   const [choosing, setChoosing] = useState(false);
@@ -27,8 +34,7 @@ export function SessionEndBar({ sessionId }: { sessionId: string }) {
     setFailed(false);
     try {
       await endSession(session);
-      // The recap appears at the top of the summary; bring it into view.
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      onFinished();
     } catch {
       setFailed(true);
     }

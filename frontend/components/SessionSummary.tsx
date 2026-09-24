@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { dayLabel } from "@/lib/domain/history";
@@ -7,6 +8,7 @@ import { elapsed, formatDuration, formatElapsed } from "@/lib/domain/timers";
 import { countLabel, formatSet, formatTime, kindLabel, patternLabel } from "@/lib/format";
 import { useActiveSession } from "@/lib/hooks/useActiveSession";
 import { useNow } from "@/lib/hooks/useNow";
+import { useSessionRecap } from "@/lib/hooks/useSessionRecap";
 import { useSessionSummary } from "@/lib/hooks/useSessionSummary";
 import {
   SESSION_GAP_MINUTES,
@@ -15,6 +17,7 @@ import {
 } from "@/lib/domain/sessions";
 import { BackLink } from "./BackLink";
 import { SessionEndBar } from "./SessionEndBar";
+import { RecapMoment } from "./RecapMoment";
 import { SessionRecap } from "./SessionRecap";
 import { WeekStrip } from "./WeekStrip";
 
@@ -27,6 +30,15 @@ export function SessionSummary() {
   const data = useSessionSummary(id);
   const now = useNow();
   const summary = data?.summary ?? null;
+  const recap = useSessionRecap(summary?.session ?? null);
+  // True from the moment you tap Finish until you close the recap cards. Never stored: the
+  // moment belongs to the tap, and the summary keeps the recap itself.
+  const [celebrating, setCelebrating] = useState(false);
+  const closeMoment = useCallback(() => {
+    setCelebrating(false);
+    // The compact recap sits at the top of the page; bring it into view.
+    window.scrollTo({ top: 0 });
+  }, []);
 
   return (
     // Bottom padding keeps the last card clear of the pinned End / Resume bar.
@@ -68,7 +80,7 @@ export function SessionSummary() {
             )}
           </header>
 
-          <SessionRecap summary={summary} />
+          <SessionRecap summary={summary} recap={recap} />
           <WeekStrip anchor={summary.session.started_at} sessionId={summary.session.id} />
 
           {summary.groups.map((group) => (
@@ -99,7 +111,15 @@ export function SessionSummary() {
               </ul>
             </section>
           ))}
-          <SessionEndBar sessionId={summary.session.id} />
+          <SessionEndBar sessionId={summary.session.id} onFinished={() => setCelebrating(true)} />
+          {celebrating && recap && (
+            <RecapMoment
+              summary={summary}
+              recap={recap}
+              dayText={dayLabel(summary.session.started_at, now)}
+              onClose={closeMoment}
+            />
+          )}
         </div>
       )}
     </div>

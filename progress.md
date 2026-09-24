@@ -9,13 +9,13 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 ## Where we are
 
 - **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
-  milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
-  23–30 (the PR domain, flash, history marks, week calendar, mastery levels, the recap, swipe
-  to delete and the one-list picker) are built.
-- **Last commit:** `bugfix: Quieten board rows, retire the blue selection, fill a finished day` (this one).
-- **Next: the milestone 5 device check** (Ticket 31). Milestone 6 is sync and install (Supabase,
+  milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–32 in `tickets.md`;
+  23–31 (the PR domain, flash, history marks, week calendar, mastery levels, the recap, swipe
+  to delete, the one-list picker and the finish moment) are built.
+- **Last commit:** `feature: Celebrate Finish with swipeable recap cards` (this one).
+- **Next: the milestone 5 device check** (Ticket 32). Milestone 6 is sync and install (Supabase,
   outbox flush, PWA install, `navigator.storage.persist()`).
-- **Tests:** 307 Vitest tests, domain layer only.
+- **Tests:** 312 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -55,8 +55,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   strip**: the session's week, Monday to Sunday, with trained days (any set) filled green; the
   session's own day is a green outline while it's still going and fills in once it's over. Days off are plain grey; no count, no target. Once the
   session is over (Finish, or the 90-minute gap), a **recap card** sits above the strip: the total
-  weight lifted (`8,508 kg`, every set, warmups included), the records broken, and the lifts that
-  reached a new level. Empty parts are left out. Finish shows it at once and scrolls up to it.
+  weight lifted (`8,508 kg`, every set, warmups included), then **Records · 5** and **Levels · 2**
+  as folded rows you tap to open. Empty parts are left out. Level-ups show the exercise and a
+  gold badge with a double up-arrow and the level.
+- **The finish moment** (only right after tapping Finish): the page dims and a deck of cards pops
+  up — a dark "Workout done" card with the total and counts in bold lime, then Records (3 per card)
+  and Levels (5 per card), spread over more cards when long. Swipe between them (CSS scroll-snap)
+  or tap the dots; Done, the dimmed page or Escape closes it and returns to the top. Never shown
+  for a gap-closed session or a revisit, and nothing about it is stored.
 - **End session** (a bar pinned to the bottom of the summary, only for the active session):
   **End session** writes nothing; it opens a sheet over a dimmed page: **End this session?**, a
   red **Finish session** and, below it, **Resume session**. Resume (or tapping the dimmed page)
@@ -210,6 +216,25 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 31: The finish moment — swipeable recap cards when you tap Finish
+`feature: Celebrate Finish with swipeable recap cards` · 2026-09-24
+
+- The user wanted Finish to feel like an achievement. `RecapMoment` dims the page and shows a deck:
+  total, then records and level-ups paged by `recapCards` (new in `lib/domain/recap.ts`, 5 tests).
+  The swipe is native horizontal scroll with snap, so no gesture code; the page behind is locked
+  (`overflow: hidden`, `touch-action: none` on the scrim) and taps around the cards fall through to
+  the scrim to close.
+- It opens from `SessionEndBar`'s new `onFinished`, held as `celebrating` state in
+  `SessionSummary`, which now calls `useSessionRecap` once (it accepts null). Nothing is stored, so
+  a reload or a gap-closed session never shows it.
+- The summary's recap folds Records and Levels in native `<details>`. Two follow-ups from the
+  user: the first card is dark with the numbers in bold lime (not a lime card), and level-ups are
+  the exercise name plus a **gold** badge (new `level` / `level-pale` tokens) with a double arrow
+  that hops twice — gold so levels read apart from the green of records.
+- Checked with CDP: four cards for five records and two first-ever lifts ("1 of 2" paging), a
+  touch swipe snapping to card 2, the last dot jumping to Levels, the page behind not scrolling,
+  a scrim tap closing, the folds, and no overlay on revisit.
 
 ### UI polish after Ticket 30
 `bugfix: Quieten board rows, retire the blue selection, fill a finished day` · 2026-09-24

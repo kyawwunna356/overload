@@ -56,15 +56,44 @@
   --color-negative: #c0392b; /* negative — a clear warning red for the Finish session button, toned down from a bright red; text-ink on it is 4.9:1 */
   --color-negative-deep: #ff7a7f; /* negative-deep — e.g. the delete button */
 
+  /* Mastery levels — gold, so "you kept showing up" reads apart from the green of records,
+     trained days and your list. text-level on level-pale is 11:1; on card, 12:1. */
+  --color-level: #ffd11a; /* the level-up badge's arrow and number */
+  --color-level-pale: #33290a; /* the level-up badge's fill */
+
   /* Corners — DESIGN.md: 24px cards and pills, never sharp */
   --radius-card: 1.5rem; /* rounded-xl */
   --radius-control: 0.75rem; /* rounded-md — inputs */
   --radius-pill: 9999px; /* pill / full */
 
-  /* Motion: the End session sheet slides up over a fading scrim. Used only behind
+  /* Motion: the End session sheet slides up over a fading scrim, and the recap deck pops in after
+     Finish. Used only behind
      `motion-safe:`, so it's off for anyone who asked their phone for less motion. */
   --animate-sheet-in: sheet-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-scrim-in: scrim-in 200ms ease-out;
+  /* A level-up arrow hops twice as it appears. */
+  --animate-level-up: level-up 600ms ease-out 2;
+  @keyframes level-up {
+    0%,
+    100% {
+      transform: none;
+    }
+    40% {
+      transform: translateY(-3px);
+    }
+  }
+  /* The finish moment's deck pops in over the dimmed page. */
+  --animate-card-in: card-in 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  @keyframes card-in {
+    from {
+      transform: scale(0.94);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
   @keyframes sheet-in {
     from {
       transform: translateY(2rem);
