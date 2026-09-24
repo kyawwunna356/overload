@@ -9,15 +9,15 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 ## Where we are
 
 - **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
-  milestones 1–3 were. Everything is committed and pushed; the working tree is clean.
-- **Last commit:** `fe942b1` — a docs commit recording the milestone 4 device check and
-  refreshing the README, which had gone stale by three milestones.
-- **Next: milestone 5, rewards.** It has no tickets yet — break it down when planning the first
-  one. Scope: `detectPR` and a PR flash while logging, `weeklyRing`, `masteryLevel`, and a
-  **session recap page** (`/recap?id=…`) that **Finish** opens, showing the session's PRs and the
-  total weight lifted (one number, not a chart — charts are a non-goal). Milestone 6 is sync and
-  install (Supabase, outbox flush, PWA install, `navigator.storage.persist()`).
-- **Tests:** 203 Vitest tests, domain layer only.
+  milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
+  Ticket 23 (the PR domain) is built.
+- **Last commit:** `feature: Add the PR domain — weight, reps and e1RM records` (this one).
+- **Next: Ticket 24, the PR flash while logging.** `detectPR` exists; nothing calls it from the UI
+  yet. After that: PR pills in history (25), the week's ring (26), mastery levels (27), the session
+  recap page (28, `/recap?id=…`, opened by Finish), then the milestone 5 device check (29).
+  Milestone 6 is sync and install (Supabase, outbox flush, PWA install,
+  `navigator.storage.persist()`).
+- **Tests:** 244 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -72,8 +72,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** the session recap page,
-PRs, weekly ring, mastery, Supabase sync, PWA install, manage and history pages.
+**Not built yet:** the PR flash and pills, the session recap page, weekly ring, mastery,
+Supabase sync, PWA install, and the history page.
 
 ## Decisions worth remembering
 
@@ -176,11 +176,40 @@ These aren't obvious from the code and shaped later work.
   the tint are the only signal. Six pills including Core wrap to two rows at phone width.
 - Tickets 7, 12, 16 and 22 (the on-device checks for milestones 1–4) have no code commit: the
   user confirmed each by hand on the iPhone.
+- **Milestone 5 has two decisions of the user's baked into the plan** (`tickets.md`): the weekly
+  ring (Ticket 26) is a *count*, scaled to your own recent habit, not a quota against a fixed
+  target — an empty arc against an invented number is loss aversion however it's worded; and a PR
+  is marked *permanently* in history (Ticket 25), not only flashed, which `detectPR` allows because
+  a set is only ever judged against sets strictly earlier than itself, so beating a record later
+  doesn't unmark the set that held it.
+- **PR kinds don't collapse into one "best set" score.** Weight and reps are compared like-for-like
+  (reps only against the same weight, so a light high-rep set can't steal a heavy set's record);
+  e1RM is the only kind that can stand alone, for a new-weight set that's plainly better without
+  being heavier or higher-rep. `historyPRs` does one oldest-first pass per exercise so the flash
+  (Ticket 24) and the history pills (Ticket 25) can't disagree — both come from `judge()`.
 
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 23: PR domain — weight, reps and e1RM records
+`feature: Add the PR domain — weight, reps and e1RM records` · 2026-09-24
+
+- `lib/domain/prs.ts`: `detectPR(set, history)` — the records one working set breaks, judged only
+  against working sets of the same exercise strictly earlier than it (order-independent, tolerant
+  of `history` holding other exercises, other sets, or the set itself). Three kinds: `weight`
+  (heavier than ever), `reps` (more reps at that exact weight — bodyweight sets at 0 kg compare
+  with each other only), and `e1rm` (a better Epley estimate, skipped for bodyweight); ties never
+  count. `historyPRs(logs)` sweeps a whole history in one oldest-first pass per exercise, and
+  `sessionPRs(sessionSets, history)` is the session recap's list — both agree with `detectPR` by
+  construction, since all three share one `judge()`.
+- Milestone 5 broken into Tickets 23–29 in `tickets.md`, with the two rewards decisions (the ring
+  as a count, not a quota; a PR mark as permanent) written down.
+- 41 new tests (244 total): the three kinds individually and combined, ties, warmup/drop/failure
+  excluded on both sides, cross-exercise and cross-weight isolation, order-independence, the
+  logged_at tie-break by id, e1RM-alone records, and no-mutation checks.
+- Domain-only; nothing calls it yet (Ticket 24, the flash).
 
 ### Ticket 22: On-device check — milestone 4, and the README
 `docs: Record the milestone 4 device check and refresh the README` · 2026-09-23

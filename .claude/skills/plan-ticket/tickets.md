@@ -53,11 +53,23 @@ never reorders anything. See CLAUDE.md's UI rule for the board and Hard Rule 3.
 | 21 | Reorder — drag a row by its handle to move it | done |
 | 22 | On-device check — run milestone 4 on the iPhone | done |
 
-## Milestone 5 — Rewards (to be broken down into tickets when it is planned)
+## Milestone 5 — Rewards
 
-`detectPR` and the PR flash while logging, `weeklyRing`, `masteryLevel`, and a **session recap page**
-(`/recap?id=…`) that Finish opens: the PRs hit in the session, the total weight lifted (one number for the
-session, not a chart or trend), the weekly ring and any mastery level-ups.
+The payoff layer, all of it derived from `set_logs` — no schema change and no Dexie version bump in the
+whole milestone. Two decisions shaped it (the user's): the weekly ring is a **count, not a quota**, scaled
+to your own recent habit rather than a target the app invented, because an empty arc against a fixed 3 is
+loss aversion however kind the words are; and a record is **marked permanently** in the history, not only
+flashed, which a set's record status allows because it is only ever judged against sets earlier than itself.
+
+| # | Ticket | Status |
+|---|---|---|
+| 23 | PR domain — weight, reps and e1RM records (pure, tested) | built — awaiting review |
+| 24 | PR flash — the reward the moment you log a record | next |
+| 25 | PR marks — a durable `PR` pill in the exercise's history | not started |
+| 26 | The week's ring — sessions this week, scaled to your habit | not started |
+| 27 | Mastery levels — how long you've been doing a lift | not started |
+| 28 | Session recap — what the workout was worth, opened by Finish (`/recap?id=…`) | not started |
+| 29 | On-device check — run milestone 5 on the iPhone | not started |
 
 ## Milestone 6 — Sync and install
 
