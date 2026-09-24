@@ -12,8 +12,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–32 in `tickets.md`;
   23–31 (the PR domain, flash, history marks, week calendar, mastery levels, the recap, swipe
   to delete, the one-list picker and the finish moment) are built.
-- **Last commit:** `bugfix: Quieten the log sheet and make the record flash readable` (this one).
-  A confetti-and-rolling-total experiment (Ticket 33) is being tried on a `confetti` branch.
+- **Last commit:** `feature: Celebrate Finish with a confetti burst and a rolling total` (this
+  one, Ticket 33 — tried on a `confetti` branch, kept, merged into main).
 - **Next: the milestone 5 device check** (Ticket 32). Milestone 6 is sync and install (Supabase,
   outbox flush, PWA install, `navigator.storage.persist()`).
 - **Tests:** 312 Vitest tests, domain layer only.
@@ -62,7 +62,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **The finish moment** (only right after tapping Finish): the page dims and a deck of cards pops
   up — a dark "Workout done" card with the total and counts in bold lime, then Records (3 per card)
   and Levels (5 per card), spread over more cards when long. Swipe between them (CSS scroll-snap)
-  or tap the dots; Done, the dimmed page or Escape closes it and returns to the top. Never shown
+  or tap the dots; Done, the dimmed page or Escape closes it and returns to the top. As it opens,
+  confetti bursts from the bottom corners (lime, yellow, off-white; gone in ~2 s, never blocks a
+  tap) and the total rolls up from 0 in 0.9 s. Reduced motion: no confetti, the total just shows. Never shown
   for a gap-closed session or a revisit, and nothing about it is stored.
 - **End session** (a bar pinned to the bottom of the summary, only for the active session):
   **End session** writes nothing; it opens a sheet over a dimmed page: **End this session?**, a
@@ -120,6 +122,10 @@ These aren't obvious from the code and shaped later work.
   set is a working set, so the log sheet always logs `kind: 'working'`. `SET_KINDS`, `kindLabel`,
   the `kind` column and every rule that reads it (prefill, PRs) are untouched, and old non-working
   sets still show their label in the history, so bringing the chips back is a UI-only change.
+- **Celebration tricks are visual only.** Confetti is a hand-rolled canvas (`Confetti.tsx`, colours
+  read from the theme's CSS variables), no dependency. Haptics were ruled out (iOS web has no
+  vibration API) and so was sound (headphones in, and Safari blocks audio without a tap).
+  `useCountUp` is a display animation driven by `requestAnimationFrame`, not a timer.
 - **The session timer lives on the board only.** The log sheet shows just the rest timer; the way
   into the summary (and End) is the board's timer.
 - **Neutral buttons press to `line`,** and only the Log button presses to the lime.
@@ -224,6 +230,17 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 33: Celebrate the finish — confetti burst and a rolling total
+`feature: Celebrate Finish with a confetti burst and a rolling total` · 2026-09-24
+
+- The user wanted a celebration when a session ends. Built on a `confetti` branch as a trial, then
+  kept. Two canvas "cannons" fire ~120 pieces in the theme's lime, yellow and ink when the recap
+  deck opens; `pointer-events: none`, cleared after ~3 s, skipped under reduced motion.
+- The first card's total rolls up with `useCountUp` (ease-out cubic, 900 ms).
+- Checked with CDP: the total reads 861 → 1,693 → 2,043 → the exact 2,044 kg, the canvas is empty by
+  3.5 s, Done works mid-burst, and with reduced motion emulated there's no confetti and the exact
+  total at once.
 
 ### Log sheet and record flash polish
 `bugfix: Quieten the log sheet and make the record flash readable` · 2026-09-24

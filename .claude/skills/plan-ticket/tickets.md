@@ -73,6 +73,7 @@ flashed, which a set's record status allows because it is only ever judged again
 | 30 | One list — pick and order your exercises in the same list | done |
 | 31 | The finish moment — swipeable recap cards when you tap Finish | done |
 | 32 | On-device check — run milestone 5 on the iPhone | next |
+| 33 | Celebrate the finish — confetti burst and a rolling total | done |
 
 ## Milestone 6 — Sync and install
 

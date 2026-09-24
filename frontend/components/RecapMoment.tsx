@@ -5,9 +5,12 @@ import { recapCards, type Recap, type RecapCard } from "@/lib/domain/recap";
 import type { SessionSummary } from "@/lib/domain/sessions";
 import { formatDuration } from "@/lib/domain/timers";
 import { countLabel, formatKg } from "@/lib/format";
+import { useCountUp } from "@/lib/hooks/useCountUp";
+import { Confetti } from "./Confetti";
 import { LevelLine, RecordLine, exerciseNames } from "./SessionRecap";
 
 const PER_CARD = { records: 3, levels: 5 };
+const COUNT_UP_MS = 900;
 
 // The moment after Finish: the page dims and a deck of cards pops up in front — the total lifted,
 // then your records, then your level-ups, each spread over more cards when the list is long. Swipe
@@ -117,6 +120,9 @@ export function RecapMoment({
           Done
         </button>
       </div>
+
+      {/* One burst as the deck opens, over everything but never in the way of a tap. */}
+      <Confetti />
     </div>
   );
 }
@@ -146,7 +152,7 @@ function Card({
         </div>
         <div>
           <p className="font-display text-6xl font-black leading-none tracking-tight tabular-nums text-primary">
-            {formatKg(recap.totalKg)}
+            <RollingKg total={recap.totalKg} />
           </p>
           <p className="pt-2 text-xl font-semibold text-ink">lifted</p>
         </div>
@@ -189,6 +195,11 @@ function Card({
       )}
     </article>
   );
+}
+
+// The total lifted, rolling up from 0 like a scoreboard as the deck pops in.
+function RollingKg({ total }: { total: number }) {
+  return <>{formatKg(useCountUp(total, COUNT_UP_MS))}</>;
 }
 
 // "23 sets · 6 exercises · 1h 20m" with each number in bold lime and the words left as they are.
