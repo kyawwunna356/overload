@@ -65,7 +65,7 @@ flashed, which a set's record status allows because it is only ever judged again
 |---|---|---|
 | 23 | PR domain — weight, reps and e1RM records (pure, tested) | done |
 | 24 | PR flash — the reward the moment you log a record | done |
-| 25 | PR marks — a durable `PR` pill in the exercise's history | next |
+| 25 | PR marks — a durable `PR` pill in the exercise's history | done |
 | 26 | The week's ring — sessions this week, scaled to your habit | not started |
 | 27 | Mastery levels — how long you've been doing a lift | not started |
 | 28 | Session recap — what the workout was worth, opened by Finish (`/recap?id=…`) | not started |

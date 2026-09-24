@@ -10,12 +10,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
-  23 (the PR domain) and 24 (the PR flash) are built.
-- **Last commit:** `feature: Add the PR flash while logging` (this one).
-- **Next: Ticket 25, a durable PR pill in the exercise's history.** The flash is only the moment
-  it happens; nothing marks a record set afterwards yet. After that: the week's ring (26), mastery
-  levels (27), the session recap page (28, `/recap?id=…`, opened by Finish), then the milestone 5
-  device check (29). Milestone 6 is sync and install (Supabase, outbox flush, PWA install,
+  23–25 (the PR domain, flash and history marks) are built.
+- **Last commit:** `feature: Mark record sets with a PR pill in the history` (this one).
+- **Next: Ticket 26, the week's ring.** After that: mastery levels (27), the session recap page
+  (28, `/recap?id=…`, opened by Finish), then the milestone 5 device check (29). Milestone 6 is sync and install (Supabase, outbox flush, PWA install,
   `navigator.storage.persist()`).
 - **Tests:** 244 Vitest tests, domain layer only.
 
@@ -63,7 +61,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **PR flash** (log sheet, above the pinned Log button): logging a working set that breaks a
   weight, rep-at-that-weight, or e1RM record shows a lime "New record" card with one line per
   kind broken. It closes itself after 4 seconds, on a tap, or the moment you log the next set;
-  nothing about it is stored — the lasting mark is Ticket 25's job.
+  nothing about it is stored.
+- **PR pills** (log sheet history): every set that broke a record carries a small green `PR` pill,
+  for good — beating it later doesn't take it away. Derived with `historyPRs` on each read, so it
+  always agrees with the flash; a screen reader hears which records it broke.
 - **Local data:** Dexie database seeded once with 25 exercises, a default "Full Body"
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
@@ -76,7 +77,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** durable PR pills in history, the session recap page, weekly ring, mastery,
+**Not built yet:** the session recap page, weekly ring, mastery,
 Supabase sync, PWA install, and the history page.
 
 ## Decisions worth remembering
@@ -196,6 +197,18 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 25: PR marks — a durable PR pill in the exercise's history
+`feature: Mark record sets with a PR pill in the history` · 2026-09-24
+
+- `SetHistory` runs `historyPRs` over the exercise's history (memoised on the history alone, so the
+  clock's repaints don't redo it) and a small `PRPill` marks each record set, with the kinds broken
+  in its aria-label.
+- Permanent by construction: each set is judged only against earlier ones. Deleting an earlier
+  record can promote a later set, which is correct — it's now the best of what's left.
+- Checked in headless Chrome: seeded records marked, a new heavier set marked, both keeping their
+  pills after a heavier one still, a repeat unmarked, and a record surviving the deletion of the
+  sets after it.
 
 ### Ticket 24: PR flash — the reward the moment you log a record
 `feature: Add the PR flash while logging` · 2026-09-24

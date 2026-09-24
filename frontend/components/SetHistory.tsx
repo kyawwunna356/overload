@@ -2,8 +2,9 @@
 
 import { useMemo } from "react";
 import { groupByDay } from "@/lib/domain/history";
+import { historyPRs, type PR } from "@/lib/domain/prs";
 import type { SetLog } from "@/lib/domain/types";
-import { formatSet, formatTime, kindLabel } from "@/lib/format";
+import { formatSet, formatTime, kindLabel, prKindLabel } from "@/lib/format";
 import { deleteSet } from "@/lib/writes";
 
 // Every set of this exercise, live, under a heading for each day it was done (Today,
@@ -11,8 +12,13 @@ import { deleteSet } from "@/lib/writes";
 // logged; the delete button fixes a mistaken one. Deleting asks for no confirmation —
 // re-logging a set is a single tap. `now` comes from the caller so "Today" stays right
 // after the phone wakes.
+//
+// A set that broke a record wears a PR pill for good: each set is judged only against the sets
+// before it, so beating it later never takes the pill away. Derived every time, never stored.
 export function SetHistory({ history, now }: { history: SetLog[]; now: number }) {
   const days = useMemo(() => groupByDay(history, now), [history, now]);
+  // Keyed on history alone, so the clock's repaints don't redo the sweep.
+  const records = useMemo(() => historyPRs(history), [history]);
 
   return (
     <section>
@@ -28,8 +34,9 @@ export function SetHistory({ history, now }: { history: SetLog[]; now: number })
                 {day.sets.map((set) => (
                   <li key={set.id} className="flex min-h-16 items-center gap-3 py-2 pr-3 pl-6">
                     <div className="min-w-0 flex-1">
-                      <p className="text-lg font-semibold tabular-nums text-ink">
+                      <p className="flex items-center gap-2 text-lg font-semibold tabular-nums text-ink">
                         {formatSet(set)}
+                        <PRPill prs={records.get(set.id)} />
                       </p>
                       <p className="text-sm text-body">
                         {formatTime(set.logged_at)}
@@ -52,5 +59,19 @@ export function SetHistory({ history, now }: { history: SetLog[]; now: number })
         </div>
       )}
     </section>
+  );
+}
+
+// Quiet on purpose: the flash was the celebration; this is the lasting mark.
+function PRPill({ prs }: { prs: PR[] | undefined }) {
+  if (prs === undefined) return null;
+  return (
+    <span
+      role="img"
+      aria-label={`Record: ${prs.map((pr) => prKindLabel(pr.kind)).join(", ")}`}
+      className="rounded-pill bg-primary-pale px-2 py-0.5 text-xs font-bold text-ink-deep"
+    >
+      PR
+    </span>
   );
 }
