@@ -70,7 +70,8 @@ flashed, which a set's record status allows because it is only ever judged again
 | 27 | Mastery levels — how long you've been doing a lift | done |
 | 28 | Session recap — what the workout was worth, on the summary once it's over | done |
 | 29 | Swipe to delete — swipe a set left in the history to delete it | done |
-| 30 | On-device check — run milestone 5 on the iPhone | next |
+| 30 | One list — pick and order your exercises in the same list | done |
+| 31 | On-device check — run milestone 5 on the iPhone | next |
 
 ## Milestone 6 — Sync and install
 

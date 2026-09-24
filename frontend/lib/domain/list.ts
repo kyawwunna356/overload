@@ -62,3 +62,16 @@ export function dropIndex(heights: readonly number[], from: number, dy: number):
   }
   return index;
 }
+
+// One pattern's list as the manage screen shows it: your picks first, in your order, then the rest
+// of the catalogue in catalogue order. A pick missing from `catalogue` (archived, or another
+// pattern) is left out, and every catalogue entry appears exactly once.
+export function splitPicks<T extends { id: string }>(
+  catalogue: readonly T[],
+  yours: readonly T[],
+): { onBoard: T[]; rest: T[] } {
+  const inCatalogue = new Set(catalogue.map((entry) => entry.id));
+  const onBoard = yours.filter((entry) => inCatalogue.has(entry.id));
+  const picked = new Set(onBoard.map((entry) => entry.id));
+  return { onBoard, rest: catalogue.filter((entry) => !picked.has(entry.id)) };
+}

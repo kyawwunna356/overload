@@ -10,12 +10,12 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
-  23–29 (the PR domain, flash, history marks, week calendar, mastery levels, the recap and swipe
-  to delete) are built.
-- **Last commit:** `feature: Swipe a set left in the history to delete it` (this one).
-- **Next: the milestone 5 device check** (Ticket 30). Milestone 6 is sync and install (Supabase,
+  23–30 (the PR domain, flash, history marks, week calendar, mastery levels, the recap, swipe
+  to delete and the one-list picker) are built.
+- **Last commit:** `feature: Pick and order your exercises in one list` (this one).
+- **Next: the milestone 5 device check** (Ticket 31). Milestone 6 is sync and install (Supabase,
   outbox flush, PWA install, `navigator.storage.persist()`).
-- **Tests:** 303 Vitest tests, domain layer only.
+- **Tests:** 307 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -25,12 +25,13 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   inline (`82.5 kg × 5`, `BW × 9`) and days ago (`2d`) — but never "today", which mid-session
   every touched row would say. Nothing is folded away: you chose the list.
 - **The catalogue and manage screen** (`/exercises`, or `?pattern=…` for one group, titled by that
-  pattern): 73 exercises across the six patterns, with a search box. With two or more picks in the
-  group it opens with **Your order** — your picks, each with a grip handle you drag to move it — and
-  the board follows that order. Only the handle starts a drag, so the list still scrolls under a
-  finger, and the arrow keys on a focused handle do the same thing without a pointer. Tap a row to put it on your board, tap again to take it
-  off — one tap, no save button, and removing keeps every set you ever logged. Each row says what
-  it is now (`Add` / `On board ✓`). A group on the board reaches it by the `+` beside its heading,
+  pattern and nothing else): 73 exercises across the six patterns, with a search box. Each pattern
+  is **one list**: your picks first, in your order, each with `On board ✓` and a grip handle you drag
+  to reorder (the board follows); then the rest of the catalogue as neutral `Add` rows. Tapping Add
+  slides the row up to the end of your picks with a brief green glow; tapping a pick slides it back
+  to its catalogue place — one tap, no save button, and removing keeps every set you ever logged.
+  Only a handle starts a drag, so the list still scrolls under a finger; the arrow keys on a focused
+  handle reorder without a pointer. Handles hide while searching. A group on the board reaches it by the `+` beside its heading,
   or by the full-width "Add exercises" button when the group is still empty.
 - **Log sheet** (`/exercise?id=…`): last working set as large ghost values, ± buttons
   (2.5 kg, ±1 rep), tap a number to type, kind chips (warmup / working / drop / failure)
@@ -170,8 +171,12 @@ These aren't obvious from the code and shaped later work.
 - **There is no auto-scroll while dragging:** with a list taller than the screen a row moves only as
   far as the screen reaches in one gesture. Ten rows fit on a phone; fifteen would take two drags.
 - **Adding and removing are one tap, with no confirmation,** because nothing can be lost: removing
-  an exercise from your list keeps all its sets, and re-adding brings the history straight back. The
-  picker says so in a line under its title.
+  an exercise from your list keeps all its sets, and re-adding brings the history straight back.
+- **The manage screen is one list, not two** (the user's redesign, Ticket 30): picks and catalogue
+  share a `<ul>`, split by `splitPicks`. `useFlip` slides rows only when membership changes, never on
+  a reorder, so it can't fight the drag. For 400ms after a toggle, taps are ignored, because the row
+  that slides under your thumb would otherwise be toggled by a double tap. No instruction lines:
+  the page is just its title, the search and the list.
 - **The Add control is quiet once a group has exercises:** a `+` icon beside the heading (an inline
   SVG, `currentColor`, 44px tap area), not a full-width button — that's kept for an empty group,
   where it's the only thing to do. The heading row centres rather than aligning on the baseline,
@@ -205,6 +210,25 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 30: One list — pick and order your exercises in the same list
+`feature: Pick and order your exercises in one list` · 2026-09-24
+
+- The user redesigned the manage screen: no separate **Your order** block. Picks (green, with
+  handles, in your order) come first and the rest of the catalogue follows as neutral rows; Add
+  slides a row up to the end of the picks, removing slides it back to its catalogue place.
+- `splitPicks` in `lib/domain/list.ts` (4 tests). `useFlip` (new, `lib/hooks/`) is a hand-rolled
+  FLIP: page positions so scrolling isn't a move, and a mid-slide row starts from where it visibly
+  is. `PatternList` replaces `OrderList` + `CatalogueRow`, keeping the drag, the optimistic dropped
+  order and the arrow keys; the drag transform sits on an inner element so it never fights the
+  slide.
+- Also folded in: the page's second heading (the pattern name repeated) and both instruction lines
+  are gone.
+- Checked with CDP taps and touch drags: adds landing last with the next `sort_order`, a
+  frame-by-frame slide over ~250ms, a double tap adding one, a drag to the top written densely and
+  followed by the board, removal back to the catalogue slot, vertical scroll on neutral rows,
+  ArrowUp on a handle, handles hidden while searching, and all six sections under "Show every
+  pattern".
 
 ### Ticket 29: Swipe to delete — swipe a set left in the history to delete it
 `feature: Swipe a set left in the history to delete it` · 2026-09-24

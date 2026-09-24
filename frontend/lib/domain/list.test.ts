@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dropIndex, movePick, nextSortOrder, type ListItem } from './list';
+import { dropIndex, movePick, nextSortOrder, splitPicks, type ListItem } from './list';
 
 const item = (exercise_id: string, sort_order: number): ListItem => ({ exercise_id, sort_order });
 
@@ -138,5 +138,34 @@ describe('dropIndex', () => {
     const heights = [...even];
     dropIndex(heights, 0, 200);
     expect(heights).toEqual(even);
+  });
+});
+
+describe('splitPicks', () => {
+  const ex = (id: string) => ({ id });
+  const catalogue = ['a', 'b', 'c', 'd', 'e'].map(ex);
+  const ids = (list: { id: string }[]) => list.map((entry) => entry.id);
+
+  it('puts your picks first in your order, and the rest in catalogue order', () => {
+    const { onBoard, rest } = splitPicks(catalogue, ['d', 'b'].map(ex));
+    expect(ids(onBoard)).toEqual(['d', 'b']);
+    expect(ids(rest)).toEqual(['a', 'c', 'e']);
+  });
+
+  it('shows every catalogue entry exactly once', () => {
+    const { onBoard, rest } = splitPicks(catalogue, ['e', 'a', 'c'].map(ex));
+    expect([...ids(onBoard), ...ids(rest)].sort()).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+
+  it('is all catalogue with nothing picked', () => {
+    const { onBoard, rest } = splitPicks(catalogue, []);
+    expect(onBoard).toEqual([]);
+    expect(ids(rest)).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+
+  it('leaves out a pick that is not in this catalogue', () => {
+    const { onBoard, rest } = splitPicks(catalogue, ['x', 'c'].map(ex));
+    expect(ids(onBoard)).toEqual(['c']);
+    expect(rest).toHaveLength(4);
   });
 });

@@ -1,16 +1,17 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
-import { dropIndex } from "@/lib/domain/list";
+import { useRef, useState } from "react";
+import { dropIndex, splitPicks } from "@/lib/domain/list";
 import { PATTERNS, type Exercise } from "@/lib/domain/types";
 import { patternLabel } from "@/lib/format";
 import { useCatalogue } from "@/lib/hooks/useCatalogue";
+import { FLIP_MS, useFlip } from "@/lib/hooks/useFlip";
 import { addToList, moveInList, removeFromList, setListOrder } from "@/lib/writes";
 import { BackLink } from "./BackLink";
 
-// The catalogue: every exercise the app knows, and which ones are on your list. Tapping a row
-// adds it to the board or takes it off — one tap, no save button and no confirmation, because
+// The catalogue: every exercise the app knows, with the ones on your list first, in your order,
+// ready to drag. Tapping a row adds it to the board or takes it off — one tap, no save button and no confirmation, because
 // nothing here can be lost (Hard Rule 3: this decides what the board shows, never what you can
 // log, and removing an exercise keeps every set you ever did of it).
 //
@@ -24,9 +25,6 @@ export function ExercisePicker() {
   // back would leave "‹ Board" pointing at this page instead of the board.
   const [showAll, setShowAll] = useState(false);
   const only = showAll ? null : (PATTERNS.find((pattern) => pattern === requested) ?? null);
-
-  // Only the group being shown can be ordered: an order is per pattern.
-  const yours = (catalogue?.yours ?? []).filter((exercise) => exercise.pattern === only);
 
   const needle = query.trim().toLowerCase();
   const groups = (catalogue?.groups ?? [])
@@ -49,20 +47,7 @@ export function ExercisePicker() {
         <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">
           {only ? patternLabel(only) : "Exercises"}
         </h1>
-        <p className="pt-2 text-body">
-          Tap to put one on your board, or take it off. Your sets are always kept.
-        </p>
       </header>
-
-      {only && yours.length > 1 && (
-        <section className="pb-6">
-          <h2 className="px-2 pb-2 text-xl font-semibold tracking-tight text-ink">Your order</h2>
-          <OrderList exercises={yours} />
-          <p className="px-2 pt-2 text-sm text-body">
-            Drag a row by its handle. The board follows this order, and logging never changes it.
-          </p>
-        </section>
-      )}
 
       <div className="px-2 pb-5">
         <input
@@ -83,18 +68,17 @@ export function ExercisePicker() {
         <div className="flex flex-col gap-6">
           {groups.map((group) => (
             <section key={group.pattern}>
-              <h2 className="px-2 pb-2 text-xl font-semibold tracking-tight text-ink">
-                {patternLabel(group.pattern)}
-              </h2>
-              <ul className="divide-y divide-line overflow-hidden rounded-card bg-card">
-                {group.exercises.map((exercise) => (
-                  <CatalogueRow
-                    key={exercise.id}
-                    exercise={exercise}
-                    listed={catalogue.listed.has(exercise.id)}
-                  />
-                ))}
-              </ul>
+              {/* With one pattern open, the page title already names it. */}
+              {only === null && (
+                <h2 className="px-2 pb-2 text-xl font-semibold tracking-tight text-ink">
+                  {patternLabel(group.pattern)}
+                </h2>
+              )}
+              <PatternList
+                catalogue={group.exercises}
+                yours={catalogue.yours.filter((exercise) => exercise.pattern === group.pattern)}
+                searching={needle !== ""}
+              />
             </section>
           ))}
         </div>
@@ -115,87 +99,73 @@ export function ExercisePicker() {
   );
 }
 
-// One catalogue row. The whole row is the control, so it's easy to hit one-handed, and it says
-// what it is now rather than what tapping will do — the tick is the state, not a promise.
-function CatalogueRow({ exercise, listed }: { exercise: Exercise; listed: boolean }) {
-  const [failed, setFailed] = useState(false);
-
-  async function toggle() {
-    setFailed(false);
-    try {
-      if (listed) await removeFromList(exercise.id);
-      else await addToList(exercise.id, exercise.pattern);
-    } catch {
-      setFailed(true);
-    }
-  }
-
-  return (
-    <li>
-      <button
-        type="button"
-        aria-pressed={listed}
-        onClick={() => void toggle()}
-        className="flex min-h-16 w-full touch-manipulation items-center justify-between gap-4 px-6 py-3 text-left active:bg-page"
-      >
-        <span className="min-w-0 flex-1">
-          <span className="block text-base font-semibold text-ink">{exercise.name}</span>
-          {failed && (
-            <span role="alert" className="block text-sm font-semibold text-negative-deep">
-              Couldn&apos;t save that. Try again.
-            </span>
-          )}
-        </span>
-        <span
-          aria-hidden
-          className={`inline-flex h-9 shrink-0 items-center rounded-pill px-4 text-sm font-semibold ${
-            listed ? "bg-primary-pale text-ink-deep" : "bg-page text-body"
-          }`}
-        >
-          {listed ? "On board ✓" : "Add"}
-        </span>
-      </button>
-    </li>
-  );
-}
-
-// Your order, dragged into shape. The fiddly arithmetic — which row a drag has landed on — is
-// `dropIndex` in the domain; this measures the rows and moves them.
+// One pattern's list: your picks first, in your order, then the rest of the catalogue. Tapping a
+// row adds it or takes it off; an added row slides up to the end of your picks (where the board
+// puts it) and a removed one slides back to its catalogue place. Your picks carry a handle for
+// dragging them into order — the fiddly arithmetic is `dropIndex` in the domain; this measures
+// the rows and moves them.
 //
-// Only the handle starts a drag (`touch-action: none` on it alone), so a finger anywhere else on
-// the list scrolls the page as it always did. Nothing is written until you let go, so one gesture
-// is one write, and a drag you abandon costs nothing.
-function OrderList({ exercises }: { exercises: Exercise[] }) {
+// Only a handle starts a drag (`touch-action: none` on it alone), so a finger anywhere else scrolls
+// the page. Nothing is written until you let go, so one gesture is one write. While rows are
+// moving, taps are ignored for a moment: the row that slides under your thumb can't be toggled by
+// accident.
+function PatternList({
+  catalogue,
+  yours,
+  searching,
+}: {
+  // This pattern's catalogue, already filtered by any search.
+  catalogue: Exercise[];
+  // Your picks in this pattern, in your order.
+  yours: Exercise[];
+  searching: boolean;
+}) {
   const [drag, setDrag] = useState<{ id: string; from: number; dy: number; heights: number[] } | null>(
     null,
   );
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   // The order you just dropped, shown until the database read catches up. Without it the list snaps
   // back to the old order for a frame on release, and the row you dropped jumps twice. `basedOn` is
   // the order the read was still showing at that moment, so the override expires by itself the
   // instant the read changes — whether that's this write landing or anything else moving a row.
   const [dropped, setDropped] = useState<{ order: string[]; basedOn: string } | null>(null);
+  const [justAdded, setJustAdded] = useState<string | null>(null);
   const rows = useRef(new Map<string, HTMLLIElement>());
   const startY = useRef(0);
+  const quietUntil = useRef(0);
 
-  const liveOrder = exercises.map((exercise) => exercise.id).join();
-  const ordered = useMemo(() => {
-    if (dropped === null || dropped.basedOn !== liveOrder) return exercises;
-    const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
-    const rearranged = dropped.order.flatMap((id) => {
-      const exercise = byId.get(id);
-      return exercise ? [exercise] : [];
-    });
-    return rearranged.length === exercises.length ? rearranged : exercises;
-  }, [dropped, liveOrder, exercises]);
+  const { onBoard, rest } = splitPicks(catalogue, yours);
+  const liveOrder = onBoard.map((exercise) => exercise.id).join();
+  // Rows slide only when your picks change membership, never on a reorder.
+  const flip = useFlip(onBoard.map((exercise) => exercise.id).sort().join());
+
+  const ordered = inDroppedOrder(onBoard, dropped, liveOrder);
 
   const ids = ordered.map((exercise) => exercise.id);
   const to = drag ? dropIndex(drag.heights, drag.from, drag.dy) : -1;
 
+  // `at` is the tap's event time, so the guard compares taps with each other, not with a clock.
+  async function toggle(exercise: Exercise, listed: boolean, at: number) {
+    if (drag !== null || at < quietUntil.current) return;
+    quietUntil.current = at + FLIP_MS + 150;
+    setFailed(null);
+    try {
+      if (listed) {
+        await removeFromList(exercise.id);
+      } else {
+        await addToList(exercise.id, exercise.pattern);
+        setJustAdded(exercise.id);
+        setTimeout(() => setJustAdded((id) => (id === exercise.id ? null : id)), FLIP_MS + 350);
+      }
+    } catch {
+      setFailed(exercise.id);
+    }
+  }
+
   function begin(event: React.PointerEvent, id: string, from: number) {
     const heights = ids.map((rowId) => rows.current.get(rowId)?.getBoundingClientRect().height ?? 0);
     startY.current = event.clientY;
-    setFailed(false);
+    setFailed(null);
     setDrag({ id, from, dy: 0, heights });
     // Capture keeps the moves coming to this handle even when the finger wanders off it. A
     // synthetic pointer has nothing to capture, so it can throw; the drag then still works as long
@@ -221,12 +191,12 @@ function OrderList({ exercises }: { exercises: Exercise[] }) {
     try {
       await setListOrder(moved);
     } catch {
-      setFailed(true);
+      setFailed(id);
       setDropped(null); // nothing was stored, so show what really is stored
     }
   }
 
-  // Where a row sits while another is being dragged over it: the ones it has passed step aside by
+  // Where a pick sits while another is being dragged over it: the ones it has passed step aside by
   // exactly the dragged row's height, so the gap is always where the row will land.
   function shift(index: number): number {
     if (!drag || index === drag.from) return 0;
@@ -236,66 +206,116 @@ function OrderList({ exercises }: { exercises: Exercise[] }) {
     return 0;
   }
 
-  return (
-    <>
-      {failed && (
-        <p role="alert" className="px-2 pb-2 text-sm font-semibold text-negative-deep">
-          Couldn&apos;t save that order. Try again.
-        </p>
-      )}
-      <ul
-        // select-none always: a finger resting on a row should never start selecting its text.
-        className="divide-y divide-line select-none overflow-hidden rounded-card bg-card"
+  function rowRef(id: string) {
+    const setFlip = flip(id);
+    return (el: HTMLLIElement | null) => {
+      setFlip(el);
+      if (el) rows.current.set(id, el);
+      else rows.current.delete(id);
+    };
+  }
+
+  function toggleButton(exercise: Exercise, listed: boolean) {
+    return (
+      <button
+        type="button"
+        aria-pressed={listed}
+        onClick={(event) => void toggle(exercise, listed, event.timeStamp)}
+        className={`flex min-h-16 min-w-0 flex-1 touch-manipulation items-center justify-between gap-4 py-3 pl-6 text-left active:bg-page ${
+          listed && !searching ? "pr-1" : "pr-6"
+        }`}
       >
-        {ordered.map((exercise, index) => {
-          const dragging = drag?.id === exercise.id;
-          return (
-            <li
-              key={exercise.id}
-              ref={(el) => {
-                if (el) rows.current.set(exercise.id, el);
-                else rows.current.delete(exercise.id);
-              }}
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-semibold text-ink">{exercise.name}</span>
+          {failed === exercise.id && (
+            <span role="alert" className="block text-sm font-semibold text-negative-deep">
+              Couldn&apos;t save that. Try again.
+            </span>
+          )}
+        </span>
+        <span
+          aria-hidden
+          className={`inline-flex h-9 shrink-0 items-center rounded-pill px-4 text-sm font-semibold ${
+            listed ? "bg-primary-pale text-ink-deep" : "bg-page text-body"
+          }`}
+        >
+          {listed ? "On board ✓" : "Add"}
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    // select-none always: a finger resting on a row should never start selecting its text.
+    <ul className="divide-y divide-line select-none overflow-hidden rounded-card bg-card">
+      {ordered.map((exercise, index) => {
+        const dragging = drag?.id === exercise.id;
+        return (
+          <li key={exercise.id} ref={rowRef(exercise.id)}>
+            <div
               style={{ transform: `translateY(${dragging ? drag.dy : shift(index)}px)` }}
-              className={`relative flex min-h-16 items-center gap-2 py-2 pr-2 pl-6 ${
+              className={`relative flex items-center pr-2 ${
                 dragging
                   ? "z-10 bg-line shadow-2xl"
                   : drag
                     ? "transition-transform duration-150"
-                    : ""
+                    : // A new pick glows briefly across the whole row, so your eye can follow it up.
+                      `transition-colors duration-700 ${justAdded === exercise.id ? "bg-primary-pale/60" : ""}`
               }`}
             >
-              <span className="min-w-0 flex-1 text-base font-semibold text-ink">{exercise.name}</span>
-              <button
-                type="button"
-                aria-label={`Reorder ${exercise.name}`}
-                style={{ touchAction: "none" }}
-                onPointerDown={(event) => begin(event, exercise.id, index)}
-                onPointerMove={(event) =>
-                  setDrag((current) =>
-                    current && current.id === exercise.id
-                      ? { ...current, dy: event.clientY - startY.current }
-                      : current,
-                  )
-                }
-                onPointerUp={() => void end(exercise.id)}
-                onPointerCancel={() => void end(exercise.id)}
-                // Without a pointer: the arrow keys do the same one step at a time.
-                onKeyDown={(event) => {
-                  if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-                  event.preventDefault();
-                  void moveInList(exercise.id, event.key === "ArrowUp" ? "up" : "down");
-                }}
-                className="flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-pill text-body active:bg-line"
-              >
-                <GripIcon />
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </>
+              {toggleButton(exercise, true)}
+              {!searching && (
+                <button
+                  type="button"
+                  aria-label={`Reorder ${exercise.name}`}
+                  style={{ touchAction: "none" }}
+                  onPointerDown={(event) => begin(event, exercise.id, index)}
+                  onPointerMove={(event) =>
+                    setDrag((current) =>
+                      current && current.id === exercise.id
+                        ? { ...current, dy: event.clientY - startY.current }
+                        : current,
+                    )
+                  }
+                  onPointerUp={() => void end(exercise.id)}
+                  onPointerCancel={() => void end(exercise.id)}
+                  // Without a pointer: the arrow keys do the same one step at a time.
+                  onKeyDown={(event) => {
+                    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                    event.preventDefault();
+                    void moveInList(exercise.id, event.key === "ArrowUp" ? "up" : "down");
+                  }}
+                  className="flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-pill text-body active:bg-line"
+                >
+                  <GripIcon />
+                </button>
+              )}
+            </div>
+          </li>
+        );
+      })}
+      {rest.map((exercise) => (
+        <li key={exercise.id} ref={rowRef(exercise.id)} className="flex">
+          {toggleButton(exercise, false)}
+        </li>
+      ))}
+    </ul>
   );
+}
+
+// Your picks as last dropped, until the read catches up (see `dropped` in PatternList).
+function inDroppedOrder(
+  onBoard: Exercise[],
+  dropped: { order: string[]; basedOn: string } | null,
+  liveOrder: string,
+): Exercise[] {
+  if (dropped === null || dropped.basedOn !== liveOrder) return onBoard;
+  const byId = new Map(onBoard.map((exercise) => [exercise.id, exercise]));
+  const rearranged = dropped.order.flatMap((id) => {
+    const exercise = byId.get(id);
+    return exercise ? [exercise] : [];
+  });
+  return rearranged.length === onBoard.length ? rearranged : onBoard;
 }
 
 function GripIcon() {
