@@ -233,8 +233,8 @@ end-to-end on a real device.
 3. Patterns, staleness sort, coverage strip
 4. **My exercises**: pick your list from the catalogue, order it yourself, and the board
    shows that list in that order
-5. PR flash, a week calendar on the session summary, mastery levels, and a recap of the
-   finished session (PRs, total weight lifted)
+5. PR flash, a week calendar on the session summary, mastery levels, and a recap at the top
+   of a session's summary once it's over (total weight lifted, PRs, level-ups)
 6. Supabase + outbox sync + PWA install + `navigator.storage.persist()`
 
 **Current milestone: 5**

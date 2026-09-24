@@ -2,10 +2,11 @@
 
 import { useMemo } from "react";
 import { groupByDay } from "@/lib/domain/history";
-import { historyPRs, type PR } from "@/lib/domain/prs";
+import { historyPRs } from "@/lib/domain/prs";
 import type { SetLog } from "@/lib/domain/types";
-import { formatSet, formatTime, kindLabel, prKindLabel } from "@/lib/format";
+import { formatSet, formatTime, kindLabel } from "@/lib/format";
 import { deleteSet } from "@/lib/writes";
+import { PRPill } from "./PRPill";
 
 // Every set of this exercise, live, under a heading for each day it was done (Today,
 // Yesterday, a weekday, or a date). Seeing a row appear is the confirmation that a tap
@@ -59,19 +60,5 @@ export function SetHistory({ history, now }: { history: SetLog[]; now: number })
         </div>
       )}
     </section>
-  );
-}
-
-// Quiet on purpose: the flash was the celebration; this is the lasting mark.
-function PRPill({ prs }: { prs: PR[] | undefined }) {
-  if (prs === undefined) return null;
-  return (
-    <span
-      role="img"
-      aria-label={`Record: ${prs.map((pr) => prKindLabel(pr.kind)).join(", ")}`}
-      className="rounded-pill bg-primary-pale px-2 py-0.5 text-xs font-bold text-ink-deep"
-    >
-      PR
-    </span>
   );
 }

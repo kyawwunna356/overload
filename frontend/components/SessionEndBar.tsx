@@ -27,6 +27,8 @@ export function SessionEndBar({ sessionId }: { sessionId: string }) {
     setFailed(false);
     try {
       await endSession(session);
+      // The recap appears at the top of the summary; bring it into view.
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       setFailed(true);
     }

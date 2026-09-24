@@ -10,13 +10,12 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
-  23–27 (the PR domain, flash, history marks, week calendar and mastery levels) are built.
-- **Last commit:** `feature: Add mastery levels to the log sheet` (this one).
-- **Next: Ticket 28, the session recap page** (`/recap?id=…`, opened by Finish): PRs hit, total
-  weight lifted, the week strip and any level-ups (`masteryLevel` before and after the session).
-  Then the milestone 5 device check (29). Milestone 6 is sync and install (Supabase, outbox flush,
-  PWA install, `navigator.storage.persist()`).
-- **Tests:** 280 Vitest tests, domain layer only.
+  23–28 (the PR domain, flash, history marks, week calendar, mastery levels and the recap) are
+  built.
+- **Last commit:** `feature: Show a recap on the session summary once it's over` (this one).
+- **Next: the milestone 5 device check** (Ticket 29). Milestone 6 is sync and install (Supabase,
+  outbox flush, PWA install, `navigator.storage.persist()`).
+- **Tests:** 290 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -51,7 +50,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   Tapping the session timer opens it; when no session is active, the board shows
   "Last session · <day> ›" instead, linking to the most recent one. Under the header, a **week
   strip**: the session's week, Monday to Sunday, with trained days (any set) filled green and the
-  session's own day a green outline. Days off are plain grey; no count, no target.
+  session's own day a green outline. Days off are plain grey; no count, no target. Once the
+  session is over (Finish, or the 90-minute gap), a **recap card** sits above the strip: the total
+  weight lifted (`8,508 kg`, every set, warmups included), the records broken, and the lifts that
+  reached a new level. Empty parts are left out. Finish shows it at once and scrolls up to it.
 - **End session** (a bar pinned to the bottom of the summary, only for the active session):
   **End session** writes nothing; it opens a sheet over a dimmed page: **End this session?**, a
   red **Finish session** and, below it, **Resume session**. Resume (or tapping the dimmed page)
@@ -74,7 +76,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`. `useCoverage` combines the active
+  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`, `recap`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
@@ -82,8 +84,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** the session recap page,
-Supabase sync, PWA install, and the history page.
+**Not built yet:** Supabase sync, PWA install, and the history page.
 
 ## Decisions worth remembering
 
@@ -202,6 +203,23 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 28: Session recap — what the workout was worth, on the summary once it's over
+`feature: Show a recap on the session summary once it's over` · 2026-09-24
+
+- The user chose the summary over a separate `/recap` page: Finish turns the summary into the
+  recap in place, so there's no new route to preload for offline. CLAUDE.md's build step 5 says so.
+- `lib/domain/recap.ts`: `sessionRecap(session, history)`: total kg (Σ weight × reps, warmups
+  included, bodyweight 0), `sessionPRs` judged against the sets before the session, and level-ups
+  (`masteryLevel` before vs through the session). 10 tests.
+- `useSessionRecap` reads each exercise's history up to the session's last set through the
+  `[exercise_id+logged_at]` index. `SessionRecap` decides "over" from `useActiveSession`, the same
+  live clock as the End bar, so a gap-closed session's recap appears the instant the bar goes.
+- `PRPill` moved to its own component, shared by the history and the recap. `SessionEndBar`
+  scrolls to the top after Finish.
+- Checked in headless Chrome: a seeded gap-closed session (8,508 kg against the rows' 8,507.5, two
+  records, six lifts to Level 3), no card while active, and End → Finish showing the recap with a
+  new record and a first-ever lift at Level 1.
 
 ### Ticket 27: Mastery levels — how long you've been doing a lift
 `feature: Add mastery levels to the log sheet` · 2026-09-24

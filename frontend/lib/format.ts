@@ -74,6 +74,12 @@ export function masteryLine(mastery: Mastery): string {
   return `${countLabel(mastery.sessions, 'session')} · ${toGo} more to level ${mastery.level + 1}`;
 }
 
+// "4,215 kg": whole kilos with fixed en-US grouping, so the phone's locale can't change it.
+const KG_GROUPING = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+export function formatKg(total: number): string {
+  return `${KG_GROUPING.format(Math.round(total))} kg`;
+}
+
 // "1 set", "12 sets", "0 exercises" — every word used here pluralises with an "s".
 export function countLabel(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? '' : 's'}`;

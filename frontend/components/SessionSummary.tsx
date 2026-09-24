@@ -15,6 +15,7 @@ import {
 } from "@/lib/domain/sessions";
 import { BackLink } from "./BackLink";
 import { SessionEndBar } from "./SessionEndBar";
+import { SessionRecap } from "./SessionRecap";
 import { WeekStrip } from "./WeekStrip";
 
 // What you did in one session, chosen by `?id=` in the URL (a session's id is its first set's
@@ -67,6 +68,7 @@ export function SessionSummary() {
             )}
           </header>
 
+          <SessionRecap summary={summary} />
           <WeekStrip anchor={summary.session.started_at} />
 
           {summary.groups.map((group) => (
