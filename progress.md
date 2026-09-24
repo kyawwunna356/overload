@@ -10,12 +10,12 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
-  23–28 (the PR domain, flash, history marks, week calendar, mastery levels and the recap) are
-  built.
-- **Last commit:** `feature: Show a recap on the session summary once it's over` (this one).
-- **Next: the milestone 5 device check** (Ticket 29). Milestone 6 is sync and install (Supabase,
+  23–29 (the PR domain, flash, history marks, week calendar, mastery levels, the recap and swipe
+  to delete) are built.
+- **Last commit:** `feature: Swipe a set left in the history to delete it` (this one).
+- **Next: the milestone 5 device check** (Ticket 30). Milestone 6 is sync and install (Supabase,
   outbox flush, PWA install, `navigator.storage.persist()`).
-- **Tests:** 290 Vitest tests, domain layer only.
+- **Tests:** 303 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -36,7 +36,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   (2.5 kg, ±1 rep), tap a number to type, kind chips (warmup / working / drop / failure)
   that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
   last set. Below it, the full history grouped by day (Today, Yesterday, weekday, then short
-  dates like "13 Sep") with delete. The header reads `Squat · Level 3`; tapping the dotted
+  dates like "13 Sep"). Swipe a set left to delete it: past halfway or a flick deletes, less
+  springs back, and scrolling never deletes; a Delete button appears only on keyboard/VoiceOver
+  focus. The header reads `Squat · Level 3`; tapping the dotted
   "Level 3" shows a small label, `6 sessions · 4 more to level 4`, and a tap anywhere hides it.
 - **Coverage strip** (top of the board, only while a session is active): six pills, one per
   pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
@@ -76,7 +78,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`, `recap`. `useCoverage` combines the active
+  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`, `recap`, `swipe`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
@@ -203,6 +205,24 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 29: Swipe to delete — swipe a set left in the history to delete it
+`feature: Swipe a set left in the history to delete it` · 2026-09-24
+
+- The user asked for swipeable rows; no dependency, the same hand-rolled pointer-event approach
+  as the drag reorder. `lib/domain/swipe.ts` decides: `gestureAxis` (commits to swipe or scroll
+  once past 10px, and a scroll stays a scroll), `swipeOffset` (left only, clamped) and
+  `swipeOutcome` (past halfway, or a flick over 0.5 px/ms that travelled 40px). 13 tests.
+- `SwipeToDelete` wraps each history row over a red Delete panel, with `touch-action: pan-y` so
+  the browser keeps vertical scrolling. A pause before lifting cancels a flick. Reduced motion
+  deletes without the slide.
+- The ✕ buttons are gone; an `sr-only` Delete button shows on focus for VoiceOver and keyboards.
+  The device check was renumbered to Ticket 30.
+- Checked with CDP touch events: 40% springs back, a vertical drag scrolls, a right swipe and a
+  25px flick do nothing, a 70px flick and a 60% swipe delete (with outbox rows), and the focused
+  button deletes.
+- **Port 3000 on this machine is `next start`**, so after a change it needs `next build` and a
+  restart before the phone sees it (the tunnel forwards 3000).
 
 ### Ticket 28: Session recap — what the workout was worth, on the summary once it's over
 `feature: Show a recap on the session summary once it's over` · 2026-09-24
