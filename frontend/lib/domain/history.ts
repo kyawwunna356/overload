@@ -58,9 +58,9 @@ export function dayLabel(timestamp: number, now: number): string {
   return day.year === today.year ? date : `${date} ${day.year}`;
 }
 
-type LocalDate = { year: number; month: number; date: number };
+export type LocalDate = { year: number; month: number; date: number };
 
-function localDate(timestamp: number): LocalDate {
+export function localDate(timestamp: number): LocalDate {
   const d = new Date(timestamp);
   return { year: d.getFullYear(), month: d.getMonth(), date: d.getDate() };
 }
@@ -71,7 +71,7 @@ function dayNumber(d: LocalDate): number {
   return Date.UTC(d.year, d.month, d.date) / DAY_MS;
 }
 
-function dayKey(d: LocalDate): string {
+export function dayKey(d: LocalDate): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.year}-${pad(d.month + 1)}-${pad(d.date)}`;
 }

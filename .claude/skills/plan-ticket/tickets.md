@@ -56,8 +56,8 @@ never reorders anything. See CLAUDE.md's UI rule for the board and Hard Rule 3.
 ## Milestone 5 — Rewards
 
 The payoff layer, all of it derived from `set_logs` — no schema change and no Dexie version bump in the
-whole milestone. Two decisions shaped it (the user's): the weekly ring is a **count, not a quota**, scaled
-to your own recent habit rather than a target the app invented, because an empty arc against a fixed 3 is
+whole milestone. Two decisions shaped it (the user's): the week is shown with **no target** — the weekly
+ring was dropped for a plain calendar of the days you trained, because an empty arc against a number is
 loss aversion however kind the words are; and a record is **marked permanently** in the history, not only
 flashed, which a set's record status allows because it is only ever judged against sets earlier than itself.
 
@@ -66,8 +66,8 @@ flashed, which a set's record status allows because it is only ever judged again
 | 23 | PR domain — weight, reps and e1RM records (pure, tested) | done |
 | 24 | PR flash — the reward the moment you log a record | done |
 | 25 | PR marks — a durable `PR` pill in the exercise's history | done |
-| 26 | The week's ring — sessions this week, scaled to your habit | not started |
-| 27 | Mastery levels — how long you've been doing a lift | not started |
+| 26 | Week calendar — the days you trained this week, on the session summary | done |
+| 27 | Mastery levels — how long you've been doing a lift | next |
 | 28 | Session recap — what the workout was worth, opened by Finish (`/recap?id=…`) | not started |
 | 29 | On-device check — run milestone 5 on the iPhone | not started |
 

@@ -10,12 +10,12 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
-  23–25 (the PR domain, flash and history marks) are built.
-- **Last commit:** `feature: Mark record sets with a PR pill in the history` (this one).
-- **Next: Ticket 26, the week's ring.** After that: mastery levels (27), the session recap page
-  (28, `/recap?id=…`, opened by Finish), then the milestone 5 device check (29). Milestone 6 is sync and install (Supabase, outbox flush, PWA install,
+  23–26 (the PR domain, flash, history marks and the week calendar) are built.
+- **Last commit:** `feature: Show the week's training days on the session summary` (this one).
+- **Next: Ticket 27, mastery levels.** After that: the session recap page (28, `/recap?id=…`,
+  opened by Finish), then the milestone 5 device check (29). Milestone 6 is sync and install (Supabase, outbox flush, PWA install,
   `navigator.storage.persist()`).
-- **Tests:** 244 Vitest tests, domain layer only.
+- **Tests:** 262 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -46,7 +46,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   length is the whole workout. While the session is still running the page counts up live
   (`Today 6:20 PM · 42:10`) instead of showing a frozen length. Read-only apart from the bottom bar below.
   Tapping the session timer opens it; when no session is active, the board shows
-  "Last session · <day> ›" instead, linking to the most recent one.
+  "Last session · <day> ›" instead, linking to the most recent one. Under the header, a **week
+  strip**: the session's week, Monday to Sunday, with trained days (any set) filled green and the
+  session's own day a green outline. Days off are plain grey; no count, no target.
 - **End session** (a bar pinned to the bottom of the summary, only for the active session):
   **End session** writes nothing; it opens a sheet over a dimmed page: **End this session?**, a
   red **Finish session** and, below it, **Resume session**. Resume (or tapping the dimmed page)
@@ -69,7 +71,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`. `useCoverage` combines the active
+  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
@@ -77,7 +79,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** the session recap page, weekly ring, mastery,
+**Not built yet:** the session recap page, mastery,
 Supabase sync, PWA install, and the history page.
 
 ## Decisions worth remembering
@@ -181,9 +183,9 @@ These aren't obvious from the code and shaped later work.
   the tint are the only signal. Six pills including Core wrap to two rows at phone width.
 - Tickets 7, 12, 16 and 22 (the on-device checks for milestones 1–4) have no code commit: the
   user confirmed each by hand on the iPhone.
-- **Milestone 5 has two decisions of the user's baked into the plan** (`tickets.md`): the weekly
-  ring (Ticket 26) is a *count*, scaled to your own recent habit, not a quota against a fixed
-  target — an empty arc against an invented number is loss aversion however it's worded; and a PR
+- **Milestone 5 has two decisions of the user's baked into the plan** (`tickets.md`): the week is
+  shown with *no target* — the weekly ring was dropped for a plain calendar of trained days
+  (Ticket 26), since an empty arc against a number is loss aversion however it's worded; and a PR
   is marked *permanently* in history (Ticket 25), not only flashed, which `detectPR` allows because
   a set is only ever judged against sets strictly earlier than itself, so beating a record later
   doesn't unmark the set that held it.
@@ -197,6 +199,21 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 26: Week calendar — the days you trained this week, on the session summary
+`feature: Show the week's training days on the session summary` · 2026-09-24
+
+- Replaces the weekly ring, which the user dropped: a plain calendar has nothing to fall short of.
+  CLAUDE.md's build order and domain contract, and `tickets.md`, now say so.
+- `lib/domain/week.ts`: `weekOf(anchor, setTimes, now)` (seven local days, Monday first, with
+  trained / anchor / future flags) and `weekRange(anchor)` (Monday 00:00 to the next). Reuses
+  `localDate` / `dayKey`, now exported from `history.ts`. 18 tests, run in five timezones including
+  daylight-saving weeks.
+- `useWeek` reads one week of sets through the `logged_at` index, live; `WeekStrip` draws it under
+  the summary's header. The session's own day is a green outline (the user's choice, after a
+  filled-and-ringed first try), other trained days are filled.
+- Checked in headless Chrome: the latest seeded session, an older one showing its own week, and
+  today's session after logging a set.
 
 ### Ticket 25: PR marks — a durable PR pill in the exercise's history
 `feature: Mark record sets with a PR pill in the history` · 2026-09-24

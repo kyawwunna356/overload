@@ -15,6 +15,7 @@ import {
 } from "@/lib/domain/sessions";
 import { BackLink } from "./BackLink";
 import { SessionEndBar } from "./SessionEndBar";
+import { WeekStrip } from "./WeekStrip";
 
 // What you did in one session, chosen by `?id=` in the URL (a session's id is its first set's
 // id). A static page that reads the id in the browser, so it opens with no signal, and every
@@ -65,6 +66,8 @@ export function SessionSummary() {
               </p>
             )}
           </header>
+
+          <WeekStrip anchor={summary.session.started_at} />
 
           {summary.groups.map((group) => (
             <section key={group.sets[0].exercise_id} className="overflow-hidden rounded-card bg-card">
