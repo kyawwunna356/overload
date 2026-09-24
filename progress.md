@@ -12,7 +12,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
   23–30 (the PR domain, flash, history marks, week calendar, mastery levels, the recap, swipe
   to delete and the one-list picker) are built.
-- **Last commit:** `feature: Pick and order your exercises in one list` (this one).
+- **Last commit:** `bugfix: Quieten board rows, retire the blue selection, fill a finished day` (this one).
 - **Next: the milestone 5 device check** (Ticket 31). Milestone 6 is sync and install (Supabase,
   outbox flush, PWA install, `navigator.storage.persist()`).
 - **Tests:** 307 Vitest tests, domain layer only.
@@ -21,9 +21,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Board** (`/`): six movement-pattern groups, each holding **the exercises you picked, in the
   order you put them in** — never re-sorted by what you did last, and logging never moves a row.
-  A group you haven't picked for says "No exercises yet." Every row shows the last working set
-  inline (`82.5 kg × 5`, `BW × 9`) and days ago (`2d`) — but never "today", which mid-session
-  every touched row would say. Nothing is folded away: you chose the list.
+  A group you haven't picked for says "No exercises yet." Every row shows its name in white,
+  then — small and faint (`text-mute`) — the last working set (`82.5 kg × 5`, `BW × 9`) and days ago
+  (`2d`, never "today"), and a `›` so it reads as a link. A lift never done shows just its name. Nothing is folded away: you chose the list.
 - **The catalogue and manage screen** (`/exercises`, or `?pattern=…` for one group, titled by that
   pattern and nothing else): 73 exercises across the six patterns, with a search box. Each pattern
   is **one list**: your picks first, in your order, each with `On board ✓` and a grip handle you drag
@@ -34,7 +34,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   handle reorder without a pointer. Handles hide while searching. A group on the board reaches it by the `+` beside its heading,
   or by the full-width "Add exercises" button when the group is still empty.
 - **Log sheet** (`/exercise?id=…`): last working set as large ghost values, ± buttons
-  (2.5 kg, ±1 rep), tap a number to type, kind chips (warmup / working / drop / failure)
+  (2.5 kg, ±1 rep), tap a number to type (the field empties with the value as a faint placeholder — no selection, no focus box; leave it empty and nothing changes), kind chips (warmup / working / drop / failure)
   that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
   last set. Below it, the full history grouped by day (Today, Yesterday, weekday, then short
   dates like "13 Sep"). Swipe a set left to delete it: past halfway or a flick deletes, less
@@ -52,8 +52,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   (`Today 6:20 PM · 42:10`) instead of showing a frozen length. Read-only apart from the bottom bar below.
   Tapping the session timer opens it; when no session is active, the board shows
   "Last session · <day> ›" instead, linking to the most recent one. Under the header, a **week
-  strip**: the session's week, Monday to Sunday, with trained days (any set) filled green and the
-  session's own day a green outline. Days off are plain grey; no count, no target. Once the
+  strip**: the session's week, Monday to Sunday, with trained days (any set) filled green; the
+  session's own day is a green outline while it's still going and fills in once it's over. Days off are plain grey; no count, no target. Once the
   session is over (Finish, or the 90-minute gap), a **recap card** sits above the strip: the total
   weight lifted (`8,508 kg`, every set, warmups included), the records broken, and the lifts that
   reached a new level. Empty parts are left out. Finish shows it at once and scrolls up to it.
@@ -210,6 +210,18 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### UI polish after Ticket 30
+`bugfix: Quieten board rows, retire the blue selection, fill a finished day` · 2026-09-24
+
+- Log sheet: tapping weight or reps no longer selects the number (iOS painted it blue) or shows a
+  focus box. The field empties with the value as a faint placeholder, the ghost colour; typing
+  replaces it, and leaving it empty (or typing then deleting) keeps the value it had.
+- Board rows: the white last-set value clashed with the name, so the value and its age are now small
+  and `text-mute` (the one place that token carries secondary text, by the user's choice), with a
+  `›` chevron; a lift never done shows no dash.
+- Week strip: the session's own day is an outline only while the session is live (same
+  `useActiveSession` clock as the End bar and recap) and fills once it's over.
 
 ### Ticket 30: One list — pick and order your exercises in the same list
 `feature: Pick and order your exercises in one list` · 2026-09-24

@@ -69,7 +69,7 @@ export function SessionSummary() {
           </header>
 
           <SessionRecap summary={summary} />
-          <WeekStrip anchor={summary.session.started_at} />
+          <WeekStrip anchor={summary.session.started_at} sessionId={summary.session.id} />
 
           {summary.groups.map((group) => (
             <section key={group.sets[0].exercise_id} className="overflow-hidden rounded-card bg-card">

@@ -168,6 +168,8 @@ function Stepper({
 }) {
   // What's being typed, while the field has focus; null otherwise, so it shows the value.
   const [draft, setDraft] = useState<string | null>(null);
+  // The value when the field was tapped, to fall back on if you leave it empty.
+  const atFocus = useRef(value);
 
   function nudge(direction: 1 | -1) {
     setDraft(null);
@@ -186,15 +188,28 @@ function Stepper({
           enterKeyHint="done"
           autoComplete="off"
           aria-label={`${label} in ${unit}`}
+          // Tapping empties the field and shows the value faintly behind it, so what you type
+          // replaces it without a selection to paint blue. Leave it empty and nothing changes.
           value={draft ?? format(value)}
-          onFocus={(event) => event.target.select()}
+          placeholder={format(value)}
+          onFocus={() => {
+            atFocus.current = value;
+            setDraft("");
+          }}
           onChange={(event) => {
             setDraft(event.target.value);
             const parsed = parse(event.target.value);
             if (parsed !== null) onChange(parsed);
           }}
-          onBlur={() => setDraft(null)}
-          className={`w-full bg-transparent text-center text-5xl font-black tabular-nums ${
+          onBlur={() => {
+            if ((draft === null || parse(draft) === null) && value !== atFocus.current) {
+              onChange(atFocus.current); // typed, then cleared: keep what was there
+            }
+            setDraft(null);
+          }}
+          // No focus box: the emptied field and its faint placeholder already show where you're
+          // typing.
+          className={`w-full bg-transparent text-center text-5xl font-black tabular-nums outline-none placeholder:text-body ${
             ghost ? "text-body" : "text-ink"
           }`}
         />
