@@ -10,19 +10,21 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 - **Milestone 4 — My exercises is finished** (Tickets 17–22) and was checked on the iPhone, as
   milestones 1–3 were. Milestone 5 (rewards) is broken down into Tickets 23–29 in `tickets.md`;
-  23–26 (the PR domain, flash, history marks and the week calendar) are built.
-- **Last commit:** `feature: Show the week's training days on the session summary` (this one).
-- **Next: Ticket 27, mastery levels.** After that: the session recap page (28, `/recap?id=…`,
-  opened by Finish), then the milestone 5 device check (29). Milestone 6 is sync and install (Supabase, outbox flush, PWA install,
-  `navigator.storage.persist()`).
-- **Tests:** 262 Vitest tests, domain layer only.
+  23–27 (the PR domain, flash, history marks, week calendar and mastery levels) are built.
+- **Last commit:** `feature: Add mastery levels to the log sheet` (this one).
+- **Next: Ticket 28, the session recap page** (`/recap?id=…`, opened by Finish): PRs hit, total
+  weight lifted, the week strip and any level-ups (`masteryLevel` before and after the session).
+  Then the milestone 5 device check (29). Milestone 6 is sync and install (Supabase, outbox flush,
+  PWA install, `navigator.storage.persist()`).
+- **Tests:** 280 Vitest tests, domain layer only.
 
 ## What works today
 
 - **Board** (`/`): six movement-pattern groups, each holding **the exercises you picked, in the
   order you put them in** — never re-sorted by what you did last, and logging never moves a row.
   A group you haven't picked for says "No exercises yet." Every row shows the last working set
-  inline (`82.5 kg × 5`, `BW × 9`) and days ago. Nothing is folded away: you chose the list.
+  inline (`82.5 kg × 5`, `BW × 9`) and days ago (`2d`) — but never "today", which mid-session
+  every touched row would say. Nothing is folded away: you chose the list.
 - **The catalogue and manage screen** (`/exercises`, or `?pattern=…` for one group, titled by that
   pattern): 73 exercises across the six patterns, with a search box. With two or more picks in the
   group it opens with **Your order** — your picks, each with a grip handle you drag to move it — and
@@ -35,7 +37,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   (2.5 kg, ±1 rep), tap a number to type, kind chips (warmup / working / drop / failure)
   that reset to Working, and a "Log set" button pinned to the bottom. One tap repeats the
   last set. Below it, the full history grouped by day (Today, Yesterday, weekday, then short
-  dates like "13 Sep") with delete.
+  dates like "13 Sep") with delete. The header reads `Squat · Level 3`; tapping the dotted
+  "Level 3" shows a small label, `6 sessions · 4 more to level 4`, and a tap anywhere hides it.
 - **Coverage strip** (top of the board, only while a session is active): six pills, one per
   pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
   rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
@@ -71,7 +74,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   template and ~6 weeks of training. Every write is one Dexie transaction over `set_logs`
   and `outbox`. Nothing syncs yet.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
-  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`. `useCoverage` combines the active
+  `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
   reads the current session from Dexie through `sessions.ts` and also returns `last` (the
   most recent session); the summary page uses `useSessionSummary`; `timers.ts` also has
@@ -79,7 +82,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   one Dexie transaction with an outbox row; `sessions.ts` has `endMarkerTime` behind the last.
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`.
 
-**Not built yet:** the session recap page, mastery,
+**Not built yet:** the session recap page,
 Supabase sync, PWA install, and the history page.
 
 ## Decisions worth remembering
@@ -199,6 +202,20 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 27: Mastery levels — how long you've been doing a lift
+`feature: Add mastery levels to the log sheet` · 2026-09-24
+
+- `lib/domain/mastery.ts`: `masteryLevel(exerciseId, logs)` counts the distinct local days you did
+  a lift (any set) and turns them into a level that only rises — level L at L·(L+1)/2 sessions, so
+  1, 3, 6, 10, 15 … with no cap. 18 tests, run in three timezones.
+- `useLogSheet` computes it from the history it already reads; no new query. The seed tops out at
+  6 days per lift, so seeded lifts sit at level 3 or below.
+- The user found a second header line too cramped, so `LevelBadge` shows just `Level 3`
+  (dotted underline) and a tap reveals the sessions line as a small label; a tap anywhere hides it.
+- Also at the user's request: board rows no longer say "today", only `2d` and older.
+- Squat and hinge were considered for merging into "Legs" and kept apart: the coverage strip's
+  value is telling a squat day from a hinge day.
 
 ### Ticket 26: Week calendar — the days you trained this week, on the session summary
 `feature: Show the week's training days on the session summary` · 2026-09-24

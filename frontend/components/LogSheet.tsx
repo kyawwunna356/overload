@@ -5,6 +5,7 @@ import { patternLabel } from "@/lib/format";
 import { useLogSheet } from "@/lib/hooks/useLogSheet";
 import { useNow } from "@/lib/hooks/useNow";
 import { BackLink } from "./BackLink";
+import { LevelBadge } from "./LevelBadge";
 import { RestTimer } from "./RestTimer";
 import { SessionHeader } from "./SessionHeader";
 import { SetEntry } from "./SetEntry";
@@ -38,7 +39,15 @@ export function LogSheet() {
               <h1 className="font-display text-4xl font-black leading-none tracking-tight break-words text-ink">
                 {data.exercise.name}
               </h1>
-              <p className="pt-2 text-body">{patternLabel(data.exercise.pattern)}</p>
+              <p className="pt-2 text-body">
+                {patternLabel(data.exercise.pattern)}
+                {data.mastery.level > 0 && (
+                  <>
+                    {" · "}
+                    <LevelBadge mastery={data.mastery} />
+                  </>
+                )}
+              </p>
             </div>
             {/* The rest timer is the prominent counter; the session timer is the quiet one. */}
             <div className="flex shrink-0 flex-col items-end gap-1">

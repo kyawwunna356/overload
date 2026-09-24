@@ -7,6 +7,8 @@ import { formatDaysAgo, formatSet } from "@/lib/format";
 // than text-mute, which is too faint to read in a dim gym.
 export function ExerciseRow({ row }: { row: BoardRow }) {
   const { exercise, lastSet, daysSince } = row;
+  // Only how long ago, never "today": mid-session, every row you've touched would say it.
+  const ago = daysSince === null ? null : formatDaysAgo(daysSince);
   return (
     <li>
       <Link
@@ -18,8 +20,8 @@ export function ExerciseRow({ row }: { row: BoardRow }) {
           <span className="block text-lg font-semibold tabular-nums text-ink">
             {lastSet ? formatSet(lastSet) : "—"}
           </span>
-          {daysSince !== null && (
-            <span className="block text-sm text-body">{formatDaysAgo(daysSince)}</span>
+          {ago !== null && ago !== "today" && (
+            <span className="block text-sm text-body">{ago}</span>
           )}
         </span>
       </Link>

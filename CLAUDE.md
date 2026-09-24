@@ -177,7 +177,7 @@ staleness(exerciseId, logs, now)   // days since last performed → board sort
 coverage(sessionLogs, exercises)   // { squat: true, hinge: false, ... }
 detectPR(set, history)             // weight | reps | e1RM PR → reward moment
 weekOf(anchor, setTimes, now)      // Mon–Sun: which days you trained → week strip
-masteryLevel(exerciseId, logs)     // lifetime session count → level
+masteryLevel(exerciseId, logs)     // days you did it → level (1, 3, 6, 10 … sessions)
 ```
 
 All take data in, return data out. No fetching, no dates from `new Date()` inside —

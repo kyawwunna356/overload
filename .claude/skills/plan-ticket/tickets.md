@@ -67,8 +67,8 @@ flashed, which a set's record status allows because it is only ever judged again
 | 24 | PR flash — the reward the moment you log a record | done |
 | 25 | PR marks — a durable `PR` pill in the exercise's history | done |
 | 26 | Week calendar — the days you trained this week, on the session summary | done |
-| 27 | Mastery levels — how long you've been doing a lift | next |
-| 28 | Session recap — what the workout was worth, opened by Finish (`/recap?id=…`) | not started |
+| 27 | Mastery levels — how long you've been doing a lift | done |
+| 28 | Session recap — what the workout was worth, opened by Finish (`/recap?id=…`) | next |
 | 29 | On-device check — run milestone 5 on the iPhone | not started |
 
 ## Milestone 6 — Sync and install

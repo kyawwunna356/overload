@@ -1,3 +1,4 @@
+import type { Mastery } from './domain/mastery';
 import type { PR, PRKind } from './domain/prs';
 import type { Pattern, SetKind, SetLog } from './domain/types';
 
@@ -65,6 +66,12 @@ export function prValues(pr: PR): string {
   const show = (value: number) =>
     pr.kind === 'reps' ? String(value) : `${formatNumber(Math.round(value * 10) / 10)} kg`;
   return `${show(pr.value)} · was ${show(pr.previous)}`;
+}
+
+// "16 sessions · 5 more to level 6", "1 session · 2 more to level 2".
+export function masteryLine(mastery: Mastery): string {
+  const toGo = mastery.nextLevelAt - mastery.sessions;
+  return `${countLabel(mastery.sessions, 'session')} · ${toGo} more to level ${mastery.level + 1}`;
 }
 
 // "1 set", "12 sets", "0 exercises" — every word used here pluralises with an "s".
