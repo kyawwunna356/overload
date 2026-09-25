@@ -96,10 +96,16 @@ and pulling it into the installed one.
 there are no tombstones. A fresh device's untouched catalogue is replaced by the remote one on
 restore, so no exercise is duplicated.
 
+**Later, for friends (the user's plan):** friends sign in by typing their email. The code already
+supports it. What's missing is an email sender that reaches anyone, since Supabase's built-in one
+only delivers to the project's team. Connect custom SMTP (Resend plus a domain) in the dashboard;
+no code change is needed. Until then the email code is for the user only. Google sign-in is built
+but its dashboard setup is deferred too.
+
 | # | Ticket | Status |
 |---|---|---|
 | 35 | Sync foundation — Supabase schema, RLS, and a local store ready to back up (fake sets dropped, forward-compatibility contract, every row queued) | done |
-| 36 | Back up — sign in with an email code and push the outbox (on `online` and on returning to the app) | next |
-| 37 | Restore — pull from Supabase into a fresh device (last write wins on `updated_at`, `synced_at` cursor) | not started |
+| 36 | Back up — sign in with Google or an email code, and push the outbox (on `online` and on returning to the app) | done |
+| 37 | Restore — pull from Supabase into a fresh device (last write wins on `updated_at`, `synced_at` cursor) | next |
 | 38 | Install — static export on Vercel, manifest, icons, service worker, `storage.persist()` | not started |
 | 39 | On-device check — run milestone 6 on the iPhone, moving to the installed app without losing a set | not started |

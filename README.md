@@ -201,6 +201,22 @@ The app runs fully without a backend; Supabase is the durable copy. To set one u
    from `backend/`.
 3. Copy `frontend/.env.example` to `frontend/.env.local` and fill in the project URL and
    anon key (Project Settings → API).
+4. **Sign-in** (Authentication in the dashboard):
+   - **Google:** in Google Cloud, create an OAuth client of type *Web application* with the
+     redirect URI `https://<ref>.supabase.co/auth/v1/callback`, and publish the consent screen
+     so anyone can sign in. Then enable the Google provider in Supabase with its client ID and
+     secret.
+   - **Email code:** in Email Templates, put `{{ .Token }}` in *Magic Link* and *Confirm
+     signup*, so the email carries a code rather than only a link. Supabase's built-in sender
+     only reaches the project's team; add custom SMTP (for example Resend with your own domain)
+     so it reaches anyone.
+   - **URL Configuration:** add every origin the app runs on to the redirect URLs, with `/**`
+     (for example `http://localhost:3000/**`), or Google can't return to it.
+
+Once signed in, the app backs up in the background: the outbox drains on open, when the phone
+comes back online, when you return to the app, and a few seconds after each write. The first
+account to back up from a phone owns that phone's data, so a friend signing in on it can't
+receive your history.
 
 Migrations are **additive only**: a later one adds tables or nullable/defaulted columns and
 never renames, drops or retypes, so history stored today always stays readable.

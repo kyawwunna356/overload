@@ -13,12 +13,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   the recap, swipe to delete, the one-list picker, the finish moment with confetti and the muscle
   star. **CLAUDE.md now says milestone 6.**
 - **Milestone 6 — Sync and install is under way** (Tickets 35–39 in `tickets.md`).
-- **Last commit:** `feature: Lay the sync foundation — Supabase schema and a clean local store`
-  (this one, Ticket 35). The Supabase project exists, the migration has been run, and all five
-  tables refuse anonymous access. The user was given an SQL check for RLS and last write wins, but
-  hasn't reported its results yet.
-- **Next: Ticket 36 — Back up:** sign in with an email code and push the outbox.
-- **Tests:** 362 Vitest tests, domain layer only.
+- **Last commit:** `feature: Back up to Supabase — sign in with Google or an email code` (this
+  one, Ticket 36). The user signed in on the phone with an email code and reports the backup done.
+  Supabase SMTP goes through Resend with its test sender, so codes reach only the user. Google
+  sign-in is built, but its dashboard setup is deferred.
+- **Ticket 35's SQL check passed** (RLS between two accounts, last write wins, `synced_at`).
+- **Next: Ticket 37 — Restore:** pull into a fresh device (planned; a fresh device adopts the
+  account's catalogue instead of pushing a duplicate).
+- **Tests:** 380 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -95,10 +97,17 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   - Every row that exists is queued in the outbox, catalogue and list included.
   - Every read passes through its table's reader (`lib/domain/rows.ts`) via Dexie's `reading`
     hook.
-  - Nothing is pushed yet.
 - **Supabase:** the five synced tables with RLS, a last-write-wins trigger and a server-set
-  `synced_at` (`backend/supabase/migrations/`). The client is `lib/sync/supabase.ts`, which nothing
-  uses yet. The URL and publishable key live in `frontend/.env.local` (not committed).
+  `synced_at` (`backend/supabase/migrations/`). The URL and publishable key live in
+  `frontend/.env.local` (not committed).
+- **Backup** (`/account`, and a line at the bottom of the board):
+  - Sign in with Google or an emailed code. Google needs its dashboard setup first.
+  - Once signed in, `lib/sync/push.ts` drains the outbox in the background: on open, online,
+    return to the app, sign-in, and 3 s after a write.
+  - The board line reads `Back up ›`, `Backed up ✓`, `N changes waiting` or `Backup paused`.
+  - Sign out keeps every set. The first account to back up owns the phone's data (`overload.owner`
+    in localStorage).
+  - Nothing is pulled back yet (Ticket 37).
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
   `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`, `recap`, `swipe`, `muscles`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
@@ -109,8 +118,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`. No text
   selection or long-press callout (inputs excepted) and no visible scrollbars, app-wide.
 
-**Not built yet:** sign-in and push (Ticket 36), pull and restore (Ticket 37), PWA install
-(Ticket 38), and the history page.
+**Not built yet:** pull and restore (Ticket 37), PWA install (Ticket 38), and the history page.
 
 ## Decisions worth remembering
 
@@ -266,10 +274,45 @@ These aren't obvious from the code and shaped later work.
 - **The pure sync module is `lib/domain/replica.ts`,** not `domain/sync.ts`: the rule check (and a
   reader) would take it for the forbidden `lib/sync` layer.
 
+- **Sign-in is the one written exception to Hard Rule 5** (the user's choice): `/account` awaits
+  Supabase auth and says "No signal…" offline. The UI reaches sync only through `lib/hooks`.
+- **Friends can sign in, each with private data** (CLAUDE.md's intro now says so). Supabase's
+  built-in email reaches only the project's team, and editing templates needs custom SMTP, so
+  email codes go through Resend. Without a domain it reaches only the user; a domain later opens
+  it to friends with no code change. Google (built, setup deferred) needs no email at all.
+- **Email codes, not magic links,** because iOS opens links in Safari rather than the installed
+  app. The code field keeps digits only, and 6–10 of them count as a code.
+- **One owner per phone:** the first account to back up claims the phone's data, so a friend
+  signing in on your phone can't receive your history. A rejected row stays queued and never
+  blocks the others; a batch the server refuses is retried row by row. Postgres won't upsert
+  one id twice in a statement, so `pushBatches` sends one row per id.
+
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 36: Back up — sign in with Google or an email code, and push the outbox
+`feature: Back up to Supabase — sign in with Google or an email code` · 2026-09-25
+
+- `/account` (static): Continue with Google (PKCE; the page exchanges `?code`), or an emailed
+  code. It has plain messages for offline, a wrong code and an unfinished Google sign-in, and
+  Sign out. `BackLink` gained `direct`, so after Google, "Board" doesn't go back to Google's page.
+- Background push, all in `lib/sync/`:
+  - `push.ts` drains the outbox in write order with `pushBatches`. It's single-flight within a
+    tab and across tabs (Web Locks). Rows are cleared only once accepted. It stops on offline,
+    401 or 5xx, and retries row by row on a rejection.
+  - `triggers.ts` handles open, online, visibility, sign-in, and 3 s after an outbox write.
+  - `auth.ts` and `owner.ts`.
+- Hooks: `useSyncAgent` (mounted by `SyncAgent` in the layout), `useAccount` and
+  `useBackupStatus`. The board line is `BackupLine`.
+- `lib/domain`: `pushBatches` in `replica.ts`, and `signin.ts` (email and code helpers,
+  `canPush`, `backupState` / `backupLabel`). 18 new tests.
+- Google's "G" (`GoogleMark`) uses four `google-*` tokens in `theme.css`, the one place the
+  palette isn't ours.
+- Checked in headless Chrome: the line and the page, offline messages, the Google hand-off
+  reaching Supabase (the provider isn't enabled yet), and a failed Google return. The user then
+  signed in on the phone with an email code.
 
 ### Ticket 35: Sync foundation — Supabase schema, RLS, and a local store ready to back up
 `feature: Lay the sync foundation — Supabase schema and a clean local store` · 2026-09-24

@@ -146,6 +146,52 @@ export function seededSetIds(setLogs: readonly SetLog[], outbox: readonly Outbox
   return setLogs.filter((set) => !logged.has(set.id)).map((set) => set.id);
 }
 
+// One request's worth of the outbox: a run of the same table and op, in write order. `items` is
+// one per row id, carrying every outbox row it clears — two queued edits of the same list item
+// go up as one row (Postgres refuses to upsert the same id twice in one statement), and both
+// outbox rows leave once it's accepted.
+export type PushItem = { id: string; outboxIds: string[]; row: RemoteRow | null };
+export type PushBatch = { table: SyncedTable; op: OutboxRow['op']; items: PushItem[] };
+
+// Turns the outbox into requests, oldest first. Runs are never reordered, so a row deleted after
+// it was written is deleted after it was written. An upsert whose payload can't be read is left
+// out and reported, never dropped: it stays in the outbox.
+export function pushBatches(
+  outbox: readonly OutboxRow[],
+  userId: string,
+  maxRows: number,
+): { batches: PushBatch[]; unreadable: string[] } {
+  const ordered = [...outbox].sort(
+    (a, b) => a.created_at - b.created_at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  );
+  const batches: PushBatch[] = [];
+  const unreadable: string[] = [];
+
+  for (const entry of ordered) {
+    const row = entry.op === 'upsert' ? toRemote(entry.table, entry.payload, userId) : null;
+    const id = row === null ? entry.payload.id : row.id;
+    if ((entry.op === 'upsert' && row === null) || typeof id !== 'string') {
+      unreadable.push(entry.id);
+      continue;
+    }
+
+    const last = batches.at(-1);
+    const current =
+      last && last.table === entry.table && last.op === entry.op ? last : undefined;
+    const existing = current?.items.find((item) => item.id === id);
+    if (existing) {
+      // The later write wins within a batch, as it would on the server.
+      existing.outboxIds.push(entry.id);
+      existing.row = row;
+    } else if (current && current.items.length < maxRows) {
+      current.items.push({ id, outboxIds: [entry.id], row });
+    } else {
+      batches.push({ table: entry.table, op: entry.op, items: [{ id, outboxIds: [entry.id], row }] });
+    }
+  }
+  return { batches, unreadable };
+}
+
 // Rows that have never been queued for a push: the catalogue and list, which were written
 // before anything synced. Queueing them makes the outbox the one path to the server.
 export function unqueuedRows<T extends { id: string }>(

@@ -7,14 +7,26 @@ import { useRouter } from "next/navigation";
 // previous page is cached: a plain link would ask the server for it, which fails with no
 // signal. With no history to go back to (a page opened directly), the link's own navigation
 // to `href` applies.
-export function BackLink({ href, label }: { href: string; label: string }) {
+//
+// `direct` skips the history: after a sign-in round trip through Google, going back would land
+// on Google's page (or, in the installed app, leave it).
+export function BackLink({
+  href,
+  label,
+  direct = false,
+}: {
+  href: string;
+  label: string;
+  direct?: boolean;
+}) {
   const router = useRouter();
 
   return (
     <Link
       href={href}
+      replace={direct}
       onClick={(event) => {
-        if (window.history.length > 1) {
+        if (!direct && window.history.length > 1) {
           event.preventDefault();
           router.back();
         }

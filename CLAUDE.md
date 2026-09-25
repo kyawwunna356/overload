@@ -3,7 +3,8 @@
 A personal strength log. Its only job: **show me what I lifted last time, let me record
 today's set in under three seconds, and never make me set anything up.**
 
-Single user, installed as a PWA on iOS, used in a gym basement with no signal.
+Built for me first, installed as a PWA on iOS, used in a gym basement with no signal. Friends
+can sign in too, each with their own private log (RLS); nothing is ever shared between them.
 
 ---
 
@@ -62,6 +63,10 @@ Also re-read the clock on `visibilitychange` so the value snaps to correct on re
 - Every **write** goes to Dexie first, then enqueues an `outbox` row.
 - The UI must never await the network, show a network spinner, or behave differently
   offline. Assume there is no signal.
+- **The one exception (the user's choice):** the sign-in screen (`/account`), used once per
+  device, awaits Supabase auth and says so plainly when offline. Nothing on the logging path
+  does, and backup itself runs in the background. The UI reaches sync only through
+  `lib/hooks`, never by importing `lib/sync` or `@supabase`.
 
 ### 6. The domain layer is pure
 

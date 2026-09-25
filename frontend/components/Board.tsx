@@ -1,6 +1,7 @@
 "use client";
 
 import { useBoard } from "@/lib/hooks/useBoard";
+import { BackupLine } from "./BackupLine";
 import { CoverageStrip } from "./CoverageStrip";
 import { PatternGroup } from "./PatternGroup";
 import { SessionHeader } from "./SessionHeader";
@@ -27,6 +28,7 @@ export function Board() {
           ))}
         </div>
       )}
+      <BackupLine />
     </>
   );
 }

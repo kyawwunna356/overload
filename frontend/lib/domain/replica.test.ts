@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { newerWins, seededSetIds, toLocal, toRemote, unqueuedRows } from './replica';
+import {
+  newerWins,
+  pushBatches,
+  seededSetIds,
+  toLocal,
+  toRemote,
+  unqueuedRows,
+} from './replica';
 import { makeExercise, makeSet, without } from './test-utils';
 import type { OutboxRow, Session, SyncedRow, SyncedTable, Template, TemplateItem } from './types';
 
@@ -139,5 +146,72 @@ describe('unqueuedRows', () => {
     expect(unqueuedRows('templates', [template], [outbox('template_items', 'upsert', { ...item, id: 't1' })])).toEqual([
       template,
     ]);
+  });
+});
+
+describe('pushBatches', () => {
+  const at = (row: OutboxRow, created_at: number): OutboxRow => ({ ...row, id: `${row.id}@${created_at}`, created_at });
+  const shape = (result: ReturnType<typeof pushBatches>) =>
+    result.batches.map((b) => `${b.table}:${b.op}:${b.items.map((i) => i.id).join(',')}`);
+
+  it('keeps write order across tables and ops, one batch per run', () => {
+    const a = makeSet({ logged_at: 1 });
+    const b = makeSet({ logged_at: 2 });
+    const queue = [
+      at(outbox('set_logs', 'upsert', a), 1),
+      at(outbox('set_logs', 'upsert', b), 2),
+      at(outbox('set_logs', 'delete', a), 3),
+      at(outbox('sessions', 'upsert', session), 4),
+      at(outbox('set_logs', 'upsert', b), 5),
+    ];
+    expect(shape(pushBatches(queue, 'u', 200))).toEqual([
+      `set_logs:upsert:${a.id},${b.id}`,
+      `set_logs:delete:${a.id}`,
+      'sessions:upsert:m1',
+      `set_logs:upsert:${b.id}`,
+    ]);
+  });
+
+  it('sorts by created_at whatever order the outbox arrives in', () => {
+    const queue = [at(outbox('sessions', 'upsert', session), 9), at(outbox('templates', 'upsert', template), 1)];
+    expect(shape(pushBatches(queue, 'u', 200))).toEqual(['templates:upsert:t1', 'sessions:upsert:m1']);
+  });
+
+  it('caps a batch at maxRows', () => {
+    const queue = [1, 2, 3, 4, 5].map((t) => at(outbox('set_logs', 'upsert', makeSet({ logged_at: t })), t));
+    expect(pushBatches(queue, 'u', 2).batches.map((b) => b.items.length)).toEqual([2, 2, 1]);
+  });
+
+  it('sends one row per id, the latest, and clears every outbox row for it', () => {
+    const first = at(outbox('template_items', 'upsert', { ...item, sort_order: 0 }), 1);
+    const second = at(outbox('template_items', 'upsert', { ...item, sort_order: 5 }), 2);
+    const [batch] = pushBatches([first, second], 'u', 200).batches;
+    expect(batch.items).toHaveLength(1);
+    expect(batch.items[0].row?.sort_order).toBe(5);
+    expect(batch.items[0].outboxIds).toEqual([first.id, second.id]);
+  });
+
+  it('converts upserts to remote rows owned by the signed-in user, and deletes to ids', () => {
+    const queue = [at(outbox('set_logs', 'upsert', set), 1), at(outbox('set_logs', 'delete', set), 2)];
+    const [upsert, remove] = pushBatches(queue, 'user-uuid', 200).batches;
+    expect(upsert.items[0].row).toMatchObject({ id: set.id, user_id: 'user-uuid' });
+    expect(remove.items[0]).toEqual({ id: set.id, outboxIds: [queue[1].id], row: null });
+  });
+
+  it('leaves an unreadable payload out and reports it', () => {
+    const broken: OutboxRow = {
+      id: 'bad',
+      table: 'set_logs',
+      op: 'upsert',
+      payload: { ...set, logged_at: Number.NaN },
+      created_at: 1,
+    };
+    const result = pushBatches([broken, at(outbox('templates', 'upsert', template), 2)], 'u', 200);
+    expect(result.unreadable).toEqual(['bad']);
+    expect(shape(result)).toEqual(['templates:upsert:t1']);
+  });
+
+  it('returns nothing for an empty outbox', () => {
+    expect(pushBatches([], 'u', 200)).toEqual({ batches: [], unreadable: [] });
   });
 });

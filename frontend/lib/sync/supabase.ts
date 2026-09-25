@@ -8,15 +8,23 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 let client: SupabaseClient | null = null;
 
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// Whether a project is configured, without creating a client (safe while prerendering).
+export function isConfigured(): boolean {
+  return Boolean(url && key);
+}
+
 export function supabase(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
   client ??= createClient(url, key, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      // Sign-in is an emailed code typed into the app, never a link back into it.
+      // Google comes back to /account with a one-time `?code`, which the page exchanges itself
+      // (`finishGoogleSignIn`); PKCE keeps that code useless to anyone but this browser.
+      flowType: 'pkce',
       detectSessionInUrl: false,
     },
   });
