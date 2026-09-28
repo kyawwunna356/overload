@@ -333,6 +333,16 @@ These aren't obvious from the code and shaped later work.
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
 
+### The user's own app icon
+`feature: Use the neon arrow-and-ring artwork as the app icon` · 2026-09-28
+
+- The user supplied a 2048×2048 image: a neon green ring of plates with an arrow breaking out, on
+  near-black. `sips` resized it into `app/apple-icon.png` (180), `app/icon.png` (64) and
+  `public/icons/` (192, 512 and maskable 512). The art already sits inside the maskable safe
+  zone, so it needed no padding.
+- The icon is artwork now, not drawn from the theme tokens. `theme.css` and the README say so,
+  including that iOS needs the app removed and re-added to show a new icon.
+
 ### Vercel publishes the static export as built
 `bugfix: Deploy out/ as built on Vercel so the service worker ships` · 2026-09-28
 

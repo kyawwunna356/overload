@@ -174,10 +174,14 @@ read apart from the green.
 - **Tokens only:** every colour, font and radius is a named token (`bg-page`, `text-ink`,
   `bg-primary`, `rounded-card`…), and components use only those. Tailwind's default palette is
   switched off, and the rule check fails on a raw colour anywhere else.
-- **Three things repeat the page and lime colours as literals,** so change them together:
-  - `app/manifest.webmanifest`;
-  - the icon PNGs;
-  - the four `google-*` tokens for Google's logo, whose colours Google's branding fixes.
+- **Two things repeat colours as literals,** so change them together:
+  - `app/manifest.webmanifest` repeats the page colour;
+  - the four `google-*` tokens hold Google's logo colours, which Google's branding fixes.
+- **The app icon is artwork, not tokens:** a neon arrow-and-ring image, resized into
+  `app/apple-icon.png` (the iPhone home screen), `app/icon.png` (the browser tab) and
+  `public/icons/` (192, 512 and maskable 512). To change it, replace those files from a new
+  square image. iOS keeps its own copy of the icon, so remove the app from the home screen and
+  add it again to see the change.
 
 ## Getting started
 
