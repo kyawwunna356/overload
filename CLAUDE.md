@@ -121,11 +121,14 @@ Supabase Postgres               durable archive only
 
 ```
 app/
-  (app)/page.tsx                 board (home)
-  (app)/exercise/page.tsx        log sheet (?id=… — a static page, so it opens offline)
+  (app)/page.tsx                 board (home) — the Train tab
+  (app)/exercise/page.tsx        log sheet (?id=… — a static page, so it opens offline;
+                                 kept for old links, the sheet is ?log=… over any page)
   (app)/session/page.tsx         session summary (?id=… — a static page, so it opens offline)
-  (app)/exercises/page.tsx       the catalogue — pick what's on your board
-  (app)/history/page.tsx         sessions + per-exercise history
+  (app)/exercises/page.tsx       the catalogue (kept for old links; the sheet is ?edit=…)
+  (app)/history/page.tsx         the History tab: sessions + exercises
+  (app)/history/exercise/page.tsx  exercise detail (?id=…, static like the others)
+  (app)/account/page.tsx         the Me tab: backup, sign-in, install, version
 lib/
   db.ts                          Dexie schema + migrations
   domain/                        PURE. no db, no sync, no react.
@@ -135,8 +138,9 @@ lib/
   hooks/
     useElapsed.ts  useBoard.ts  useActiveSession.ts  useWakeLock.ts
 components/
-  PatternGroup.tsx  ExerciseRow.tsx  SetEntry.tsx
-  RestTimer.tsx  SessionHeader.tsx  CoverageStrip.tsx  PRFlash.tsx
+  PatternGroup.tsx  ExerciseRow.tsx  SetEntry.tsx  RestTimer.tsx
+  TabBar.tsx  Sheet.tsx  SheetHost.tsx  LiveBar.tsx  LiveSession.tsx
+  SetTable.tsx  RecordBanner.tsx  Snackbar.tsx
 ```
 
 ---
@@ -177,6 +181,10 @@ Units are kilograms. Default increment 2.5 kg, reps ±1.
 
 ```ts
 previousSet(exerciseId, logs)      // last WORKING set → prefill values
+previousSession(exerciseId, logs, before, gapMinutes)
+                                   // working sets, in order, of that exercise's most recent
+                                   // earlier session → the Last time column; set N prefills
+                                   // from its set N
 elapsed(sinceTimestamp, now)       // seconds; powers both timers
 assignSession(logs, gapMinutes)    // gap rule → session_id per log
 staleness(exerciseId, logs, now)   // days since last performed → board sort
@@ -195,14 +203,31 @@ pass `now` as an argument so tests are deterministic.
 
 **Board (home).** Grouped by movement pattern. Each group holds the exercises **you picked**,
 in the order **you put them in** — never alphabetically, never re-sorted by what you did last,
-and logging a set never moves a row. A group you haven't picked for is empty and offers to add.
-Each row still shows its last-performed weight inline — value before any tap — and how long ago.
-Coverage strip at top. Session timer is small grey text in the header.
+and logging a set never moves a row. Each row still shows its last-performed weight inline —
+value before any tap — and how long ago (`Last: 82.5 kg × 5 · 4d`, in `text-body`); once done
+this session it reads
+`Today: 3 sets · best 85 kg × 5` with a check instead. The header is the date plus an **Edit**
+button; the week strip sits at the top. Coverage is a ✓ on each pattern heading the session has
+touched. A group you haven't picked for is hidden; an empty board shows one card that offers to
+pick. Session time lives in the live session bar, not the board.
 
 **Log sheet.** Previous set shown as large ghost values. One tap to repeat identical.
 Swipe or ± buttons for weight/reps. **Target: logging a set requires one tap and no
 keyboard in the common case.** Rest timer prominent; session timer quiet. Never two
-prominent counters on screen at once.
+prominent counters on screen at once. It is a sheet over the page you came from, so closing it
+keeps your place. Today's sets are a numbered set table with a **Last time** column (the same
+set number from the previous session). A **Next up** row shows the next exercise in board order
+not yet done this session — display only; it never limits what you can log.
+
+**Navigation.** Three tabs at the bottom: Train (the board), History, Me (`/account`). A live
+session bar sits above them only while a session is active (never before a set); tapping it
+opens the live session screen, where **End session** lives. Mid-set screens (log sheet, live
+session, edit board) are sheets opened with a query param on the current page
+(`?log=`, `?live`, `?edit=`) via `history.pushState`, so back closes them and a reload reopens
+them offline.
+
+**Rewards never block.** The record banner does not dim the page or catch input; you can log
+the next set while it shows. The finish deck is the only overlay, and only right after Finish.
 
 **Coverage, not completion.** Never show `5/8 exercises done` or any progress bar against
 the template — that frames deviation as failure. Show pattern coverage instead
@@ -247,8 +272,16 @@ end-to-end on a real device.
 5. PR flash, a week calendar on the session summary, mastery levels, and a recap at the top
    of a session's summary once it's over (total weight lifted, PRs, level-ups)
 6. Supabase + outbox sync + PWA install + `navigator.storage.persist()`
+7. **Shell and live session**: tab bar (Train, History, Me), sheets over any page, a live
+   session bar after the first set and a live screen that holds End
+8. **Log sheet as a set table**: last time's set N beside today's, per-set prefill, edit and
+   undo, Next up, a record banner that never blocks
+9. **Board, picker and summary**: two row states, pattern ticks, the week strip on the board, a
+   picker sheet with chips and Done, a read-only summary with the rewards open
+10. **History and first run**: sessions and exercises, exercise detail, a welcome, the install
+    card, a backup prompt, custom exercises
 
-**Current milestone: 6**
+**Current milestone: 7**
 
 Seed ~6 weeks of realistic full-body training data early, before building UI. Without it
 the board sorting and prefill behaviour can't be evaluated.

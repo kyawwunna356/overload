@@ -108,4 +108,144 @@ but its dashboard setup is deferred too.
 | 36 | Back up — sign in with Google or an email code, and push the outbox (on `online` and on returning to the app) | done |
 | 37 | Restore — pull from Supabase into a fresh device (last write wins on `updated_at`, `synced_at` cursor; plus a repair that merges duplicated catalogues and lists) | done |
 | 38 | Install — static export on Vercel, manifest, icons, service worker, `storage.persist()` | done |
-| 39 | On-device check — run milestone 6 on the iPhone, moving to the installed app without losing a set | next |
+| 39 | On-device check — run milestone 6 on the iPhone, moving to the installed app without losing a set | done |
+
+## Milestone 7 — Shell and live session
+
+The redesign starts here (the user's plan, `Overload — UX flow plan.md`, and the Figma file *Overload —
+UI/UX redesign*). The features stay the same, and so do the Hard Rules: no schema change and no Dexie
+version bump in milestones 7–10. Navigation becomes three tabs (Train, History, Me) plus a live session
+bar that exists only after your first set. End moves off the summary and onto the live screen. The
+user's decisions:
+- **Four milestones, each ending in an iPhone check**, not the design doc's single milestone. The doc's
+  ticket numbers shift because of this.
+- **Me keeps the `/account` URL.** Supabase's Redirect URL and the service worker's cached page both
+  point there.
+- **Sheets are query params on the current page** (`?log=`, `?live`, `?edit=`), opened with
+  `history.pushState`. Back, swipe-down and a tap on the dimmed strip close them. A reload reopens
+  them offline, because the worker ignores the query. `/exercise` and `/exercises` stay for old links.
+- **The rest time counts up with no ring.** A ring against `default_rest_sec` would add a target, which
+  the weekly-ring decision already turned down.
+
+| # | Ticket | Status |
+|---|---|---|
+| 40 | Redesign rules — CLAUDE.md, build order 7–10, and this list (docs only) | done |
+| 41 | Tab bar and Me tab — Train, History, Me; backup and sign-in leave the board; a badge only for "Backup paused" | next |
+| 42 | Sheet host — a shared `Sheet` (grab handle, swipe down, Escape), `?log=` over any page with `pushState`, the log sheet over the board, and the `raised` token | not started |
+| 43 | Live session bar and live screen — rest and session time after the first set, the session clock, coverage chips, exercises in the order done, End → Finish/Resume → deck → summary | not started |
+| 44 | On-device check — run milestone 7 on the iPhone | not started |
+
+What each ticket builds from:
+- **41:**
+  - `TabBar` is three `Link`s in `(app)/layout.tsx`, with the active tab from `usePathname`.
+  - Me (`/account`) is rebuilt from `AccountForm` into signed out, backed up and paused (Figma
+    6.1–6.3), using `backupState` and `useBackupStatus`. It adds a local stats line and the version.
+  - `BackupLine` is removed.
+  - A placeholder `(app)/history/page.tsx` is added.
+- **42:**
+  - `Sheet.tsx` reuses `gestureAxis` from `lib/domain/swipe.ts` for swipe-down.
+  - `SheetHost.tsx` in the layout reads `?log=`.
+  - `LogSheet` splits into `LogSheetBody` plus two wrappers: the sheet, and the `/exercise?id=` page.
+  - Board rows open the sheet in place, so the board's scroll position never moves.
+- **43:**
+  - `LiveBar.tsx` shows when `useActiveSession().session` is non-null, and hides while the log sheet
+    is open (one prominent counter).
+  - `LiveSession.tsx` opens as `?live` and uses `useCoverage` and `useSessionSummary`.
+  - `SessionEndBar`'s choice moves here, keeping Resume where End was. `RecapMoment`'s Done goes to
+    `/session?id=`.
+  - The summary loses its End bar, and the board's `SessionHeader` goes.
+
+## Milestone 8 — Log sheet as a set table
+
+The log sheet answers "what did I do last time, set by set": today's sets are numbered, with the same
+set from last session beside each (Hevy's PREVIOUS column). Prefill runs from last time's set N, then
+your last set today, then your last working set ever. **"Last time" follows the gap rule on the
+exercise's own sets** (the user's choice), not the calendar day, so two sessions on one day stay apart.
+Rewards never block a tap.
+
+| # | Ticket | Status |
+|---|---|---|
+| 45 | Set table — `previousSession` (domain), Last time beside Today, per-set prefill, and Earlier folded | not started |
+| 46 | Edit and undo — tap a today row to edit it (`updateSet`), and Undo for 5 s after a delete (`restoreSet`) | not started |
+| 47 | Next up — the next lift on your board not done this session, swapped in place | not started |
+| 48 | Record banner — slides in under the header for 3 s, no dimming, catches no taps (replaces `PRFlash`) | not started |
+| 49 | On-device check — run milestone 8 on the iPhone | not started |
+
+What each ticket builds from:
+- **45:**
+  - `previousSession(exerciseId, logs, before, gapMinutes)` in `previous.ts` groups that exercise's
+    sets with `startsNewSession`.
+  - `prefillFor(setNumber, lastTime, today, previous)` goes in `entry.ts`.
+  - `useLogSheet` also returns `today` and `lastTime`.
+  - `SetTable.tsx` is added. The level becomes plain text (`Push · Level 5 · 14 sessions`), and
+    `LevelBadge`'s tap label is retired.
+- **46:** Both writes are one Dexie transaction plus an outbox upsert. `restoreSet` keeps the set's
+  original id. `Snackbar.tsx` never catches taps outside itself.
+- **47:** `nextUp(boardOrder, doneToday, currentId)` goes in `board.ts`, for display only (Hard
+  Rule 3). The sheet's `?log=` changes with `replaceState`, so back still returns to the board.
+- **48:** `RecordBanner.tsx` reads `New record · 85 kg × 5 (was 82.5)` and is announced through
+  `aria-live`. It still uses `detectPR` on the history held before the tap.
+
+## Milestone 9 — Board, picker and summary
+
+The board answers "what have I done today" and "how's my week" with no extra tap. It's still your list
+in your order, and logging never moves a row. The picker is a sheet with a real Done. The summary is
+read-only and opens with the rewards. The user's decisions:
+- **The week strip goes on the board, and at the bottom of the summary.**
+- **The muscle star keeps the six muscle groups** (Chest, Shoulders, Arms, Core, Legs, Back), not the
+  pattern names drawn in the Figma frame.
+
+| # | Ticket | Status |
+|---|---|---|
+| 50 | Board — date header and Edit, the week strip on top, a ✓ on pattern headings (the coverage strip retired), two row states with the level, and empty groups hidden | not started |
+| 51 | Picker as a sheet — `?edit=<pattern>`, Done, pattern chips with pick counts, the chip pre-selected from a group's `+` | not started |
+| 52 | Summary and finish deck — a Duration · Sets · kg stat row, rewards open, the week strip at the bottom, and Done landing on the summary | not started |
+| 53 | On-device check — run milestone 9 on the iPhone | not started |
+
+What each ticket builds from:
+- **50:**
+  - `rowState(exerciseId, sessionSets, history, now)` goes in `board.ts`, giving `Last: … · 4d` or
+    `Today: 3 sets · best …` or `New`. `useBoard` already reads each listed exercise's history.
+  - Line 2 is in `text-body`.
+  - The week strip comes from `useWeek(now)`, and the heading ticks from `useCoverage`.
+- **51:** `ExercisePicker`'s one list, drag, `useFlip` and 400 ms guard are unchanged. `/exercises`
+  stays as a wrapper for old links.
+- **52:** `sessionStats(summary)` goes in `recap.ts`. Rewards fold only past 5 items, and the block is
+  left out when empty.
+
+## Milestone 10 — History and first run
+
+History answers two questions, "what did I do on Thursday" and "what did I bench five weeks ago", with
+no charts in either view. First run gives value first and asks for an account later: the only new
+stored things are two localStorage UI flags. The milestone ends with release 2.0.0.
+
+| # | Ticket | Status |
+|---|---|---|
+| 54 | History: Sessions — grouped by week with trained-day dots, and cards with duration, counts, patterns and records | not started |
+| 55 | History: Exercises and exercise detail — A to Z with search; a records card, every session, Log a set, and editing a past set | not started |
+| 56 | First run — a derived welcome, a first-set hint, a Safari install card (7-day dismiss), and a backup prompt after the first finished session | not started |
+| 57 | Custom exercise — "Can't find it?" in the picker adds your own lift to a pattern | not started |
+| 58 | On-device check and release 2.0.0 | not started |
+
+What each ticket builds from:
+- **54:**
+  - `sessionWeeks` and `sessionCard` go in `history.ts`, reusing `weekRange`, `weekOf` and
+    `sessionPRs`.
+  - `useHistory` reads 8 weeks at a time by `logged_at` and derives them with `deriveSessions`.
+- **55:**
+  - `exerciseRecords` and `exerciseIndex` go in `prs.ts`.
+  - The static `(app)/history/exercise/page.tsx?id=` is added.
+  - Edits reuse Ticket 46's writes, and the session recomputes because it's derived.
+- **56:**
+  - The welcome and the hint are derived (no picks and no sets), with no flag.
+  - `showInstallCard(dismissedAt, now, standalone)` is pure.
+  - Two flags: `overload.installDismissed` and `overload.backupPromptDismissed`.
+- **57:**
+  - `addCustomExercise(name, pattern)` is one transaction (an `exercises` row plus an outbox
+    upsert), then `addToList`.
+  - There's no schema change. `muscleOf` already falls back to the pattern, and `repairDuplicates`
+    merges by name.
+- **58:** Bump `package.json` to 2.0.0, update CHANGELOG and README, and tag `v2.0.0` (when asked).
+
+Left out of milestones 7–10: bodyweight `BW +` entry, per-exercise rest targets, bringing back the
+set-type chips, and auto-scroll while dragging.

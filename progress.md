@@ -8,24 +8,18 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 
 ## Where we are
 
-- **Milestone 5 — Rewards is finished** (Tickets 23–34) and was checked on the iPhone on
-  2026-09-24 (Ticket 32), as milestones 1–4 were: PR flash and pills, week strip, mastery levels,
-  the recap, swipe to delete, the one-list picker, the finish moment with confetti and the muscle
-  star. **CLAUDE.md now says milestone 6.**
-- **Milestone 6 — Sync and install is under way** (Tickets 35–39 in `tickets.md`).
-- **Last commit:** `feature: Install as an app — static export on Vercel, offline service worker,
-  icons` (Ticket 38). The 1.0.0 release commit, tagged `v1.0.0`, follows it.
-  - **Restore (Ticket 37) was confirmed on both devices by the user** after the purge and fresh
-    start.
-  - **Deployed at https://overload-three-zeta.vercel.app** (then fixed so `sw.js` ships). Not yet
-    installed on the iPhone: the user creates the Vercel project, sets the Supabase Site
-    URL and Redirect URL, and installs from Safari. That, plus the offline launch and Google
-    returning into the installed app, is Ticket 39.
+- **Milestone 6 — Sync and install is finished** (Tickets 35–39). The user ran the check on the
+  iPhone on 2026-09-28 (Ticket 39), and everything passed: the app installed from
+  https://overload-three-zeta.vercel.app, restored the history through Google sign-in, and logged
+  offline.
+- **Milestone 7 — the redesign — starts now.** The user's UX flow plan and Figma file
+  (*Overload — UI/UX redesign*) are split into four milestones, 7–10 (Tickets 40–58 in
+  `tickets.md`), each ending in an iPhone check. CLAUDE.md says milestone 7.
+- **Last commit:** `docs: Close milestone 6 and plan the redesign as milestones 7–10`
+  (Ticket 40).
+- **Next: Ticket 41 — Tab bar and Me tab.**
 - **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `AccountForm.tsx`). The email
   code still works in code, and the flag brings it back.
-- **Google on the phone** lands on `localhost` until the tunnel address is in Supabase's Redirect
-  URLs.
-- **Next: Ticket 39 — the milestone 6 run-through on the iPhone.**
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
 - **Tests:** 411 Vitest tests, domain layer only.
@@ -328,10 +322,36 @@ These aren't obvious from the code and shaped later work.
 - **Literal colours live outside the rule check on purpose:** `app/manifest.webmanifest` (JSON) and
   the icon PNGs mirror `--color-page` and `--color-primary`. `theme.css` says so.
 
+- **The redesign (milestones 7–10) was split and decided by the user** (Ticket 40):
+  - four milestones, each ending in an iPhone check, not the design doc's single milestone;
+  - the Me tab keeps the `/account` URL, because Supabase's Redirect URL and the cached page point
+    there;
+  - sheets are query params on the current page (`?log=`, `?live`, `?edit=`), opened with
+    `history.pushState`, and the `/exercise` and `/exercises` pages stay for old links;
+  - the rest time counts up with no ring, since a ring adds a target;
+  - the muscle star keeps its six muscle groups;
+  - the week strip moves to the board, and to the summary's bottom;
+  - "Last time" follows the gap rule on the exercise's own sets, not the calendar day;
+  - there's no schema change or Dexie version bump in milestones 7–10.
+
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 40: Redesign rules — close milestone 6, plan milestones 7–10
+`docs: Close milestone 6 and plan the redesign as milestones 7–10` · 2026-09-29
+
+- Ticket 39 is done: the user confirmed the milestone 6 run-through on the iPhone.
+- CLAUDE.md gains the redesign's UI wording, which the user approved in the design doc:
+  - the board's date header, week strip, pattern ticks and two row states;
+  - the log sheet as a sheet, with a set table and Next up;
+  - a Navigation paragraph (three tabs, the live bar, sheets as query params);
+  - "Rewards never block".
+- CLAUDE.md also gains `previousSession` in the domain contract, the new routes and components in
+  the tree, build steps 7–10, and current milestone 7. The Hard Rules and non-goals are unchanged.
+- `tickets.md` has milestones 7–10: Tickets 40–58, with the decisions and what each ticket builds
+  from.
 
 ### The user's own app icon
 `feature: Use the neon arrow-and-ring artwork as the app icon` · 2026-09-28
