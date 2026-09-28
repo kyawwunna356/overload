@@ -238,6 +238,10 @@ export function AccountForm() {
           {shown}
         </p>
       )}
+
+      <p className="pt-10 text-center text-xs text-mute">
+        Overload {process.env.NEXT_PUBLIC_APP_VERSION}
+      </p>
     </div>
   );
 }

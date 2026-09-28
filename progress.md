@@ -14,7 +14,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   star. **CLAUDE.md now says milestone 6.**
 - **Milestone 6 — Sync and install is under way** (Tickets 35–39 in `tickets.md`).
 - **Last commit:** `feature: Install as an app — static export on Vercel, offline service worker,
-  icons` (Ticket 38). It's followed by the 1.0.0 release commit, tagged `v1.0.0`.
+  icons` (Ticket 38). The 1.0.0 release commit, tagged `v1.0.0`, follows it.
   - **Restore (Ticket 37) was confirmed on both devices by the user** after the purge and fresh
     start.
   - **Not yet on Vercel or the iPhone:** the user creates the Vercel project, sets the Supabase Site
@@ -331,6 +331,17 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Release 1.0.0 — first launch
+`chore: Release 1.0.0 — version, changelog and an up-to-date README` · 2026-09-28 · tag `v1.0.0`
+
+- The first installable version. `frontend/package.json` is now `overload@1.0.0`, and the single
+  source of the version. `next.config` bakes it in as `NEXT_PUBLIC_APP_VERSION`, and the Back up
+  screen shows "Overload 1.0.0" small and grey, so the installed app tells you which version it's
+  running once updates start arriving.
+- `CHANGELOG.md` is new. The README was rewritten to match the app as it is: rewards, sync and
+  restore, install, the current layout, the data model with `user_id` / `updated_at` /
+  `sync_state`, and all six roadmap steps built.
 
 ### Ticket 38: Install — static export on Vercel, manifest, icons, service worker
 `feature: Install as an app — static export on Vercel, offline service worker, icons` · 2026-09-28
