@@ -21,6 +21,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   - The user then chose to **purge everything** (all Supabase rows and accounts, and both
     browsers' data) and start again.
   - The end-to-end check was still waiting: the phone signs in first, then the Mac adopts.
+- **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `AccountForm.tsx`). The email
+  code still works in code, and the flag brings it back.
 - **Google on the phone** lands on `localhost` until the tunnel address is in Supabase's Redirect
   URLs.
 - **Next: Ticket 38 — Install** (static export on Vercel, manifest, service worker,
@@ -316,6 +318,13 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Google-only sign-in on screen
+`chore: Hide the email code sign-in and keep it behind a flag` · 2026-09-28
+
+- The user's choice: Google is the one way in for now. The email form and the "or" divider on
+  `/account` sit behind `SHOW_EMAIL_CODE = false`, and the Google error no longer suggests an
+  email code. `sendCode` / `verifyCode` and the form stay in the code for later.
 
 ### Ticket 37: Restore — pull from Supabase into a fresh device
 `feature: Restore from Supabase — pull, adopt, and repair duplicates` · 2026-09-28

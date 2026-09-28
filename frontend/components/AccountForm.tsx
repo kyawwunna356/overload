@@ -22,7 +22,13 @@ import { GoogleMark } from "./GoogleMark";
 
 const NO_SIGNAL = "No signal. Try again when you're online.";
 const NOT_SET_UP = "Backup isn't set up on this copy of the app.";
-const GOOGLE_FAILED = "Google sign-in didn't finish. Try again, or use an email code.";
+// The emailed-code sign-in is built and working but hidden for now (the user's choice): Google
+// is the one way in. Flip this to bring the email form back; nothing else needs to change.
+const SHOW_EMAIL_CODE = false;
+
+const GOOGLE_FAILED = SHOW_EMAIL_CODE
+  ? "Google sign-in didn't finish. Try again, or use an email code."
+  : "Google sign-in didn't finish. Try again.";
 
 function explain(result: AuthResult, rejected: string): string | null {
   if (result.ok) return null;
@@ -139,87 +145,91 @@ export function AccountForm() {
             Continue with Google
           </button>
 
-          <div className="flex items-center gap-3 px-2 text-sm text-body" aria-hidden>
-            <span className="h-px flex-1 bg-line" />
-            or
-            <span className="h-px flex-1 bg-line" />
-          </div>
+          {SHOW_EMAIL_CODE && (
+            <>
+              <div className="flex items-center gap-3 px-2 text-sm text-body" aria-hidden>
+                <span className="h-px flex-1 bg-line" />
+                or
+                <span className="h-px flex-1 bg-line" />
+              </div>
 
-          <Card>
-            {!codeSent ? (
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (looksLikeEmail(email)) void send();
-                }}
-                className="flex flex-col gap-3"
-              >
-                <label htmlFor="email" className="text-sm text-body">
-                  Email me a sign-in code
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@example.com"
-                  className="h-12 w-full rounded-control bg-page px-4 text-base text-ink placeholder:text-body"
-                />
-                <button
-                  type="submit"
-                  disabled={busy || !looksLikeEmail(email)}
-                  className="h-12 w-full touch-manipulation rounded-pill bg-page text-base font-semibold text-ink active:bg-line disabled:opacity-60"
-                >
-                  Send code
-                </button>
-              </form>
-            ) : (
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (isCompleteCode(code)) void verify();
-                }}
-                className="flex flex-col gap-3"
-              >
-                <label htmlFor="code" className="text-sm text-body">
-                  Enter the code sent to{" "}
-                  <span className="font-semibold text-ink">{normalizeEmail(email)}</span>
-                </label>
-                <input
-                  id="code"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  pattern="[0-9]*"
-                  value={code}
-                  onChange={(event) => setCode(normalizeCode(event.target.value))}
-                  placeholder="123456"
-                  className="h-16 w-full rounded-control bg-page px-4 text-center text-3xl font-bold tracking-[0.3em] text-ink placeholder:text-mute"
-                />
-                <button
-                  type="submit"
-                  disabled={busy || !isCompleteCode(code)}
-                  className="h-14 w-full touch-manipulation rounded-pill bg-primary text-lg font-bold text-on-primary active:bg-primary-active disabled:opacity-60"
-                >
-                  Sign in
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCodeSent(false);
-                    setCode("");
-                    setMessage(null);
-                  }}
-                  className="h-12 touch-manipulation text-sm text-body active:text-ink"
-                >
-                  Use a different email
-                </button>
-              </form>
-            )}
-          </Card>
+              <Card>
+                {!codeSent ? (
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (looksLikeEmail(email)) void send();
+                    }}
+                    className="flex flex-col gap-3"
+                  >
+                    <label htmlFor="email" className="text-sm text-body">
+                      Email me a sign-in code
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder="you@example.com"
+                      className="h-12 w-full rounded-control bg-page px-4 text-base text-ink placeholder:text-body"
+                    />
+                    <button
+                      type="submit"
+                      disabled={busy || !looksLikeEmail(email)}
+                      className="h-12 w-full touch-manipulation rounded-pill bg-page text-base font-semibold text-ink active:bg-line disabled:opacity-60"
+                    >
+                      Send code
+                    </button>
+                  </form>
+                ) : (
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (isCompleteCode(code)) void verify();
+                    }}
+                    className="flex flex-col gap-3"
+                  >
+                    <label htmlFor="code" className="text-sm text-body">
+                      Enter the code sent to{" "}
+                      <span className="font-semibold text-ink">{normalizeEmail(email)}</span>
+                    </label>
+                    <input
+                      id="code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      pattern="[0-9]*"
+                      value={code}
+                      onChange={(event) => setCode(normalizeCode(event.target.value))}
+                      placeholder="123456"
+                      className="h-16 w-full rounded-control bg-page px-4 text-center text-3xl font-bold tracking-[0.3em] text-ink placeholder:text-mute"
+                    />
+                    <button
+                      type="submit"
+                      disabled={busy || !isCompleteCode(code)}
+                      className="h-14 w-full touch-manipulation rounded-pill bg-primary text-lg font-bold text-on-primary active:bg-primary-active disabled:opacity-60"
+                    >
+                      Sign in
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCodeSent(false);
+                        setCode("");
+                        setMessage(null);
+                      }}
+                      className="h-12 touch-manipulation text-sm text-body active:text-ink"
+                    >
+                      Use a different email
+                    </button>
+                  </form>
+                )}
+              </Card>
+            </>
+          )}
         </div>
       )}
 
