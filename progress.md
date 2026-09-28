@@ -98,7 +98,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   for good — beating it later doesn't take it away. Derived with `historyPRs` on each read, so it
   always agrees with the flash; a screen reader hears which records it broke.
 - **Local data:**
-  - The Dexie database (v3) is seeded once with the 73-exercise catalogue and an empty list.
+  - The Dexie database (v5) is seeded once with the 76-exercise catalogue and an empty list.
     Only dev also gets ~6 weeks of fake training.
   - Every write is one Dexie transaction with its outbox row.
   - Every row that exists is queued in the outbox, catalogue and list included.
@@ -318,6 +318,19 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Three new catalogue exercises
+`feature: Add Seated Leg Curl, Machine Incline Press and Single-Arm Triceps Pushdown` · 2026-09-28
+
+- The user asked for four. Leg Extension was already in the catalogue (Squat), so it was skipped.
+  The catalogue is now 76.
+- Dexie v5 (no schema change) adds the missing ones on devices that already have the catalogue,
+  matched by name, and queues them for backup. Each device gives them its own ids; sync's repair
+  merges the copies by name.
+- `muscleOf` places Seated Leg Curl in legs. The press counts to chest and the pushdown to arms,
+  by pattern.
+- Checked against a fake IndexedDB: v4 → v5 adds the three once, queues them once, and a reopen
+  changes nothing.
 
 ### Google-only sign-in on screen
 `chore: Hide the email code sign-in and keep it behind a flag` · 2026-09-28

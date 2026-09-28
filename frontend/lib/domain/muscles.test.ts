@@ -9,7 +9,7 @@ describe('muscleOf', () => {
   const EXPECTED: Record<Muscle, string[]> = {
     chest: [
       'Bench Press', 'Incline Bench Press', 'Close-Grip Bench Press', 'Dumbbell Bench Press',
-      'Incline Dumbbell Press', 'Machine Chest Press', 'Cable Fly', 'Pec Deck', 'Dips', 'Push-Up',
+      'Incline Dumbbell Press', 'Machine Incline Press', 'Machine Chest Press', 'Cable Fly', 'Pec Deck', 'Dips', 'Push-Up',
     ],
     back: [
       'Barbell Row', 'T-Bar Row', 'Dumbbell Row', 'Chest-Supported Row', 'Seated Cable Row',
@@ -20,7 +20,8 @@ describe('muscleOf', () => {
       'Bulgarian Split Squat', 'Walking Lunge', 'Step-Up', 'Goblet Squat', 'Leg Extension',
       'Pistol Squat', 'Deadlift', 'Sumo Deadlift', 'Trap Bar Deadlift', 'Romanian Deadlift',
       'Single-Leg RDL', 'Good Morning', 'Hip Thrust', 'Kettlebell Swing', 'Cable Pull-Through',
-      'Glute-Ham Raise', 'Back Extension', 'Leg Curl', 'Calf Raise', 'Seated Calf Raise',
+      'Glute-Ham Raise', 'Back Extension', 'Leg Curl', 'Seated Leg Curl', 'Calf Raise',
+      'Seated Calf Raise',
     ],
     shoulders: [
       'Overhead Press', 'Dumbbell Shoulder Press', 'Landmine Press', 'Lateral Raise', 'Front Raise',
@@ -28,7 +29,7 @@ describe('muscleOf', () => {
     ],
     arms: [
       'Dumbbell Curl', 'Barbell Curl', 'Hammer Curl', 'Preacher Curl', 'Cable Curl',
-      'Triceps Pushdown', 'Overhead Triceps Extension', 'Skullcrusher',
+      'Triceps Pushdown', 'Single-Arm Triceps Pushdown', 'Overhead Triceps Extension', 'Skullcrusher',
     ],
     core: [
       'Cable Crunch', 'Hanging Leg Raise', 'Toes-to-Bar', 'Decline Sit-Up', 'Russian Twist',

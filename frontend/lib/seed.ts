@@ -34,8 +34,9 @@ type CatalogueEntry = {
 
 // Every exercise the app knows about — what the picker offers. Nothing here is "yours"
 // until you add it to your list (template_items); the board shows only what you picked.
-// A new exercise can be appended at any time: the Dexie v2 migration adds the ones a device
-// hasn't got yet, matching on name.
+// A new exercise can be added at any time, with a new Dexie version whose upgrade adds the ones a
+// device hasn't got yet, matched by name (see v2 and v5 in lib/db.ts). Each device gives it its own
+// id; if two devices both add it to one account, sync's repair merges the copies by name.
 const CATALOGUE = {
   back_squat: { name: 'Back Squat', pattern: 'squat', rest: 180, start: 80, step: 2.5 },
   front_squat: { name: 'Front Squat', pattern: 'squat', rest: 180, start: 60, step: 2.5 },
@@ -67,6 +68,7 @@ const CATALOGUE = {
   close_grip_bench: { name: 'Close-Grip Bench Press', pattern: 'push', rest: 150, start: 60, step: 2.5 },
   db_bench_press: { name: 'Dumbbell Bench Press', pattern: 'push', rest: 120, start: 28, step: 2 },
   incline_db_press: { name: 'Incline Dumbbell Press', pattern: 'push', rest: 120, start: 24, step: 2 },
+  machine_incline_press: { name: 'Machine Incline Press', pattern: 'push', rest: 120, start: 40, step: 5 },
   machine_chest_press: { name: 'Machine Chest Press', pattern: 'push', rest: 90, start: 45, step: 5 },
   overhead_press: { name: 'Overhead Press', pattern: 'push', rest: 150, start: 42.5, step: 2.5 },
   db_shoulder_press: { name: 'Dumbbell Shoulder Press', pattern: 'push', rest: 120, start: 20, step: 2 },
@@ -95,6 +97,7 @@ const CATALOGUE = {
   preacher_curl: { name: 'Preacher Curl', pattern: 'accessory', rest: 75, start: 20, step: 2.5 },
   cable_curl: { name: 'Cable Curl', pattern: 'accessory', rest: 60, start: 20, step: 2.5 },
   triceps_pushdown: { name: 'Triceps Pushdown', pattern: 'accessory', rest: 75, start: 25, step: 2.5 },
+  single_arm_pushdown: { name: 'Single-Arm Triceps Pushdown', pattern: 'accessory', rest: 60, start: 10, step: 2.5 },
   overhead_triceps_ext: { name: 'Overhead Triceps Extension', pattern: 'accessory', rest: 75, start: 20, step: 2.5 },
   skullcrusher: { name: 'Skullcrusher', pattern: 'accessory', rest: 75, start: 25, step: 2.5 },
   lateral_raise: { name: 'Lateral Raise', pattern: 'accessory', rest: 60, start: 8, step: 1 },
@@ -102,6 +105,7 @@ const CATALOGUE = {
   front_raise: { name: 'Front Raise', pattern: 'accessory', rest: 60, start: 8, step: 1 },
   upright_row: { name: 'Upright Row', pattern: 'accessory', rest: 75, start: 25, step: 2.5 },
   leg_curl: { name: 'Leg Curl', pattern: 'accessory', rest: 75, start: 35, step: 2.5 },
+  seated_leg_curl: { name: 'Seated Leg Curl', pattern: 'accessory', rest: 75, start: 35, step: 2.5 },
   calf_raise: { name: 'Calf Raise', pattern: 'accessory', rest: 60, start: 60, step: 5 },
   seated_calf_raise: { name: 'Seated Calf Raise', pattern: 'accessory', rest: 60, start: 40, step: 5 },
 

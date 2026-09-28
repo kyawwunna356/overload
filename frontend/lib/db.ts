@@ -102,6 +102,22 @@ class GymDB extends Dexie {
     // too and the next pull starts from the beginning instead of wrongly skipping everything.
     this.version(4).stores({ sync_state: 'key' });
 
+    // No schema change: the catalogue grew (Seated Leg Curl, Machine Incline Press, Single-Arm
+    // Triceps Pushdown), so a device that has the catalogue already gets the ones it's missing,
+    // matched by name as in v2. Unlike v2 they're queued for backup too, since sync now exists.
+    // Nothing is removed and no history is touched.
+    this.version(5).upgrade(async (tx) => {
+      const now = Date.now();
+      const exercises = tx.table<Exercise, string>('exercises');
+      const known = new Set((await exercises.toArray()).map((row) => row.name));
+      const missing = catalogueExercises(now).filter((row) => !known.has(row.name));
+      if (missing.length === 0) return;
+      await exercises.bulkAdd(missing);
+      await tx
+        .table<OutboxRow, string>('outbox')
+        .bulkAdd(missing.map((row) => outboxRow('exercises', 'upsert', row, now)));
+    });
+
     // Every read goes through the table's reader, which fills fields added after a row was
     // stored (and keeps a row with a value from a newer app). Old history never has to be
     // rewritten to fit new code: see `lib/domain/rows.ts`.

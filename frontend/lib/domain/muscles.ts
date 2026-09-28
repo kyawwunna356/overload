@@ -34,6 +34,7 @@ const BY_NAME: Readonly<Record<string, Muscle>> = {
   'Calf Raise': 'legs',
   'Seated Calf Raise': 'legs',
   'Leg Curl': 'legs',
+  'Seated Leg Curl': 'legs',
 };
 
 export function muscleOf(exercise: Pick<Exercise, 'name' | 'pattern'>): Muscle {

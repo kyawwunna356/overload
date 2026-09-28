@@ -19,7 +19,7 @@ no signal. Everything works offline; the network is only ever a background backu
   group in **the order you put them in** — never re-sorted by what you did last, and logging
   never moves a row. Every row carries its last working set and how long ago (`82.5 kg × 5 ·
   3d`). A pattern you haven't picked for says so and offers the catalogue.
-- **Your list** comes from a catalogue of 73 exercises (`/exercises`, or the `+` on a group
+- **Your list** comes from a catalogue of 76 exercises (`/exercises`, or the `+` on a group
   for just that pattern). Tap to add or remove — one tap, no save button — search by name, and
   drag a row by its handle to reorder it. Removing an exercise keeps every set you ever logged.
 - **The log sheet** (`/exercise?id=…`) shows the last working set as large ghost values: one
@@ -176,7 +176,7 @@ The repo uses **pnpm only**; don't commit any other lockfile.
 
 ### Seed data
 
-On first launch the local database seeds itself with the catalogue of 73 exercises and an
+On first launch the local database seeds itself with the catalogue of 76 exercises and an
 **empty** list (so the board starts empty and every exercise on it is one you chose). In
 **development only**, it also adds about six weeks of full-body sessions, so prefill and the
 board can be judged against something realistic. A production install starts with no history,
