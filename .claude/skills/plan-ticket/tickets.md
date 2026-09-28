@@ -106,6 +106,6 @@ but its dashboard setup is deferred too.
 |---|---|---|
 | 35 | Sync foundation — Supabase schema, RLS, and a local store ready to back up (fake sets dropped, forward-compatibility contract, every row queued) | done |
 | 36 | Back up — sign in with Google or an email code, and push the outbox (on `online` and on returning to the app) | done |
-| 37 | Restore — pull from Supabase into a fresh device (last write wins on `updated_at`, `synced_at` cursor) | next |
-| 38 | Install — static export on Vercel, manifest, icons, service worker, `storage.persist()` | not started |
+| 37 | Restore — pull from Supabase into a fresh device (last write wins on `updated_at`, `synced_at` cursor; plus a repair that merges duplicated catalogues and lists) | done |
+| 38 | Install — static export on Vercel, manifest, icons, service worker, `storage.persist()` | next |
 | 39 | On-device check — run milestone 6 on the iPhone, moving to the installed app without losing a set | not started |

@@ -218,6 +218,12 @@ comes back online, when you return to the app, and a few seconds after each writ
 account to back up from a phone owns that phone's data, so a friend signing in on it can't
 receive your history.
 
+Sync runs both ways: each sync pushes, then pulls whatever the server has accepted since the
+last pull (last write wins on `updated_at`; a row with an unpushed local change is left alone).
+**Signing in on a new device restores everything**: a device that has never logged a set adopts
+the account's catalogue and list instead of uploading its own, then pulls your history. Deleting
+a set on one device doesn't delete it on another.
+
 Migrations are **additive only**: a later one adds tables or nullable/defaulted columns and
 never renames, drops or retypes, so history stored today always stays readable.
 

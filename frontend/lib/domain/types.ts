@@ -89,3 +89,12 @@ export type OutboxRow = {
   payload: SyncedRow;
   created_at: number;
 };
+
+// Local only, never synced (Dexie v4). Where the last pull of one table stopped: the server's
+// `synced_at` and `id` of the last row read, kept exactly as the server wrote them. It lives in
+// Dexie with the data, so if the browser clears one it clears both and the next pull starts over.
+export type SyncCursor = {
+  key: SyncedTable;
+  at: string;
+  id: string;
+};

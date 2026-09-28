@@ -13,6 +13,7 @@ import type {
   OutboxRow,
   Session,
   SetLog,
+  SyncCursor,
   Template,
   TemplateItem,
 } from './domain/types';
@@ -31,6 +32,7 @@ class GymDB extends Dexie {
   set_logs!: EntityTable<SetLog, 'id'>;
   sessions!: EntityTable<Session, 'id'>;
   outbox!: EntityTable<OutboxRow, 'id'>;
+  sync_state!: EntityTable<SyncCursor, 'key'>;
 
   constructor() {
     super('gym-tracker');
@@ -94,6 +96,11 @@ class GymDB extends Dexie {
       ];
       if (backlog.length > 0) await outbox.bulkAdd(backlog);
     });
+
+    // Additive: a local-only table for where each synced table's last pull stopped (Ticket 37).
+    // It sits in Dexie, not localStorage, so if the browser clears the data it clears the cursors
+    // too and the next pull starts from the beginning instead of wrongly skipping everything.
+    this.version(4).stores({ sync_state: 'key' });
 
     // Every read goes through the table's reader, which fills fields added after a row was
     // stored (and keeps a row with a value from a newer app). Old history never has to be

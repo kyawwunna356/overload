@@ -13,14 +13,19 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   the recap, swipe to delete, the one-list picker, the finish moment with confetti and the muscle
   star. **CLAUDE.md now says milestone 6.**
 - **Milestone 6 — Sync and install is under way** (Tickets 35–39 in `tickets.md`).
-- **Last commit:** `feature: Back up to Supabase — sign in with Google or an email code` (this
-  one, Ticket 36). The user signed in on the phone with an email code and reports the backup done.
-  Supabase SMTP goes through Resend with its test sender, so codes reach only the user. Google
-  sign-in is built, but its dashboard setup is deferred.
-- **Ticket 35's SQL check passed** (RLS between two accounts, last write wins, `synced_at`).
-- **Next: Ticket 37 — Restore:** pull into a fresh device (planned; a fresh device adopts the
-  account's catalogue instead of pushing a duplicate).
-- **Tests:** 380 Vitest tests, domain layer only.
+- **Last commit:** `feature: Restore from Supabase — pull, adopt, and repair duplicates` (this
+  one, Ticket 37).
+  - **Not yet confirmed on devices.** On 2026-09-25 the Mac uploaded its own catalogue and list
+    next to the phone's, probably from an old tab still running Ticket 36's code, so the account
+    held two of each. The repair step was added in response.
+  - The user then chose to **purge everything** (all Supabase rows and accounts, and both
+    browsers' data) and start again.
+  - The end-to-end check was still waiting: the phone signs in first, then the Mac adopts.
+- **Google on the phone** lands on `localhost` until the tunnel address is in Supabase's Redirect
+  URLs.
+- **Next: Ticket 38 — Install** (static export on Vercel, manifest, service worker,
+  `storage.persist()`), once restore is confirmed on both devices.
+- **Tests:** 411 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -107,7 +112,13 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   - The board line reads `Back up ›`, `Backed up ✓`, `N changes waiting` or `Backup paused`.
   - Sign out keeps every set. The first account to back up owns the phone's data (`overload.owner`
     in localStorage).
-  - Nothing is pulled back yet (Ticket 37).
+  - **Sync runs both ways** (`syncNow` in `lib/sync/sync.ts`):
+    1. the owner guard;
+    2. adoption, on a fresh device's first sync only;
+    3. push;
+    4. pull every table since its `synced_at` cursor, with last write wins, and rows with unpushed
+       changes left alone;
+    5. repair any duplicated catalogue or default list, then push the repair.
 - **Domain layer** (`frontend/lib/domain/`, pure and tested): `previous`, `staleness`,
   `board`, `list`, `entry`, `history`, `sessions`, `timers`, `coverage`, `prs`, `week`, `mastery`, `recap`, `swipe`, `muscles`. `useCoverage` combines the active
   session's sets with the exercise list for the strip. `useActiveSession` (in `lib/hooks/`)
@@ -118,7 +129,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`. No text
   selection or long-press callout (inputs excepted) and no visible scrollbars, app-wide.
 
-**Not built yet:** pull and restore (Ticket 37), PWA install (Ticket 38), and the history page.
+**Not built yet:** PWA install (Ticket 38) and the history page.
 
 ## Decisions worth remembering
 
@@ -287,10 +298,51 @@ These aren't obvious from the code and shaped later work.
   blocks the others; a batch the server refuses is retried row by row. Postgres won't upsert
   one id twice in a statement, so `pushBatches` sends one row per id.
 
+- **A fresh device adopts, and repair is the safety net.** A device with no sets and no markers,
+  signing in to an account that has data, drops its own untouched catalogue and list (plus their
+  outbox rows) and pulls the account's. When that can't happen (two devices both used before
+  signing in, an old tab), `repairDuplicates` merges the copies:
+  - it's deterministic: the lowest id is kept, so every device reaches the same answer;
+  - extra exercises are **archived, not deleted**, because deletes don't sync;
+  - sets move to the kept twin of their exercise;
+  - lists merge in order, and exact duplicate picks are removed.
+- **Pull cursors live in Dexie (`sync_state`, v4), not localStorage,** so if Safari evicts the data,
+  the cursors go with it and the next pull starts over. A pull re-reads the minute before its
+  cursor, to catch rows committed late, and pages by `(synced_at, id)`.
+- **Pulled rows write no outbox rows.** A row with any queued local change is skipped by the pull,
+  so a set deleted offline never comes back.
+
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 37: Restore — pull from Supabase into a fresh device
+`feature: Restore from Supabase — pull, adopt, and repair duplicates` · 2026-09-28
+
+- `lib/sync/sync.ts` is the single `syncNow` (under the `overload-sync` Web Lock) that the
+  triggers and sign-in call.
+  - It runs the owner guard, then `adoptIfFresh`, then `drain` (push), then `pullAll`, then
+    `repairLocal`.
+  - `push.ts` keeps only `drain`.
+- `pull.ts`:
+  - keyset paging by `synced_at, id`, 1000 rows per page;
+  - `toLocal`, then `shouldApply` (last write wins, pending rows skipped);
+  - one Dexie transaction per page, written together with the cursor.
+- `adopt.ts`: a fresh device drops its own catalogue and list when the account has exercises. It
+  checks again inside the transaction.
+- `repair.ts`, in the domain and in sync: merges duplicated catalogues and default lists, then
+  pushes the merge. It came from a real duplicate on the user's account (146 exercises, two
+  default lists).
+- Dexie v4 adds the local-only `sync_state` table. There's a new frozen fixture,
+  `history-v3.json`.
+- `replica.ts` gains `remoteCursor`, `pullSince`, `pendingIds`, `shouldApply` and
+  `isFreshDevice`. 31 new tests (411 in total).
+- Checked against a fake IndexedDB:
+  - v3 → v4 changes no data;
+  - adoption with a stubbed account count;
+  - repair on a duplicated account, and a second repair changing nothing.
+- **Not yet confirmed on devices.** Google redirects need the tunnel address in Supabase.
 
 ### Ticket 36: Back up — sign in with Google or an email code, and push the outbox
 `feature: Back up to Supabase — sign in with Google or an email code` · 2026-09-25

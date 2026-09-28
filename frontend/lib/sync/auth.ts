@@ -1,6 +1,6 @@
 import { isAuthRetryableFetchError, type Session } from '@supabase/supabase-js';
 import { normalizeCode, normalizeEmail } from '../domain/signin';
-import { flushOutbox } from './push';
+import { syncNow } from './sync';
 import { isConfigured, supabase } from './supabase';
 
 // Signing in: Continue with Google, or an emailed code as the fallback. This is the one place
@@ -29,7 +29,7 @@ function failure(error: unknown): AuthResult {
 }
 
 function signedIn(): AuthResult {
-  void flushOutbox();
+  void syncNow();
   return { ok: true };
 }
 

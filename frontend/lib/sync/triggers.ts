@@ -1,18 +1,18 @@
 import { liveQuery } from 'dexie';
 import { db } from '../db';
 import { onAuthChange } from './auth';
-import { flushOutbox } from './push';
+import { syncNow } from './sync';
 
-// When the outbox drains: on open, when the phone comes back online, when you return to the app,
-// when you sign in, and a few seconds after a new write (so with signal a set is backed up almost
-// at once, and a burst of sets goes up together). All fire-and-forget; `flushOutbox` is
-// single-flight, so overlapping triggers cost nothing.
+// When the app syncs (push, then pull): on open, when the phone comes back online, when you return
+// to the app, when you sign in, and a few seconds after a new write (so with signal a set is
+// backed up almost at once, and a burst of sets goes up together). All fire-and-forget; `syncNow`
+// is single-flight, so overlapping triggers cost nothing.
 
 const AFTER_WRITE_MS = 3000;
 
 export function startSync(): () => void {
   const flush = () => {
-    void flushOutbox();
+    void syncNow();
   };
   const onVisible = () => {
     if (document.visibilityState === 'visible') flush();

@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isFreshDevice,
   newerWins,
+  pendingIds,
+  pullSince,
   pushBatches,
+  remoteCursor,
   seededSetIds,
+  shouldApply,
   toLocal,
   toRemote,
   unqueuedRows,
@@ -213,5 +218,74 @@ describe('pushBatches', () => {
 
   it('returns nothing for an empty outbox', () => {
     expect(pushBatches([], 'u', 200)).toEqual({ batches: [], unreadable: [] });
+  });
+});
+
+describe('remoteCursor', () => {
+  it('keeps synced_at and id exactly as the server wrote them', () => {
+    const at = '2026-09-25T00:30:58.123456+00:00';
+    expect(remoteCursor('set_logs', { id: 's1', synced_at: at, weight: 60 })).toEqual({
+      key: 'set_logs',
+      at,
+      id: 's1',
+    });
+  });
+
+  it('is null without both', () => {
+    expect(remoteCursor('set_logs', { id: 's1' })).toBeNull();
+    expect(remoteCursor('set_logs', { synced_at: 'x' })).toBeNull();
+    expect(remoteCursor('set_logs', null)).toBeNull();
+  });
+});
+
+describe('pullSince', () => {
+  it('starts from the beginning with no cursor', () => {
+    expect(pullSince(undefined)).toBeNull();
+  });
+
+  it('re-reads the minute before the cursor', () => {
+    expect(pullSince({ key: 'set_logs', at: '2026-09-25T10:00:30.000Z', id: 'x' })).toBe(
+      '2026-09-25T09:59:30.000Z',
+    );
+  });
+
+  it('starts over from a cursor it cannot read', () => {
+    expect(pullSince({ key: 'set_logs', at: 'garbage', id: 'x' })).toBeNull();
+  });
+});
+
+describe('pendingIds', () => {
+  it('collects every id with a queued change, of any op or table', () => {
+    const queue = [outbox('set_logs', 'upsert', set), outbox('template_items', 'delete', item)];
+    expect(pendingIds(queue)).toEqual(new Set([set.id, item.id]));
+  });
+});
+
+describe('shouldApply', () => {
+  const none = new Set<string>();
+
+  it('takes a row this device lacks, or a newer one', () => {
+    expect(shouldApply(undefined, { id: 'a', updated_at: 1 }, none)).toBe(true);
+    expect(shouldApply({ updated_at: 1 }, { id: 'a', updated_at: 2 }, none)).toBe(true);
+  });
+
+  it('keeps the local copy on a tie or an older row', () => {
+    expect(shouldApply({ updated_at: 2 }, { id: 'a', updated_at: 2 }, none)).toBe(false);
+    expect(shouldApply({ updated_at: 2 }, { id: 'a', updated_at: 1 }, none)).toBe(false);
+  });
+
+  it('never touches a row with an unpushed change, even a newer one', () => {
+    const pending = new Set(['a']);
+    expect(shouldApply({ updated_at: 1 }, { id: 'a', updated_at: 9 }, pending)).toBe(false);
+    // Deleted offline, delete still queued: the pull must not bring it back.
+    expect(shouldApply(undefined, { id: 'a', updated_at: 9 }, pending)).toBe(false);
+  });
+});
+
+describe('isFreshDevice', () => {
+  it('is fresh only with no sets and no session markers', () => {
+    expect(isFreshDevice({ sets: 0, sessions: 0 })).toBe(true);
+    expect(isFreshDevice({ sets: 1, sessions: 0 })).toBe(false);
+    expect(isFreshDevice({ sets: 0, sessions: 1 })).toBe(false);
   });
 });

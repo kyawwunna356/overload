@@ -12,6 +12,7 @@ import type {
   OutboxRow,
   Session,
   SetLog,
+  SyncCursor,
   SyncedRow,
   SyncedTable,
   Template,
@@ -201,4 +202,52 @@ export function unqueuedRows<T extends { id: string }>(
 ): T[] {
   const queued = upsertedIds(table, outbox);
   return rows.filter((row) => !queued.has(row.id));
+}
+
+// ---- Pulling -------------------------------------------------------------------------------
+
+// Where a remote row sits in the pull order: its server-set `synced_at` and its id, kept as the
+// server wrote them so the next query compares exactly. Null for a row without them.
+export function remoteCursor(
+  table: SyncedTable,
+  raw: unknown,
+): SyncCursor | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const at: unknown = Reflect.get(raw, 'synced_at');
+  const id: unknown = Reflect.get(raw, 'id');
+  return typeof at === 'string' && typeof id === 'string' ? { key: table, at, id } : null;
+}
+
+// A pull re-reads a little before its cursor, so a row whose transaction committed late (its
+// synced_at earlier than rows already read) is still caught. Re-reading a row is harmless: a
+// tie keeps the local copy.
+export const PULL_OVERLAP_MS = 60_000;
+
+export function pullSince(cursor: SyncCursor | undefined): string | null {
+  if (cursor === undefined) return null;
+  const ms = Date.parse(cursor.at);
+  return Number.isNaN(ms) ? null : new Date(ms - PULL_OVERLAP_MS).toISOString();
+}
+
+// Every row id with a change still waiting to be pushed, of any table or op.
+export function pendingIds(outbox: readonly OutboxRow[]): Set<string> {
+  return new Set(outbox.map((row) => row.payload.id));
+}
+
+// Whether a pulled row should replace the local copy. A row with an unpushed local change is
+// left alone until that change has gone up, so a pull can never undo it (say, bring back a set
+// deleted offline). Otherwise last write wins.
+export function shouldApply(
+  local: { updated_at: number } | undefined,
+  incoming: { id: string; updated_at: number },
+  pending: ReadonlySet<string>,
+): boolean {
+  return !pending.has(incoming.id) && newerWins(local, incoming);
+}
+
+// A device that has never logged anything: its catalogue and list are the untouched ones it made
+// for itself, with ids no other device shares. Signing in to an account that already has data,
+// it adopts the account's instead of pushing a duplicate catalogue.
+export function isFreshDevice(counts: { sets: number; sessions: number }): boolean {
+  return counts.sets === 0 && counts.sessions === 0;
 }
