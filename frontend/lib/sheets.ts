@@ -1,15 +1,15 @@
 'use client';
 
-// Sheets live in the URL: `?log=<exercise id>` (and, in later tickets, `?live` and `?edit=…`) on
+// Sheets live in the URL: `?log=<exercise id>`, `?live` (and, in a later ticket, `?edit=…`) on
 // whatever page you're on. Opening one pushes a history entry with the same path and the sheet's
 // param, so the page underneath never changes — the board keeps its scroll position — and the
 // browser's back closes the sheet. A reload reopens it offline, because the service worker
 // ignores the query on navigations. This is the pushState pattern the bundled Next docs describe;
 // the router keeps useSearchParams in step with it.
 
-export type SheetName = 'log';
+export type SheetName = 'log' | 'live';
 
-const SHEET_PARAMS: readonly SheetName[] = ['log'];
+const SHEET_PARAMS: readonly SheetName[] = ['log', 'live'];
 
 // Whether the open sheet was pushed from this tab. If it was, closing goes back one entry, so
 // back and close agree; if the page was opened straight onto a sheet (a reload, a shared link),
@@ -32,6 +32,13 @@ export function openSheet(name: SheetName, value: string): void {
 // the page underneath rather than to the previous exercise.
 export function replaceSheet(name: SheetName, value: string): void {
   window.history.replaceState(null, '', urlWith(name, value));
+}
+
+// For leaving a sheet by navigating to another page with router.replace (Finish lands on the
+// summary): that replaces the sheet's own history entry, so there's nothing left for a later close
+// to go back over.
+export function forgetSheet(): void {
+  pushed = false;
 }
 
 export function closeSheet(): void {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { dayLabel } from "@/lib/domain/history";
 import { elapsed, formatDuration, formatElapsed } from "@/lib/domain/timers";
@@ -16,7 +16,7 @@ import {
 } from "@/lib/domain/sessions";
 import { BackLink } from "./BackLink";
 import { LogLink } from "./LogLink";
-import { SessionEndBar } from "./SessionEndBar";
+import { replaceSheet } from "@/lib/sheets";
 import { RecapMoment } from "./RecapMoment";
 import { SessionRecap } from "./SessionRecap";
 import { WeekStrip } from "./WeekStrip";
@@ -26,14 +26,31 @@ import { WeekStrip } from "./WeekStrip";
 // number on it is derived from the sets in the local database. It's a read-only view: it never
 // asks whether you finished anything, and deleting a set stays on the log sheet.
 export function SessionSummary() {
-  const id = useSearchParams().get("id");
+  const params = useSearchParams();
+  const id = params.get("id");
   const data = useSessionSummary(id);
   const now = useNow();
   const summary = data?.summary ?? null;
   const recap = useSessionRecap(summary?.session ?? null);
-  // True from the moment you tap Finish until you close the recap cards. Never stored: the
-  // moment belongs to the tap, and the summary keeps the recap itself.
-  const [celebrating, setCelebrating] = useState(false);
+  // True from the moment you tap Finish until you close the recap cards. Finish on the live screen
+  // lands here with `finished=1`; the flag is read once and dropped from the URL straight away, so
+  // a reload or a later visit never replays the deck. Never stored: the moment belongs to the tap,
+  // and the summary keeps the recap itself.
+  const [celebrating, setCelebrating] = useState(() => params.has("finished"));
+  useEffect(() => {
+    if (!params.has("finished") || id === null) return;
+    window.history.replaceState(null, "", `/session?id=${encodeURIComponent(id)}`);
+  }, [params, id]);
+
+  // A link to the session you're still in opens the live screen over it, once: that's where the
+  // running session lives now, End included.
+  const sentLive = useRef(false);
+  const running = summary !== null && activeSession([summary.session], now, SESSION_GAP_MINUTES) !== null;
+  useEffect(() => {
+    if (!running || sentLive.current || params.has("live")) return;
+    sentLive.current = true;
+    replaceSheet("live", "1");
+  }, [running, params]);
   const closeMoment = useCallback(() => {
     setCelebrating(false);
     // The compact recap sits at the top of the page; bring it into view.
@@ -41,8 +58,7 @@ export function SessionSummary() {
   }, []);
 
   return (
-    // Bottom padding keeps the last card clear of the pinned End / Resume bar.
-    <div className="pb-32">
+    <div className="pb-8">
       <nav className="pb-4">
         <BackLink href="/" label="‹ Back" />
       </nav>
@@ -104,7 +120,6 @@ export function SessionSummary() {
               </ul>
             </section>
           ))}
-          <SessionEndBar sessionId={summary.session.id} onFinished={() => setCelebrating(true)} />
           {celebrating && recap && (
             <RecapMoment
               summary={summary}

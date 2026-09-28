@@ -17,9 +17,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   `tickets.md`), each ending in an iPhone check. CLAUDE.md says milestone 7.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Add the tab bar, Me tab, sheets and the set table`
-  (Tickets 41, 42, 45, 47 and 48). Ticket 40's docs commit is on `main`.
-- **Next: Ticket 43 — Live session bar and live screen**, then Ticket 46 (edit and undo).
+- **Last commit (on `redesign`):** `feature: Add the live session bar and live screen, and move
+  End there` (Ticket 43). Before it on the branch: Tickets 41, 42, 45, 47 and 48 in one commit.
+  Ticket 40's docs commit is on `main`.
+- **Next: Ticket 44 — the milestone 7 check on the iPhone**, then Ticket 46 (edit and undo).
 - **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `MeScreen.tsx`). The email
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
@@ -61,24 +62,27 @@ re-reading the whole repo. **Read this file at the start of every session**, the
     a set this session: the next board lift not done yet, swapped in place without a new
     history entry;
   - **Earlier · N sessions**, folded: the old history by day, swipe to delete, PR pills.
-- **Coverage strip** (top of the board, only while a session is active): six pills, one per
-  pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
+- **Coverage strip** (top of the board, and on the live screen, only while a session is active):
+  six pills, one per pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
   rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
   session ends (the idle gap, or Finish).
 - **Session summary** (`/session?id=…`): one session's sets grouped by exercise (in the order
   first performed), with totals and the time span. The span runs from the first set to **the end of
   the session** — the moment you tapped Finish, or the last set when the gap closed it — so the
   length is the whole workout. While the session is still running the page counts up live
-  (`Today 6:20 PM · 42:10`) instead of showing a frozen length. Read-only apart from the bottom bar below.
-  Tapping the session timer opens it; when no session is active, the board shows
-  "Last session · <day> ›" instead, linking to the most recent one. Under the header, a **week
+  (`Today 6:20 PM · 42:10`) instead of showing a frozen length. Read-only: no End bar since
+  Ticket 43, and opening it for a session still running brings up the live screen over it. It's
+  reached from Finish; the board's "Last session ›" link is gone until History (Ticket 54), so an
+  older summary has no way in for now. Tapping an exercise card opens its log sheet over the
+  summary. Under the header, a **week
   strip**: the session's week, Monday to Sunday, with trained days (any set) filled green; the
   session's own day is a green outline while it's still going and fills in once it's over. Days off are plain grey; no count, no target. Once the
   session is over (Finish, or the 90-minute gap), a **recap card** sits above the strip: the total
   weight lifted (`8,508 kg`, every set, warmups included), then **Muscles · Legs** (the group leaned on most), **Records · 5** and
   **Levels · 2** as folded rows you tap to open; Muscles opens the same star as the deck. Empty parts are left out. Level-ups show the exercise and a
   gold badge with a double up-arrow and the level.
-- **The finish moment** (only right after tapping Finish): the page dims and a deck of cards pops
+- **The finish moment** (only right after tapping Finish, which lands on the summary with a one-time
+  `finished=1` flag that's dropped from the URL at once): the page dims and a deck of cards pops
   up — a dark "Workout done" card with the total and counts in bold lime, then a **Muscles** card (a
   six-point star — Chest, Shoulders, Arms, Core, Legs, Back — each axis reaching out by that group's
   working sets, the busiest touching the rim; counts at each corner, 0 in grey), then Records (3 per card)
@@ -87,16 +91,24 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   confetti bursts from the bottom corners (lime, yellow, off-white; gone in ~2 s, never blocks a
   tap) and the total rolls up from 0 in 0.9 s. Reduced motion: no confetti, the total just shows. Never shown
   for a gap-closed session or a revisit, and nothing about it is stored.
-- **End session** (a bar pinned to the bottom of the summary, only for the active session):
-  **End session** writes nothing; it opens a sheet over a dimmed page: **End this session?**, a
-  red **Finish session** and, below it, **Resume session**. Resume (or tapping the dimmed page)
-  just goes back. Finish writes the end marker and is final: both timers disappear, the bar goes, and
-  nothing offers to undo it. The next set opens a new session. A session the 90-minute gap closed
-  looks the same, so forgetting to end still works.
-- **Timers** (only while a session is active, i.e. a set in the last 90 minutes): a small
-  grey `Session 42:10` (time since the session's first set, a link to the summary) in the
-  board header only, and a `Rest` timer (time since the last set, any exercise, counts up) at the
-  top right of the log sheet — the only counter there. There's no start button: your first set opens the session.
+- **Live session bar** (Ticket 43): from your first set until the session ends, a bar above the
+  tabs on Train, History and Me: a pulsing lime dot, `Rest 1:42` big, `Session 38:10 · 12 sets`
+  small. Never before a set, so there's still no Start button. A sheet covers it, so the log sheet's
+  rest timer is the only big counter while you log. Tapping it opens the live screen.
+- **Live screen** (`?live` over any page, Ticket 43, Figma 4.1): `SESSION · STARTED 6:04 PM`, the
+  session clock as the one big number, `Rest 1:42 · 12 sets` under it, the six coverage chips, and a
+  card per exercise in the order first performed (`82.5 × 5 · 85 × 5`). A card swaps the sheet to
+  that exercise's log sheet in place. With no session running it says so.
+- **End session** (the live screen's footer, Figma 4.2): an outlined **End session** writes nothing;
+  it shows **End this session?** with a line on what finishing means, a red **Finish session** above,
+  and **Resume** in exactly End's spot. Finish writes the end marker and is final: the bar goes, the
+  sheet's history entry is replaced by the summary (so back returns to the page you were on), and
+  the deck plays. The next set opens a new session. A session the 90-minute gap closed looks the
+  same, so forgetting to end still works.
+- **Timers** (only while a session is active, i.e. a set in the last 90 minutes): the live bar's
+  rest and session times, the live screen's session clock, and the log sheet's `REST` timer (time
+  since the last set, any exercise, counts up). All `now − timestamp`. There's no start button:
+  your first set opens the session.
 - **Record banner** (log sheet, Ticket 48): logging a working set that breaks a weight,
   rep-at-that-weight or e1RM record slides a yellow line in under the header,
   `New record · 85 kg × 5 (was 82.5)`, for 3 seconds. It doesn't dim anything and catches no
@@ -176,8 +188,8 @@ These aren't obvious from the code and shaped later work.
   read from the theme's CSS variables), no dependency. Haptics were ruled out (iOS web has no
   vibration API) and so was sound (headphones in, and Safari blocks audio without a tap).
   `useCountUp` is a display animation driven by `requestAnimationFrame`, not a timer.
-- **The session timer lives on the board only.** The log sheet shows just the rest timer; the way
-  into the summary (and End) is the board's timer.
+- **The session timer lives in the live bar and the live screen** (Ticket 43; before that, the
+  board's header). The log sheet shows just the rest timer.
 - **Neutral buttons press to `line`,** and only the Log button presses to the lime.
 - **`pnpm` isn't on the PATH in Claude's shell:** use `corepack pnpm …` (or the binaries
   in `frontend/node_modules/.bin`).
@@ -197,8 +209,8 @@ These aren't obvious from the code and shaped later work.
 - **The session summary is read-only** (delete stays on the log sheet) and opens the session
   that *contains* the id in the URL, so any set's id in a session works, not only its first.
 - **Date labels are short** ("13 Sep", "13 Sep 2025"), never "13th of September".
-- **The board's idle link shows only the most recent session.** A list of sessions is the
-  later history page.
+- **The board's "Last session ›" link was removed with its timer** (Ticket 43, per the redesign
+  plan). History (Ticket 54) is the way back to past sessions.
 - **The End marker time is `max(now, last set)`** (`endMarkerTime`), so it always satisfies
   `last set <= T < next set`, even if a set is stamped in the future. Ending an ended session
   writes nothing, so a double tap is one row.
@@ -217,8 +229,9 @@ These aren't obvious from the code and shaped later work.
   page (`bg-page/70`) and a shadow set it apart. The red is `--color-negative` `#c0392b`, a warning
   red toned down from a bright one (text-ink on it is 4.9:1). The slide-in animations live in
   `theme.css` and only run under `motion-safe:`.
-- **End lives only on the summary page** (two taps from the board via the session timer), never
-  beside the pinned Log button where a mis-tap would hurt.
+- **End lives only on the live screen** (Ticket 43; before that, the summary page), one tap from the
+  live bar and never beside the pinned Log button where a mis-tap would hurt. Its choice sits in the
+  sheet's footer, so Resume lands where End was.
 - `useSessionSummary` passes `deriveSessions` only the markers before the next set, so an older
   session never reads as ended because of a later one's marker.
 - **The board is your list, not a ranking** (milestone 4, the user's design). `template_items` is
@@ -369,6 +382,32 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 43: Live session bar and live screen — End moves off the summary
+`feature: Add the live session bar and live screen, and move End there` · 2026-09-29 · branch
+`redesign`
+
+- `TabBar` holds the live bar above the tabs while a session is active, and its spacer grows to
+  match.
+- `LiveSession.tsx` (Figma 4.1–4.2):
+  - the session clock, rest and set count;
+  - `CoverageStrip`;
+  - an exercise card per lift from `useSessionSummary`;
+  - `EndControls` in the sheet's footer.
+- `SheetHost` also opens `?live`, in the same `Sheet`, so a card swaps to a log sheet in place.
+  `lib/sheets.ts` gains `live` and `forgetSheet`.
+- Finish runs `endSession`, then `router.replace` to `/session?id=…&finished=1`. `SessionSummary`
+  reads the flag once to play the deck and drops it with `replaceState`, and it opens `?live` for
+  a session still running.
+- `SessionEndBar.tsx` and `SessionHeader.tsx` are deleted, which takes the board's session timer and
+  "Last session ›" with them. The untouched coverage chips use `raised`, so they show on the sheet.
+- Checked in headless Chrome at 390 × 844:
+  - the bar after a set, and following me to History;
+  - the live screen's contents;
+  - a card swapping to Bench Press with no extra history entry;
+  - End → Resume in the same spot (y 800) → End → Finish landing on the summary with the deck;
+  - a reload showing no deck, and back returning to History with the bar gone.
+- Not checked on the iPhone yet (Ticket 44).
 
 ### Tickets 41, 42, 45, 47 and 48: the tab bar, Me tab, sheets and the set table
 `feature: Add the tab bar, Me tab, sheets and the set table` · 2026-09-29 · branch `redesign`

@@ -22,7 +22,7 @@ export function CoverageStrip() {
             key={pattern}
             aria-label={`${patternLabel(pattern)} ${done ? "covered" : "not yet"}`}
             className={`inline-flex h-8 items-center rounded-pill px-3 text-sm font-semibold ${
-              done ? "bg-primary-pale text-ink-deep" : "bg-card text-body"
+              done ? "bg-primary-pale text-ink-deep" : "bg-raised text-body"
             }`}
           >
             {patternLabel(pattern)}

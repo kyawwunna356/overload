@@ -132,8 +132,8 @@ user's decisions:
 | 40 | Redesign rules — CLAUDE.md, build order 7–10, and this list (docs only) | done |
 | 41 | Tab bar and Me tab — Train, History, Me; backup and sign-in leave the board; a badge only for "Backup paused" | done |
 | 42 | Sheet host — a shared `Sheet` (grab handle, swipe down, Escape), `?log=` over any page with `pushState`, the log sheet over the board, and the `raised` token | done |
-| 43 | Live session bar and live screen — rest and session time after the first set, the session clock, coverage chips, exercises in the order done, End → Finish/Resume → deck → summary | next |
-| 44 | On-device check — run milestone 7 on the iPhone | not started |
+| 43 | Live session bar and live screen — rest and session time after the first set, the session clock, coverage chips, exercises in the order done, End → Finish/Resume → deck → summary | done |
+| 44 | On-device check — run milestone 7 on the iPhone | next |
 
 What each ticket builds from:
 - **41:**

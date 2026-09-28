@@ -3,7 +3,6 @@
 import { useBoard } from "@/lib/hooks/useBoard";
 import { CoverageStrip } from "./CoverageStrip";
 import { PatternGroup } from "./PatternGroup";
-import { SessionHeader } from "./SessionHeader";
 
 // The client boundary between the server-rendered page and the local database. Until
 // the first local read finishes (milliseconds) only the title shows — there is no
@@ -17,7 +16,6 @@ export function Board() {
         <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">
           Overload
         </h1>
-        <SessionHeader showLast />
       </header>
       <CoverageStrip />
       {groups && (
