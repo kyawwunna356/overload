@@ -256,9 +256,11 @@ renames, drops or retypes a column.
 ### Deploying and installing
 
 The app is a static site (`output: 'export'`): one HTML file per screen, and no server.
-1. **Vercel:** import the GitHub repo with **Root Directory** `frontend`; Next.js and pnpm are
-   detected. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as environment
-   variables and deploy. Every push to `main` redeploys.
+1. **Vercel:** import the GitHub repo with **Root Directory** `frontend`. Add
+   `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as environment variables and
+   deploy. Every push to `main` redeploys. `frontend/vercel.json` makes Vercel publish `out/`
+   exactly as built (`pnpm build`, clean URLs, `sw.js` never cached) rather than running its own
+   Next.js pipeline, which would leave the service worker out.
 2. **Supabase → Authentication → URL Configuration:** set **Site URL** to the Vercel address, and add
    `https://<app>.vercel.app/**` to **Redirect URLs**.
 3. **iPhone:** open the address in Safari, then **Share → Add to Home Screen**. Open it and sign in

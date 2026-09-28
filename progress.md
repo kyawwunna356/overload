@@ -17,7 +17,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   icons` (Ticket 38). The 1.0.0 release commit, tagged `v1.0.0`, follows it.
   - **Restore (Ticket 37) was confirmed on both devices by the user** after the purge and fresh
     start.
-  - **Not yet on Vercel or the iPhone:** the user creates the Vercel project, sets the Supabase Site
+  - **Deployed at https://overload-three-zeta.vercel.app** (then fixed so `sw.js` ships). Not yet
+    installed on the iPhone: the user creates the Vercel project, sets the Supabase Site
     URL and Redirect URL, and installs from Safari. That, plus the offline launch and Google
     returning into the installed app, is Ticket 39.
 - **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `AccountForm.tsx`). The email
@@ -331,6 +332,16 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Vercel publishes the static export as built
+`bugfix: Deploy out/ as built on Vercel so the service worker ships` · 2026-09-28
+
+- The first deploy (https://overload-three-zeta.vercel.app) served every screen, but `/sw.js` was
+  a 404: Vercel's Next.js pipeline serves Next's own output and skipped the worker that
+  `build-sw.mjs` writes into `out/`.
+- `frontend/vercel.json`: `framework: null`, `buildCommand: pnpm build`, `outputDirectory: out`,
+  `cleanUrls` (so `/exercise` serves `exercise.html`, as the worker expects), and `no-cache` on
+  `sw.js`.
 
 ### Release 1.0.0 — first launch
 `chore: Release 1.0.0 — version, changelog and an up-to-date README` · 2026-09-28 · tag `v1.0.0`
