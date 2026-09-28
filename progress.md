@@ -13,20 +13,20 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   the recap, swipe to delete, the one-list picker, the finish moment with confetti and the muscle
   star. **CLAUDE.md now says milestone 6.**
 - **Milestone 6 — Sync and install is under way** (Tickets 35–39 in `tickets.md`).
-- **Last commit:** `feature: Restore from Supabase — pull, adopt, and repair duplicates` (this
-  one, Ticket 37).
-  - **Not yet confirmed on devices.** On 2026-09-25 the Mac uploaded its own catalogue and list
-    next to the phone's, probably from an old tab still running Ticket 36's code, so the account
-    held two of each. The repair step was added in response.
-  - The user then chose to **purge everything** (all Supabase rows and accounts, and both
-    browsers' data) and start again.
-  - The end-to-end check was still waiting: the phone signs in first, then the Mac adopts.
+- **Last commit:** `feature: Install as an app — static export on Vercel, offline service worker,
+  icons` (Ticket 38). It's followed by the 1.0.0 release commit, tagged `v1.0.0`.
+  - **Restore (Ticket 37) was confirmed on both devices by the user** after the purge and fresh
+    start.
+  - **Not yet on Vercel or the iPhone:** the user creates the Vercel project, sets the Supabase Site
+    URL and Redirect URL, and installs from Safari. That, plus the offline launch and Google
+    returning into the installed app, is Ticket 39.
 - **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `AccountForm.tsx`). The email
   code still works in code, and the flag brings it back.
 - **Google on the phone** lands on `localhost` until the tunnel address is in Supabase's Redirect
   URLs.
-- **Next: Ticket 38 — Install** (static export on Vercel, manifest, service worker,
-  `storage.persist()`), once restore is confirmed on both devices.
+- **Next: Ticket 39 — the milestone 6 run-through on the iPhone.**
+- **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
+  port 3000. `next start` no longer works.
 - **Tests:** 411 Vitest tests, domain layer only.
 
 ## What works today
@@ -131,7 +131,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Look:** dark only; every color, font and radius is a token in `app/theme.css`. No text
   selection or long-press callout (inputs excepted) and no visible scrollbars, app-wide.
 
-**Not built yet:** PWA install (Ticket 38) and the history page.
+**Not built yet:** the history page.
 
 ## Decisions worth remembering
 
@@ -314,10 +314,42 @@ These aren't obvious from the code and shaped later work.
 - **Pulled rows write no outbox rows.** A row with any queued local change is skipped by the pull,
   so a set deleted offline never comes back.
 
+- **The app is a static export with a hand-rolled service worker** (Ticket 38), not next-pwa or
+  Serwist.
+  - `scripts/build-sw.mjs` precaches every file in `out/` under a content-hashed version.
+  - Screens are cached under their **clean** address (`/exercise`, not `/exercise.html`): the host
+    redirects `.html` to the clean address, and iOS refuses a redirected answer from a service
+    worker.
+  - Navigations ignore the query, so `/exercise?id=…` and `/account?code=…` open offline.
+  - Other origins are never touched.
+  - A new version activates at once but keeps the previous cache, so a screen opened under it
+    still finds its files.
+- **Literal colours live outside the rule check on purpose:** `app/manifest.webmanifest` (JSON) and
+  the icon PNGs mirror `--color-page` and `--color-primary`. `theme.css` says so.
+
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 38: Install — static export on Vercel, manifest, icons, service worker
+`feature: Install as an app — static export on Vercel, offline service worker, icons` · 2026-09-28
+
+- `output: 'export'`. `pnpm build` runs `next build`, then `scripts/build-sw.mjs`.
+  `pnpm preview` (the `serve` dev dependency) replaces `next start`.
+- `scripts/sw-template.js` (about 80 lines): precache on install, keep one previous version on
+  activate, pages by path, files cache-first ignoring the query, same-origin GET only, and no push
+  handler.
+- `useInstall`, mounted by `SyncAgent`, registers `/sw.js` in production and calls
+  `navigator.storage.persist()`. Neither awaits anything or stores anything.
+- `app/manifest.webmanifest`, the Apple web-app metadata (a translucent status bar over the dark
+  page), and the icons: a lime ring on near-black, rasterised with headless Chrome. The
+  create-next-app leftovers are gone.
+- Checked in headless Chrome with the server **stopped**:
+  - a reload of `/`, `/exercise?id=…`, `/account?code=…` and `/exercises` all opened;
+  - client navigation from the board into the picker worked;
+  - all 64 files were precached, and the manifest parsed with no errors.
+- Not checked: whether iOS grants persistence, a version-to-version update, and the iPhone itself.
 
 ### Three new catalogue exercises
 `feature: Add Seated Leg Curl, Machine Incline Press and Single-Arm Triceps Pushdown` · 2026-09-28

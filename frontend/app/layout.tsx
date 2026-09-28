@@ -8,9 +8,17 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+// Installed from Safari's Share → Add to Home Screen, it opens full-screen as "Overload" (the
+// manifest and icons are app/manifest.webmanifest, app/icon.png and app/apple-icon.png). The
+// translucent status bar lets the dark page run under it; the layout already pads for the notch.
 export const metadata: Metadata = {
   title: "Overload",
   description: "A personal strength log.",
+  appleWebApp: {
+    capable: true,
+    title: "Overload",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 // viewportFit "cover" lets the page reach under the iPhone notch and home bar,

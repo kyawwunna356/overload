@@ -31,7 +31,8 @@
   --color-*: initial;
 
   /* Surfaces */
-  --color-page: #0e0f0c; /* ink — the page behind everything (Wise's near-black) */
+  --color-page: #0e0f0c; /* ink — the page behind everything (Wise's near-black). Mirrored as
+     literals in app/manifest.webmanifest and the icons (public/icons, app/*.png): change them too */
   --color-card: #1a1c18; /* cards sit one step above the page */
   --color-line: #2c2f29; /* dividers inside a card; also a neutral button's pressed fill */
 
