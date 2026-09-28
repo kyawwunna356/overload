@@ -281,7 +281,7 @@ end-to-end on a real device.
 10. **History and first run**: sessions and exercises, exercise detail, a welcome, the install
     card, a backup prompt, custom exercises
 
-**Current milestone: 7**
+**Current milestone: 8**
 
 Seed ~6 weeks of realistic full-body training data early, before building UI. Without it
 the board sorting and prefill behaviour can't be evaluated.

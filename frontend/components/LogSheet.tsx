@@ -12,13 +12,16 @@ import { useLogSheet } from "@/lib/hooks/useLogSheet";
 import { useNextUp } from "@/lib/hooks/useNextUp";
 import { useNow } from "@/lib/hooks/useNow";
 import { replaceSheet } from "@/lib/sheets";
+import type { SetLog } from "@/lib/domain/types";
+import { deleteSet, restoreSet } from "@/lib/writes";
 import { BackLink } from "./BackLink";
 import { LevelBadge } from "./LevelBadge";
 import { RecordBanner } from "./RecordBanner";
 import { RestTimer } from "./RestTimer";
-import { SetEntry } from "./SetEntry";
+import { SetEdit, SetEntry } from "./SetEntry";
 import { SetHistory } from "./SetHistory";
 import { SetTable } from "./SetTable";
+import { Snackbar } from "./Snackbar";
 
 // The log sheet as a full page, chosen by `?id=` in the URL. It's kept for old links and for
 // opening an exercise straight from a bookmark; from the app, the same content opens as a sheet
@@ -49,6 +52,16 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
   const [record, setRecord] = useState<{ id: string; line: string } | null>(null);
   // Stable, so the clock's repaints don't restart the banner's countdown.
   const hideRecord = useCallback(() => setRecord(null), []);
+  // The today set open in the editor, and the last set deleted (for Undo). Throwaway UI state; the
+  // deleted set is only held here until the snackbar goes.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleted, setDeleted] = useState<SetLog | null>(null);
+  const hideDeleted = useCallback(() => setDeleted(null), []);
+  const remove = useCallback(async (set: SetLog) => {
+    await deleteSet(set.id);
+    setDeleted(set);
+    setEditingId((id) => (id === set.id ? null : id));
+  }, []);
 
   // The session you're in splits today from last time. With none active, the next set opens a
   // new session, so today is empty and the latest session is last time.
@@ -78,6 +91,21 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
   }
 
   const setNumber = table.today.length + 1;
+  // The set being edited, looked up afresh so a delete (here or on another tab) closes the editor.
+  const editingIndex = editingId === null ? -1 : table.today.findIndex((set) => set.id === editingId);
+  const editing = editingIndex >= 0 ? table.today[editingIndex] : null;
+  const undo = deleted && (
+    <Snackbar
+      key={deleted.id}
+      message="Set deleted"
+      action="Undo"
+      onAction={() => {
+        void restoreSet(deleted);
+        setDeleted(null);
+      }}
+      onDone={hideDeleted}
+    />
+  );
   const prefill = prefillFor(setNumber, table.lastTime, table.today, data.previous);
   const showTable = table.today.length > 0 || table.lastTime.length > 0;
 
@@ -109,9 +137,29 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
       {/* Keyed by set, so back-to-back records each get their own entrance. */}
       {record && <RecordBanner key={record.id} line={record.line} onDone={hideRecord} />}
 
-      {showTable && <SetTable today={table.today} lastTime={table.lastTime} records={table.records} />}
+      {showTable && (
+        <SetTable
+          today={table.today}
+          lastTime={table.lastTime}
+          records={table.records}
+          editingId={editing?.id ?? null}
+          onEdit={(set) => setEditingId((id) => (id === set.id ? null : set.id))}
+          onDelete={remove}
+        />
+      )}
 
+      {editing && (
+        <SetEdit
+          key={editing.id}
+          set={editing}
+          setNumber={editingIndex + 1}
+          above={undo}
+          onDone={() => setEditingId(null)}
+        />
+      )}
       <SetEntry
+        hidden={editing !== null}
+        above={undo}
         exerciseId={data.exercise.id}
         setNumber={setNumber}
         prefill={prefill}
@@ -129,7 +177,7 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
             </span>
           </summary>
           <div className="px-2 pb-3">
-            <SetHistory history={table.earlier} now={now} title={null} />
+            <SetHistory history={table.earlier} now={now} onDelete={remove} title={null} />
           </div>
         </details>
       )}

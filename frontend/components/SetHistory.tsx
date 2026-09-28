@@ -5,7 +5,6 @@ import { groupByDay } from "@/lib/domain/history";
 import { historyPRs } from "@/lib/domain/prs";
 import type { SetLog } from "@/lib/domain/types";
 import { formatSet, formatTime, kindLabel } from "@/lib/format";
-import { deleteSet } from "@/lib/writes";
 import { PRPill } from "./PRPill";
 import { SwipeToDelete } from "./SwipeToDelete";
 
@@ -20,10 +19,13 @@ import { SwipeToDelete } from "./SwipeToDelete";
 export function SetHistory({
   history,
   now,
+  onDelete,
   title = "History",
 }: {
   history: readonly SetLog[];
   now: number;
+  // The log sheet deletes, so it can offer Undo.
+  onDelete: (set: SetLog) => Promise<void>;
   // Null leaves the heading out, for a caller that labels the list itself.
   title?: string | null;
 }) {
@@ -47,7 +49,7 @@ export function SetHistory({
                 {day.sets.map((set) => (
                   <SwipeToDelete
                     key={set.id}
-                    onDelete={() => deleteSet(set.id)}
+                    onDelete={() => onDelete(set)}
                     className="flex min-h-16 items-center gap-3 px-6 py-2"
                   >
                     <div className="min-w-0 flex-1">
@@ -65,7 +67,7 @@ export function SetHistory({
                     <button
                       type="button"
                       aria-label={`Delete ${formatSet(set)} logged at ${formatTime(set.logged_at)}`}
-                      onClick={() => void deleteSet(set.id)}
+                      onClick={() => void onDelete(set)}
                       className="sr-only shrink-0 rounded-pill font-semibold text-negative-deep focus:not-sr-only focus:px-3 focus:py-2"
                     >
                       Delete

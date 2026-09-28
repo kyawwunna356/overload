@@ -27,22 +27,37 @@ type Gesture = {
 // `touch-action: pan-y` leaves vertical scrolling to the browser, which cancels the pointer when it
 // takes over, and a gesture that starts vertical is abandoned for good — so scrolling the history
 // never deletes anything. The only state is where the row sits right now; nothing is stored.
+//
+// With `onTap`, a plain tap on the row runs it (the log sheet opens the set for editing). A tap is
+// a press that never moved far enough to commit to either axis, so a swipe or a scroll can never
+// also count as a tap.
 export function SwipeToDelete({
   onDelete,
+  onTap,
+  label,
+  frameClassName = "",
   className,
   children,
 }: {
   onDelete: () => Promise<void>;
+  onTap?: () => void;
+  // What a tap does, for screen readers, when `onTap` is set.
+  label?: string;
+  // Extra classes on the frame that clips the red panel, e.g. a rounding to match the row's.
+  frameClassName?: string;
   className: string;
   children: React.ReactNode;
 }) {
   const [offset, setOffset] = useState(0);
   const [phase, setPhase] = useState<"idle" | "dragging" | "settling" | "leaving">("idle");
   const gesture = useRef<Gesture | null>(null);
+  // Whether the current press has moved past the lock distance, either way.
+  const moved = useRef(false);
 
   function down(event: React.PointerEvent<HTMLDivElement>) {
     if (phase === "leaving" || gesture.current !== null) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
+    moved.current = false;
     gesture.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -63,6 +78,7 @@ export function SwipeToDelete({
     if (g.axis === null) {
       g.axis = gestureAxis(dx, event.clientY - g.startY);
       if (g.axis === null) return;
+      moved.current = true;
       if (g.axis === "y") {
         gesture.current = null; // a scroll: the page has it
         return;
@@ -117,7 +133,7 @@ export function SwipeToDelete({
   }
 
   return (
-    <li className="relative overflow-hidden">
+    <li className={`relative overflow-hidden ${frameClassName}`}>
       <div aria-hidden className="absolute inset-0 flex items-center justify-end bg-negative px-6">
         <span className="font-semibold text-ink">Delete</span>
       </div>
@@ -127,8 +143,20 @@ export function SwipeToDelete({
         onPointerMove={move}
         onPointerUp={up}
         onPointerCancel={() => {
+          moved.current = true;
           if (gesture.current !== null) reset();
         }}
+        onClick={onTap && (() => {
+          if (!moved.current && phase !== "leaving") onTap();
+        })}
+        onKeyDown={onTap && ((event) => {
+          if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
+          event.preventDefault();
+          onTap();
+        })}
+        role={onTap ? "button" : undefined}
+        tabIndex={onTap ? 0 : undefined}
+        aria-label={onTap ? label : undefined}
         onTransitionEnd={() => {
           if (phase === "settling") setPhase("idle");
         }}

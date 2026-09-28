@@ -133,7 +133,7 @@ user's decisions:
 | 41 | Tab bar and Me tab — Train, History, Me; backup and sign-in leave the board; a badge only for "Backup paused" | done |
 | 42 | Sheet host — a shared `Sheet` (grab handle, swipe down, Escape), `?log=` over any page with `pushState`, the log sheet over the board, and the `raised` token | done |
 | 43 | Live session bar and live screen — rest and session time after the first set, the session clock, coverage chips, exercises in the order done, End → Finish/Resume → deck → summary | done |
-| 44 | On-device check — run milestone 7 on the iPhone | next |
+| 44 | On-device check — run milestone 7 on the iPhone | done |
 
 What each ticket builds from:
 - **41:**
@@ -166,10 +166,10 @@ Rewards never block a tap.
 | # | Ticket | Status |
 |---|---|---|
 | 45 | Set table — `previousSession` (domain), Last time beside Today, per-set prefill, and Earlier folded | done |
-| 46 | Edit and undo — tap a today row to edit it (`updateSet`), and Undo for 5 s after a delete (`restoreSet`) | not started |
+| 46 | Edit and undo — tap a today row to edit it (`updateSet`), and Undo for 5 s after a delete (`restoreSet`) | done |
 | 47 | Next up — the next lift on your board not done this session, swapped in place | done |
 | 48 | Record banner — slides in under the header for 3 s, no dimming, catches no taps (replaces `PRFlash`) | done |
-| 49 | On-device check — run milestone 8 on the iPhone | not started |
+| 49 | On-device check — run milestone 8 on the iPhone | next |
 
 What each ticket builds from:
 - **45:**

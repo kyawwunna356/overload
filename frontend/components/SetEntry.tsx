@@ -13,7 +13,7 @@ import {
 } from "@/lib/domain/entry";
 import type { SetLog } from "@/lib/domain/types";
 import { formatNumber, formatSet } from "@/lib/format";
-import { logSet } from "@/lib/writes";
+import { logSet, updateSet } from "@/lib/writes";
 import { useSheetFooter } from "./Sheet";
 
 // A second tap this soon after a log is almost certainly a double-tap, not another set.
@@ -31,6 +31,8 @@ export function SetEntry({
   history,
   onRecord,
   below,
+  above,
+  hidden = false,
 }: {
   exerciseId: string;
   // Which set of today this is, counting from 1.
@@ -42,6 +44,11 @@ export function SetEntry({
   onRecord: (set: SetLog, prs: PR[]) => void;
   // Shown under the Log button, e.g. Next up.
   below?: ReactNode;
+  // Shown over the Log button, e.g. the Undo snackbar.
+  above?: ReactNode;
+  // True while a set is being edited: the form steps aside but stays mounted, so an edit you'd
+  // made for the next set is still there when you come back.
+  hidden?: boolean;
 }) {
   const [edit, setEdit] = useState<Entry | null>(null); // null = untouched, follows the prefill
   const [failed, setFailed] = useState(false);
@@ -83,8 +90,11 @@ export function SetEntry({
         ? "First time: set your weight"
         : `Set ${setNumber} · same as your last set`;
 
+  if (hidden) return null;
+
   const actions = (
     <div className="relative mx-auto flex max-w-md flex-col gap-3">
+      {above}
       {failed && (
         <p role="alert" className="text-center text-sm font-semibold text-negative-deep">
           Couldn&apos;t save that set. Try again.
@@ -131,19 +141,115 @@ export function SetEntry({
         </div>
       </section>
 
-      {/* The primary action lives in the thumb zone: pinned to the bottom of the sheet, or of the
-          screen on the full page. */}
-      {footer ? (
-        createPortal(
-          <div className="px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">{actions}</div>,
-          footer,
-        )
-      ) : (
-        <div className="fixed inset-x-0 bottom-0 z-10 rounded-t-card bg-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {actions}
-        </div>
-      )}
+      <Pinned footer={footer}>{actions}</Pinned>
     </>
+  );
+}
+
+// Editing one of today's sets in place (Figma 3.3): the same steppers, loaded with that set's
+// numbers, under a lime outline, with Cancel and Save set N where the Log button was. Saving
+// changes only the weight and reps (updateSet); the set keeps its time and its place.
+export function SetEdit({
+  set,
+  setNumber,
+  above,
+  onDone,
+}: {
+  set: SetLog;
+  setNumber: number;
+  // Shown over the buttons, e.g. the Undo snackbar.
+  above?: ReactNode;
+  // Save or Cancel finished; back to logging.
+  onDone: () => void;
+}) {
+  const [entry, setEntry] = useState<Entry>({ weight: set.weight, reps: set.reps });
+  const [failed, setFailed] = useState(false);
+  const footer = useSheetFooter();
+
+  async function save() {
+    setFailed(false);
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    try {
+      await updateSet(set.id, entry);
+      onDone();
+    } catch {
+      setFailed(true);
+    }
+  }
+
+  return (
+    <>
+      <section className="rounded-card bg-raised p-6 ring-2 ring-primary">
+        <p className="pb-5 text-center text-sm font-semibold text-primary">Editing set {setNumber}</p>
+        <div className="flex flex-col gap-6">
+          <Stepper
+            label="Weight"
+            unit="kg"
+            value={entry.weight}
+            ghost={false}
+            inputMode="decimal"
+            format={formatNumber}
+            parse={parseWeight}
+            step={stepWeight}
+            onChange={(weight) => setEntry({ ...entry, weight })}
+          />
+          <Stepper
+            label="Reps"
+            unit="reps"
+            value={entry.reps}
+            ghost={false}
+            inputMode="numeric"
+            format={String}
+            parse={parseReps}
+            step={stepReps}
+            onChange={(reps) => setEntry({ ...entry, reps })}
+          />
+        </div>
+      </section>
+
+      <Pinned footer={footer}>
+        <div className="mx-auto flex max-w-md flex-col gap-3">
+          {above}
+          {failed && (
+            <p role="alert" className="text-center text-sm font-semibold text-negative-deep">
+              Couldn&apos;t save that set. Try again.
+            </p>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onDone}
+              className="h-16 flex-1 touch-manipulation rounded-pill border border-line text-xl font-semibold text-ink active:bg-line"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void save()}
+              className="h-16 flex-1 touch-manipulation rounded-pill bg-primary text-xl font-bold text-on-primary active:bg-primary-active"
+            >
+              Save set {setNumber}
+            </button>
+          </div>
+        </div>
+      </Pinned>
+    </>
+  );
+}
+
+// The primary actions live in the thumb zone: in the sheet's footer, or pinned to the bottom of
+// the screen on the full page.
+function Pinned({ footer, children }: { footer: HTMLElement | null; children: ReactNode }) {
+  if (footer) {
+    return createPortal(
+      <div className="px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">{children}</div>,
+      footer,
+    );
+  }
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-10 rounded-t-card bg-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      {children}
+    </div>
   );
 }
 

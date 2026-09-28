@@ -3,13 +3,13 @@
 import type { PR } from "@/lib/domain/prs";
 import type { SetLog } from "@/lib/domain/types";
 import { formatSet, formatSetShort, formatTime } from "@/lib/format";
-import { deleteSet } from "@/lib/writes";
 import { PRPill } from "./PRPill";
 import { SwipeToDelete } from "./SwipeToDelete";
 
 // Today's sets as a numbered table, each beside the same set from last time (Hevy's PREVIOUS
 // column), then the next set to log, lit up. It answers "what did I do last time" set by set,
-// not only the final set. Swipe a today row left to delete it, as in the history.
+// not only the final set. Tap a today row to edit it (it gets a lime outline while it's open);
+// swipe it left to delete it, as in the history.
 //
 // "Today" is this exercise's sets in the session you're in; "last time" is its previous session
 // (previousSession). Both are derived; nothing here is stored.
@@ -19,10 +19,17 @@ export function SetTable({
   today,
   lastTime,
   records,
+  editingId,
+  onEdit,
+  onDelete,
 }: {
   today: readonly SetLog[];
   lastTime: readonly SetLog[];
   records: ReadonlyMap<string, PR[]>;
+  // The set open in the editor, if any.
+  editingId: string | null;
+  onEdit: (set: SetLog) => void;
+  onDelete: (set: SetLog) => Promise<void>;
 }) {
   const next = today.length + 1;
   const lastFor = (n: number) => {
@@ -41,8 +48,13 @@ export function SetTable({
         {today.map((set, i) => (
           <SwipeToDelete
             key={set.id}
-            onDelete={() => deleteSet(set.id)}
-            className={`${GRID} min-h-14 px-4`}
+            onDelete={() => onDelete(set)}
+            onTap={() => onEdit(set)}
+            label={`Edit set ${i + 1}, ${formatSet(set)}`}
+            frameClassName={set.id === editingId ? "rounded-control" : ""}
+            className={`${GRID} min-h-14 px-4 ${
+              set.id === editingId ? "rounded-control ring-2 ring-primary ring-inset" : ""
+            }`}
           >
             <span className="text-body tabular-nums">{i + 1}</span>
             <span className="text-lg text-mute tabular-nums">{lastFor(i + 1)}</span>
@@ -58,7 +70,10 @@ export function SetTable({
               <button
                 type="button"
                 aria-label={`Delete set ${i + 1}, ${formatSet(set)} at ${formatTime(set.logged_at)}`}
-                onClick={() => void deleteSet(set.id)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void onDelete(set);
+                }}
                 className="sr-only rounded-pill font-semibold text-negative-deep focus:not-sr-only focus:px-3 focus:py-2"
               >
                 Delete

@@ -52,6 +52,35 @@ export async function deleteSet(id: string): Promise<void> {
   });
 }
 
+// Changes a set's numbers in place (tap a row on the log sheet to fix a mistyped set). Only the
+// weight and reps change: logged_at stays, so the set keeps its place in its session and neither
+// timer moves (Hard Rule 4). Everything built on it — PRs, levels, last time — is derived and
+// follows. updated_at moves on, so last write wins keeps this version. A set that's gone does
+// nothing.
+export async function updateSet(id: string, entry: { weight: number; reps: number }): Promise<void> {
+  const now = Date.now();
+  await db.transaction('rw', db.set_logs, db.outbox, async () => {
+    const set = await db.set_logs.get(id);
+    if (!set) return;
+    const updated: SetLog = { ...set, weight: entry.weight, reps: entry.reps, updated_at: now };
+    await db.set_logs.put(updated);
+    await db.outbox.add(outboxRow('set_logs', 'upsert', updated, now));
+  });
+}
+
+// Undo for a delete: puts the set back exactly as it was — same id, time and numbers — so it
+// returns to its place in the session. The outbox pushes in write order, so the remote copy is
+// deleted and then written again. Restoring a set that's already back does nothing.
+export async function restoreSet(set: SetLog): Promise<void> {
+  const now = Date.now();
+  await db.transaction('rw', db.set_logs, db.outbox, async () => {
+    if (await db.set_logs.get(set.id)) return;
+    const restored: SetLog = { ...set, updated_at: now };
+    await db.set_logs.add(restored);
+    await db.outbox.add(outboxRow('set_logs', 'upsert', restored, now));
+  });
+}
+
 // Finishes a session by writing an end marker (Hard Rule 2). The summary's End session button only
 // opens the Resume / Finish choice; this runs when you choose Finish, and it's final — nothing
 // deletes a marker. It's never required: an idle gap closes a forgotten session on its own. The

@@ -12,15 +12,19 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone on 2026-09-28 (Ticket 39), and everything passed: the app installed from
   https://overload-three-zeta.vercel.app, restored the history through Google sign-in, and logged
   offline.
-- **Milestone 7 — the redesign — starts now.** The user's UX flow plan and Figma file
-  (*Overload — UI/UX redesign*) are split into four milestones, 7–10 (Tickets 40–58 in
-  `tickets.md`), each ending in an iPhone check. CLAUDE.md says milestone 7.
+- **The redesign** follows the user's UX flow plan and Figma file (*Overload — UI/UX redesign*),
+  split into four milestones, 7–10 (Tickets 40–58 in `tickets.md`), each ending in an iPhone check.
+- **Milestone 7 — Shell and live session is finished** (Tickets 40–44). The user confirmed the
+  check on the iPhone on 2026-09-29 (Ticket 44).
+- **Milestone 8 — Log sheet as a set table is built** (Tickets 45–48). Only its iPhone check is
+  left. CLAUDE.md says milestone 8.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Add the live session bar and live screen, and move
-  End there` (Ticket 43). Before it on the branch: Tickets 41, 42, 45, 47 and 48 in one commit.
-  Ticket 40's docs commit is on `main`.
-- **Next: Ticket 44 — the milestone 7 check on the iPhone**, then Ticket 46 (edit and undo).
+- **Last commit (on `redesign`):** `feature: Edit a set in place and undo a delete` (Ticket 46).
+  Before it on the branch: Ticket 43, then Tickets 41, 42, 45, 47 and 48 in one commit. Ticket 40's
+  docs commit is on `main`.
+- **Next: Ticket 49 — the milestone 8 check on the iPhone**, then milestone 9 (Board, picker and
+  summary, Tickets 50–53).
 - **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `MeScreen.tsx`). The email
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
@@ -62,6 +66,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
     a set this session: the next board lift not done yet, swapped in place without a new
     history entry;
   - **Earlier · N sessions**, folded: the old history by day, swipe to delete, PR pills.
+  - **Edit and undo** (Ticket 46, Figma 3.3):
+    - Tap one of today's rows to edit it. It gets a lime outline, the entry block reads
+      `Editing set 2` with that set's numbers, and the footer becomes **Cancel** / **Save set 2**.
+    - Save changes only the weight and reps (`updateSet`). The set keeps its time and its place.
+      Tapping the same row again, or Cancel, goes back to logging.
+    - A swipe-delete, in the table or Earlier, shows `Set deleted · Undo` over the Log button for
+      5 s. Undo (`restoreSet`) puts the same set back, with the same id and time.
+    - A swipe or scroll never counts as a tap.
 - **Coverage strip** (top of the board, and on the live screen, only while a session is active):
   six pills, one per pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
   rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
@@ -373,6 +385,14 @@ These aren't obvious from the code and shaped later work.
   - A sheet drags down only from its grab strip, so the content still scrolls under a finger.
   - **"Today" is this lift's sets in the active session.** With none active, today is empty and
     the latest session is last time.
+  - **Editing a set keeps its `logged_at`** (Ticket 46), so the session, timers and set number
+    don't move, and the PRs recompute because they're derived.
+  - **Undo restores the same row** (same id and time) rather than logging a new one. The outbox
+    carries the delete and then the re-insert, in order.
+  - **Only today's rows are editable for now.** Past sets become editable with History's exercise
+    detail (Ticket 55), which reuses `updateSet` and `restoreSet`.
+  - **Saving an edit shows no record banner**, which belongs to the moment of logging. The PR pill
+    still follows.
   - **An edit carries on to later sets** until the sheet closes, which is how Figma shows 82.5
     prefilled against last time's 80.
   - The PR pill is record yellow everywhere, as in Figma.
@@ -382,6 +402,34 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 46: Edit and undo — fix a set in place, take back a delete
+`feature: Edit a set in place and undo a delete` · 2026-09-29 · branch `redesign`
+
+- Milestone 7 closed: the user confirmed the iPhone check (Ticket 44). CLAUDE.md's current
+  milestone is 8.
+- `lib/writes.ts` gains two writes, each one Dexie transaction plus an outbox upsert:
+  - `updateSet(id, {weight, reps})` changes only the numbers and `updated_at`;
+  - `restoreSet(set)` puts a deleted set back under its own id.
+- `SetEntry.tsx`:
+  - a new `SetEdit` has a lime-outlined entry, `Editing set N`, and Cancel / Save set N;
+  - the Log form takes `hidden` (it stays mounted, so a carried edit survives) and `above`;
+  - a shared `Pinned` puts either footer in the sheet, or pins it on the full page.
+- `Snackbar.tsx` (new) shows `Set deleted · Undo` for 5 s. `LogSheetBody` owns the `editingId`
+  and the deleted set.
+- `SetTable` and `SetHistory` delete through the sheet, so both can undo. `SwipeToDelete` gains:
+  - `onTap`, which only fires when the press never committed to an axis;
+  - `role="button"`, with Enter and Space;
+  - `frameClassName`, so a rounded editing outline doesn't show the red panel at its corners.
+- Checked in headless Chrome at 390 × 844 with touch:
+  - row 2 opening the editor;
+  - Save at +5 kg giving 85 × 5 with a PR pill, where IndexedDB showed the same `logged_at` and a
+    second upsert queued;
+  - Cancel leaving a set untouched, and a short swipe not opening the editor;
+  - a full swipe deleting with the snackbar, and Undo restoring the same id and time (outbox:
+    log, delete, upsert);
+  - the snackbar leaving after 5 s.
+- Not checked on the iPhone yet (Ticket 49).
 
 ### Ticket 43: Live session bar and live screen — End moves off the summary
 `feature: Add the live session bar and live screen, and move End there` · 2026-09-29 · branch
