@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ENTRY,
+  prefillFor,
   parseReps,
   parseWeight,
   prefillFrom,
@@ -98,5 +99,28 @@ describe('prefillFrom', () => {
 
   it('keeps bodyweight as weight 0', () => {
     expect(prefillFrom(makeSet({ weight: 0, reps: 9 }))).toEqual({ weight: 0, reps: 9 });
+  });
+});
+
+describe('prefillFor', () => {
+  const set = (weight: number, reps: number, kind: 'working' | 'warmup' = 'working') => ({ weight, reps, kind });
+  const lastTime = [set(80, 5), set(80, 5), set(80, 4)];
+
+  it("takes the same set number from last time", () => {
+    expect(prefillFor(1, lastTime, [], null)).toEqual({ entry: { weight: 80, reps: 5 }, source: 'last-time' });
+    expect(prefillFor(3, lastTime, [set(82.5, 5), set(85, 5)], null)).toEqual({
+      entry: { weight: 80, reps: 4 },
+      source: 'last-time',
+    });
+  });
+
+  it("falls back to your last working set today once you're past last time's sets", () => {
+    const today = [set(80, 5), set(80, 5), set(80, 4), set(85, 3), set(20, 10, 'warmup')];
+    expect(prefillFor(6, lastTime, today, null)).toEqual({ entry: { weight: 85, reps: 3 }, source: 'today' });
+  });
+
+  it('then to the last working set ever, then to the default', () => {
+    expect(prefillFor(1, [], [], set(60, 8))).toEqual({ entry: { weight: 60, reps: 8 }, source: 'previous' });
+    expect(prefillFor(1, [], [], null)).toEqual({ entry: DEFAULT_ENTRY, source: 'default' });
   });
 });

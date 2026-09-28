@@ -1,13 +1,13 @@
 import { Suspense } from "react";
-import { AccountForm } from "@/components/AccountForm";
+import { MeScreen } from "@/components/MeScreen";
 
-// Sign in to back up. A static page like the others, so it opens with no signal; the form says
-// so if you try to sign in offline. The Suspense boundary lets AccountForm read `?code` (the
-// Google return) in the browser while the page itself is prerendered.
+// The Me tab: backup, sign-in, install and version. A static page like the others, so it opens
+// with no signal; sign-in says so when there's none. The Suspense boundary lets MeScreen read
+// `?code` (the Google return) in the browser while the page itself is prerendered.
 export default function AccountPage() {
   return (
     <Suspense fallback={null}>
-      <AccountForm />
+      <MeScreen />
     </Suspense>
   );
 }

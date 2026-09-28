@@ -1,9 +1,9 @@
-import Link from "next/link";
 import type { BoardRow } from "@/lib/domain/board";
 import { formatDaysAgo, formatSet } from "@/lib/format";
+import { LogLink } from "./LogLink";
 
 // One exercise: its name, the last working set (the value you'd repeat), and how long
-// ago it was performed. Tapping opens its log sheet, which the chevron says.
+// ago it was performed. Tapping opens its log sheet over the board, which the chevron says.
 //
 // The name is the one white thing on a row. The last set and its age are quiet on purpose — the
 // user found them clashing with the name in white — so they use text-mute, the faintest token,
@@ -14,8 +14,8 @@ export function ExerciseRow({ row }: { row: BoardRow }) {
   const ago = daysSince === null ? null : formatDaysAgo(daysSince);
   return (
     <li>
-      <Link
-        href={`/exercise?id=${encodeURIComponent(exercise.id)}`}
+      <LogLink
+        exerciseId={exercise.id}
         className="flex min-h-16 touch-manipulation items-center gap-3 py-3 pr-4 pl-6 active:bg-page"
       >
         <span className="min-w-0 flex-1 text-base font-semibold text-ink">{exercise.name}</span>
@@ -29,7 +29,7 @@ export function ExerciseRow({ row }: { row: BoardRow }) {
         <span aria-hidden className="shrink-0 text-2xl leading-none text-mute">
           ›
         </span>
-      </Link>
+      </LogLink>
     </li>
   );
 }

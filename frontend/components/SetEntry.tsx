@@ -1,48 +1,55 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { detectPR, type PR } from "@/lib/domain/prs";
 import {
   parseReps,
   parseWeight,
-  prefillFrom,
   stepReps,
   stepWeight,
   type Entry,
+  type Prefill,
 } from "@/lib/domain/entry";
 import type { SetLog } from "@/lib/domain/types";
-import { formatDaysAgo, formatNumber, formatSet } from "@/lib/format";
+import { formatNumber, formatSet } from "@/lib/format";
 import { logSet } from "@/lib/writes";
-import { PRFlash } from "./PRFlash";
+import { useSheetFooter } from "./Sheet";
 
 // A second tap this soon after a log is almost certainly a double-tap, not another set.
 const DOUBLE_TAP_GUARD_MS = 600;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
-// The entry form. It starts as a copy of the last working set shown in a muted "ghost"
-// style; "Log set" records exactly what's shown, so repeating a set is one tap. Editing
-// either number makes both solid. Nothing here is stored except the throwaway edit state —
-// the ghost values are derived from the previous set.
+// The entry form for the next set. Untouched, it shows the prefill in a muted "ghost" style —
+// last time's same set number, else your last set today (prefillFor) — and "Log" records exactly
+// what's shown, so repeating a set is one tap. Editing either number makes both solid, and the
+// edit carries on to the following sets until you leave the sheet. Nothing here is stored except
+// that throwaway edit.
 export function SetEntry({
   exerciseId,
-  previous,
+  setNumber,
+  prefill,
   history,
-  now,
+  onRecord,
+  below,
 }: {
   exerciseId: string;
-  previous: SetLog | null;
+  // Which set of today this is, counting from 1.
+  setNumber: number;
+  prefill: Prefill;
   // This exercise's sets as they stood before the tap — what a new set is judged against.
   history: readonly SetLog[];
-  now: number;
+  // A logged set broke a record; the sheet shows the banner.
+  onRecord: (set: SetLog, prs: PR[]) => void;
+  // Shown under the Log button, e.g. Next up.
+  below?: ReactNode;
 }) {
-  const [edit, setEdit] = useState<Entry | null>(null); // null = untouched, follows `previous`
+  const [edit, setEdit] = useState<Entry | null>(null); // null = untouched, follows the prefill
   const [failed, setFailed] = useState(false);
-  const [flash, setFlash] = useState<{ setId: string; prs: PR[] } | null>(null);
   const lastLogAt = useRef(0);
-  // Stable, so the page's clock repaints don't restart the flash's countdown.
-  const hideFlash = useCallback(() => setFlash(null), []);
+  // Inside a sheet, the Log button goes in the sheet's footer; on a full page it pins itself.
+  const footer = useSheetFooter();
 
-  const entry = edit ?? prefillFrom(previous);
+  const entry = edit ?? prefill.entry;
   const ghost = edit === null;
 
   async function handleLog() {
@@ -52,7 +59,6 @@ export function SetEntry({
     // Drop focus so a half-typed value isn't left on screen and the keypad closes.
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     setFailed(false);
-    setFlash(null);
     try {
       // Every set logged here is a working set. The set type stays in the data (kind), with no
       // picker on screen for now; bringing the chips back needs no data change.
@@ -63,19 +69,41 @@ export function SetEntry({
         kind: "working",
       });
       const prs = detectPR(set, history);
-      if (prs.length > 0) setFlash({ setId: set.id, prs });
+      if (prs.length > 0) onRecord(set, prs);
     } catch {
       setFailed(true);
     }
   }
 
-  const caption = previous
-    ? `Last time · ${formatSet(previous)} · ${formatDaysAgo((now - previous.logged_at) / DAY_MS)}`
-    : "First time — set your weight";
+  const caption = !ghost
+    ? `Set ${setNumber}`
+    : prefill.source === "last-time"
+      ? `Set ${setNumber} · prefilled from last time's set ${setNumber}`
+      : prefill.source === "default"
+        ? "First time: set your weight"
+        : `Set ${setNumber} · same as your last set`;
+
+  const actions = (
+    <div className="relative mx-auto flex max-w-md flex-col gap-3">
+      {failed && (
+        <p role="alert" className="text-center text-sm font-semibold text-negative-deep">
+          Couldn&apos;t save that set. Try again.
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={handleLog}
+        className="h-16 w-full touch-manipulation rounded-pill bg-primary text-xl font-bold text-on-primary active:bg-primary-active"
+      >
+        Log {formatSet(entry)}
+      </button>
+      {below}
+    </div>
+  );
 
   return (
     <>
-      <section className="rounded-card bg-card p-6">
+      <section className="rounded-card bg-raised p-6">
         <p className="pb-5 text-center text-sm text-body">{caption}</p>
         <div className="flex flex-col gap-6">
           <Stepper
@@ -103,25 +131,18 @@ export function SetEntry({
         </div>
       </section>
 
-      {/* Pinned to the bottom of the screen: the primary action lives in the thumb zone. */}
-      <div className="fixed inset-x-0 bottom-0 z-10 rounded-t-card bg-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <div className="relative mx-auto flex max-w-md flex-col gap-3">
-          {/* Keyed by set, so back-to-back records each get their own entrance. */}
-          {flash && <PRFlash key={flash.setId} prs={flash.prs} onDone={hideFlash} />}
-          {failed && (
-            <p role="alert" className="text-center text-sm font-semibold text-negative-deep">
-              Couldn&apos;t save that set. Try again.
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={handleLog}
-            className="h-16 w-full touch-manipulation rounded-pill bg-primary text-xl font-bold text-on-primary active:bg-primary-active"
-          >
-            Log {formatSet(entry)}
-          </button>
+      {/* The primary action lives in the thumb zone: pinned to the bottom of the sheet, or of the
+          screen on the full page. */}
+      {footer ? (
+        createPortal(
+          <div className="px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">{actions}</div>,
+          footer,
+        )
+      ) : (
+        <div className="fixed inset-x-0 bottom-0 z-10 rounded-t-card bg-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {actions}
         </div>
-      </div>
+      )}
     </>
   );
 }

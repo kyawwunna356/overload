@@ -53,6 +53,27 @@ export function formatSet(set: Pick<SetLog, 'weight' | 'reps'>): string {
   return `${load} × ${set.reps}`;
 }
 
+// "82.5 × 5", for the log sheet's set table where the kg is understood; "BW × 9" for bodyweight.
+export function formatSetShort(set: Pick<SetLog, 'weight' | 'reps'>): string {
+  return `${set.weight === 0 ? 'BW' : formatNumber(set.weight)} × ${set.reps}`;
+}
+
+// The record banner's one line: "New record · 85 kg × 5 (was 82.5)". It names the loudest record
+// broken — heavier beats more reps beats a better e1RM — and what it beat.
+export function recordLine(set: Pick<SetLog, 'weight' | 'reps'>, prs: readonly PR[]): string {
+  const weight = prs.find((pr) => pr.kind === 'weight');
+  const reps = prs.find((pr) => pr.kind === 'reps');
+  const e1rm = prs.find((pr) => pr.kind === 'e1rm');
+  const was = weight
+    ? `was ${formatNumber(weight.previous)}`
+    : reps
+      ? `was ${countLabel(reps.previous, 'rep')}`
+      : e1rm
+        ? `e1RM was ${prAmount(e1rm, e1rm.previous)}`
+        : null;
+  return `New record · ${formatSet(set)}${was ? ` (${was})` : ''}`;
+}
+
 // "today", "1d", "6d". Rounds, so a set from yesterday evening still reads "1d" the
 // next morning rather than "today".
 export function formatDaysAgo(days: number): string {

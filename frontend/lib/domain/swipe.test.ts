@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gestureAxis, swipeOffset, swipeOutcome } from './swipe';
+import { dismissOffset, dismissOutcome, gestureAxis, swipeOffset, swipeOutcome } from './swipe';
 
 const WIDTH = 360;
 
@@ -64,5 +64,33 @@ describe('swipeOutcome', () => {
 
   it('springs back from a flick that turned back right', () => {
     expect(swipeOutcome(-60, WIDTH, 0.8)).toBe('reset');
+  });
+});
+
+const HEIGHT = 780;
+
+describe('dismissOffset', () => {
+  it('follows the finger down and never up', () => {
+    expect(dismissOffset(120)).toBe(120);
+    expect(dismissOffset(0)).toBe(0);
+    expect(dismissOffset(-40)).toBe(0);
+  });
+});
+
+describe('dismissOutcome', () => {
+  it('closes past a quarter of the height', () => {
+    expect(dismissOutcome(HEIGHT / 4, HEIGHT, 0)).toBe('close');
+    expect(dismissOutcome(HEIGHT / 4 - 1, HEIGHT, 0)).toBe('reset');
+  });
+
+  it('closes on a downward flick that travelled far enough', () => {
+    expect(dismissOutcome(60, HEIGHT, 0.8)).toBe('close');
+    expect(dismissOutcome(30, HEIGHT, 0.8)).toBe('reset');
+  });
+
+  it('springs back on a slow short drag, or an upward flick', () => {
+    expect(dismissOutcome(100, HEIGHT, 0.2)).toBe('reset');
+    expect(dismissOutcome(100, HEIGHT, -0.9)).toBe('reset');
+    expect(dismissOutcome(0, HEIGHT, 0)).toBe('reset');
   });
 });

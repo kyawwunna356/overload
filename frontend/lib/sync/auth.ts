@@ -8,7 +8,8 @@ import { isConfigured, supabase } from './supabase';
 // once per device, never the logging path. Every call returns a result instead of throwing, so
 // the screen can say what happened in plain words.
 
-export type Account = { userId: string; label: string };
+// `label` is the name to show (the Google name, else the email); `email` is shown under it.
+export type Account = { userId: string; label: string; email: string | null };
 
 export type AuthResult = { ok: true } | { ok: false; reason: 'offline' | 'rejected' | 'unconfigured' };
 
@@ -21,7 +22,8 @@ function accountOf(session: Session | null): Account | null {
   const { user } = session;
   const meta: Record<string, unknown> = user.user_metadata ?? {};
   const name = typeof meta.full_name === 'string' ? meta.full_name : undefined;
-  return { userId: user.id, label: name ?? user.email ?? 'Signed in' };
+  const email = user.email ?? null;
+  return { userId: user.id, label: name ?? email ?? 'Signed in', email };
 }
 
 function failure(error: unknown): AuthResult {

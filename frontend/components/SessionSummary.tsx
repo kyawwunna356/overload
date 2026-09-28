@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { dayLabel } from "@/lib/domain/history";
 import { elapsed, formatDuration, formatElapsed } from "@/lib/domain/timers";
@@ -16,6 +15,7 @@ import {
   type DerivedSession,
 } from "@/lib/domain/sessions";
 import { BackLink } from "./BackLink";
+import { LogLink } from "./LogLink";
 import { SessionEndBar } from "./SessionEndBar";
 import { RecapMoment } from "./RecapMoment";
 import { SessionRecap } from "./SessionRecap";
@@ -79,13 +79,13 @@ export function SessionSummary() {
           {summary.groups.map((group) => (
             <section key={group.sets[0].exercise_id} className="overflow-hidden rounded-card bg-card">
               {group.exercise ? (
-                <Link
-                  href={`/exercise?id=${encodeURIComponent(group.exercise.id)}`}
+                <LogLink
+                  exerciseId={group.exercise.id}
                   className="block min-h-16 touch-manipulation px-6 py-3 active:bg-page"
                 >
                   <h2 className="text-lg font-semibold text-ink">{group.exercise.name}</h2>
                   <p className="text-sm text-body">{patternLabel(group.exercise.pattern)}</p>
-                </Link>
+                </LogLink>
               ) : (
                 <div className="min-h-16 px-6 py-3">
                   <h2 className="text-lg font-semibold text-ink">Unknown exercise</h2>

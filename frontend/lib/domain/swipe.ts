@@ -30,3 +30,18 @@ export function swipeOutcome(dx: number, width: number, velocity: number): 'dele
   if (velocity <= -FLICK_SPEED && dx <= -FLICK_MIN_PX) return 'delete';
   return 'reset';
 }
+
+// Swiping a sheet down to close it — the same decision turned on its side. The sheet follows the
+// finger downward only (dragging up does nothing), and letting go closes it past a quarter of its
+// height or on a real downward flick; otherwise it springs back up.
+const DISMISS_FRACTION = 0.25;
+
+export function dismissOffset(dy: number): number {
+  return Math.max(0, dy);
+}
+
+export function dismissOutcome(dy: number, height: number, velocity: number): 'close' | 'reset' {
+  if (dy >= height * DISMISS_FRACTION) return 'close';
+  if (velocity >= FLICK_SPEED && dy >= FLICK_MIN_PX) return 'close';
+  return 'reset';
+}

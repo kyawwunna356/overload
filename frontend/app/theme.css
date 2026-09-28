@@ -34,6 +34,7 @@
   --color-page: #0e0f0c; /* ink — the page behind everything (Wise's near-black). Mirrored as
      literals in app/manifest.webmanifest: change it too */
   --color-card: #1a1c18; /* cards sit one step above the page */
+  --color-raised: #23261f; /* one step above a card: the blocks inside a sheet */
   --color-line: #2c2f29; /* dividers inside a card; also a neutral button's pressed fill */
 
   /* Text */
@@ -54,6 +55,7 @@
   --color-positive-deep: #7fe39a; /* positive-deep */
   --color-warning: #ffd11a; /* warning */
   --color-warning-deep: #ffb84d; /* warning-deep */
+  --color-warning-pale: #33290a; /* the warning icon's fill, e.g. Backup paused on the Me tab */
   --color-negative: #c0392b; /* negative — a clear warning red for the Finish session button, toned down from a bright red; text-ink on it is 4.9:1 */
   --color-negative-deep: #ff7a7f; /* negative-deep — e.g. the delete button */
 
@@ -84,6 +86,7 @@
      `motion-safe:`, so it's off for anyone who asked their phone for less motion. */
   --animate-sheet-in: sheet-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-scrim-in: scrim-in 200ms ease-out;
+  --animate-sheet-up: sheet-up 320ms cubic-bezier(0.16, 1, 0.3, 1);
   /* A level-up arrow hops twice as it appears. */
   --animate-level-up: level-up 600ms ease-out 2;
   @keyframes level-up {
@@ -139,6 +142,14 @@
     to {
       transform: none;
       opacity: 1;
+    }
+  }
+  @keyframes sheet-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: none;
     }
   }
   @keyframes scrim-in {

@@ -15,14 +15,16 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Milestone 7 — the redesign — starts now.** The user's UX flow plan and Figma file
   (*Overload — UI/UX redesign*) are split into four milestones, 7–10 (Tickets 40–58 in
   `tickets.md`), each ending in an iPhone check. CLAUDE.md says milestone 7.
-- **Last commit:** `docs: Close milestone 6 and plan the redesign as milestones 7–10`
-  (Ticket 40).
-- **Next: Ticket 41 — Tab bar and Me tab.**
-- **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `AccountForm.tsx`). The email
+- **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
+  merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
+- **Last commit (on `redesign`):** `feature: Add the tab bar, Me tab, sheets and the set table`
+  (Tickets 41, 42, 45, 47 and 48). Ticket 40's docs commit is on `main`.
+- **Next: Ticket 43 — Live session bar and live screen**, then Ticket 46 (edit and undo).
+- **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `MeScreen.tsx`). The email
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
-- **Tests:** 411 Vitest tests, domain layer only.
+- **Tests:** 429 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -40,14 +42,25 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   Only a handle starts a drag, so the list still scrolls under a finger; the arrow keys on a focused
   handle reorder without a pointer. Handles hide while searching. A group on the board reaches it by the `+` beside its heading,
   or by the full-width "Add exercises" button when the group is still empty.
-- **Log sheet** (`/exercise?id=…`): last working set as large ghost values, ± buttons
-  (2.5 kg, ±1 rep, drawn signs centred in round buttons), tap a number to type (the field empties with the value as a faint placeholder — no selection, no focus box; leave it empty and nothing changes), and a "Log set" button pinned to the bottom.
-  There is no set-type picker: every set logged is `working` (`kind` stays in the data; see Decisions). One tap repeats the
-  last set. Below it, the full history grouped by day (Today, Yesterday, weekday, then short
-  dates like "13 Sep"); each row's time is small and grey on the right. Swipe a set left to delete it: past halfway or a flick deletes, less
-  springs back, and scrolling never deletes; a Delete button appears only on keyboard/VoiceOver
-  focus. The header reads `Squat · Level 3`; tapping the dotted
-  "Level 3" shows a small label, `6 sessions · 4 to Level 4`, and a tap anywhere hides it.
+- **Tab bar** (Ticket 41): Train (`/`), History (`/history`, a placeholder until milestone 10)
+  and Me (`/account`), pinned at the bottom of those three pages only. A red dot on Me means
+  backup is paused; "changes waiting" never badges.
+- **Log sheet** (`?log=<id>` over any page, Ticket 42; `/exercise?id=…` stays as a full page for
+  old links): a sheet at 92% height over the dimmed page, which never moves, so you come back to
+  the same scroll spot. It closes on a swipe down from the grab strip, a tap above it, Back or
+  Escape, and a reload reopens it offline. Inside, top to bottom (Figma 3.1–3.2):
+  - the name, `Push · Level 3` (the dotted level still taps open `6 sessions · 4 to Level 4`), and
+    the rest timer under a small `REST` label;
+  - the **set table** (Ticket 45): today's sets numbered, each beside the same set last time, with
+    a ✓ or a yellow `PR` pill, then a lime **Next set** row. Swipe a today row left to delete it.
+  - the entry block, prefilled for set N from last time's set N, else your last set today
+    (`Set 3 · prefilled from last time's set 3`). An edit carries on to the following sets. ±
+    buttons (2.5 kg, ±1 rep), and tapping a number types it. Every set is `working` (see
+    Decisions).
+  - the Log button in the sheet's footer, and under it **Next up** (Ticket 47) once this lift has
+    a set this session: the next board lift not done yet, swapped in place without a new
+    history entry;
+  - **Earlier · N sessions**, folded: the old history by day, swipe to delete, PR pills.
 - **Coverage strip** (top of the board, only while a session is active): six pills, one per
   pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
   rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
@@ -84,14 +97,13 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   grey `Session 42:10` (time since the session's first set, a link to the summary) in the
   board header only, and a `Rest` timer (time since the last set, any exercise, counts up) at the
   top right of the log sheet — the only counter there. There's no start button: your first set opens the session.
-- **PR flash** (log sheet): logging a working set that breaks a weight, rep-at-that-weight, or
-  e1RM record drops a dark-yellow "New record" card in at the top of the screen and dims the page.
-  One line per kind broken, `85 kg → 87.5 kg`: the old value small and grey, the new one large in
-  yellow (`record` / `record-pale` tokens). It closes itself after 4 seconds or on a tap anywhere
-  (a tap while it's up only closes it); nothing about it is stored.
-- **PR pills** (log sheet history): every set that broke a record carries a small green `PR` pill,
-  for good — beating it later doesn't take it away. Derived with `historyPRs` on each read, so it
-  always agrees with the flash; a screen reader hears which records it broke.
+- **Record banner** (log sheet, Ticket 48): logging a working set that breaks a weight,
+  rep-at-that-weight or e1RM record slides a yellow line in under the header,
+  `New record · 85 kg × 5 (was 82.5)`, for 3 seconds. It doesn't dim anything and catches no
+  taps, so the next set can be logged straight away; nothing about it is stored.
+- **PR pills** (set table, Earlier and the summary): every set that broke a record carries a small
+  yellow `PR` pill, for good — beating it later doesn't take it away. Derived with `historyPRs` on
+  each read, so it always agrees with the banner; a screen reader hears which records it broke.
 - **Local data:**
   - The Dexie database (v5) is seeded once with the 76-exercise catalogue and an empty list.
     Only dev also gets ~6 weeks of fake training.
@@ -102,11 +114,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Supabase:** the five synced tables with RLS, a last-write-wins trigger and a server-set
   `synced_at` (`backend/supabase/migrations/`). The URL and publishable key live in
   `frontend/.env.local` (not committed).
-- **Backup** (`/account`, and a line at the bottom of the board):
+- **Backup** (the Me tab, `/account`):
   - Sign in with Google or an emailed code. Google needs its dashboard setup first.
   - Once signed in, `lib/sync/push.ts` drains the outbox in the background: on open, online,
     return to the app, sign-in, and 3 s after a write.
-  - The board line reads `Back up ›`, `Backed up ✓`, `N changes waiting` or `Backup paused`.
+  - Me shows one card: `Back up your log` with Continue with Google (greyed out with "No signal"
+    offline), or your name and email with `Backed up`, `N changes waiting` or `Backup paused`.
+    Under it, `On this phone · N sets · N sessions` (derived), an Add to Home Screen card in
+    Safari only, Sign out, and the version.
   - Sign out keeps every set. The first account to back up owns the phone's data (`overload.owner`
     in localStorage).
   - **Sync runs both ways** (`syncNow` in `lib/sync/sync.ts`):
@@ -334,10 +349,61 @@ These aren't obvious from the code and shaped later work.
   - "Last time" follows the gap rule on the exercise's own sets, not the calendar day;
   - there's no schema change or Dexie version bump in milestones 7–10.
 
+- **Redesign build decisions (Tickets 41–48):**
+  - The tab bar shows only on the three tab pages, so it never fights a page's own pinned button.
+    It renders a spacer in the page, so content scrolls clear of it.
+  - **Backup paused keeps its meaning:** the phone's sets belong to another account. So the Me card
+    says to sign out and sign in with that account, not Figma's "Sign in again". There's no "last
+    backup 2 min ago", because no backup time is recorded.
+  - A sheet's content scrolls, and its footer slot doesn't. The entry form portals its Log button
+    into the footer inside a sheet, and pins it to the screen on the full page (`useSheetFooter`).
+  - A sheet drags down only from its grab strip, so the content still scrolls under a finger.
+  - **"Today" is this lift's sets in the active session.** With none active, today is empty and
+    the latest session is last time.
+  - **An edit carries on to later sets** until the sheet closes, which is how Figma shows 82.5
+    prefilled against last time's 80.
+  - The PR pill is record yellow everywhere, as in Figma.
+  - Inside a sheet the surface is `card` and the blocks are `raised`.
+
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Tickets 41, 42, 45, 47 and 48: the tab bar, Me tab, sheets and the set table
+`feature: Add the tab bar, Me tab, sheets and the set table` · 2026-09-29 · branch `redesign`
+
+- One commit on the `redesign` branch, which is pushed but not merged into `main`. It holds the
+  first five redesign tickets. Tickets 43, 44, 46 and 49 are still to come.
+- **Ticket 41:**
+  - `TabBar`: Train, History and Me, with a badge only for paused.
+  - `MeScreen` replaces `AccountForm`, following Figma 6.1–6.3, with `useLocalStats`, and
+    `useOnline` / `useStandalone` in `useDevice`.
+  - `BackupLine` is gone, `Account` gains `email`, and there's a placeholder History page.
+- **Ticket 42:**
+  - `Sheet` has a scrim, a grab strip with swipe-down (`dismissOffset` / `dismissOutcome` in
+    `swipe.ts`), Escape, a scroll lock and a footer slot.
+  - `SheetHost` in the layout reads `?log=`, and `lib/sheets.ts` opens and closes sheets through
+    `pushState`.
+  - `LogLink` opens the sheet from board rows and summary cards.
+  - `LogSheet` is split into `LogSheetBody`.
+  - New tokens: `raised` and `sheet-up`.
+- **Ticket 45:**
+  - `previousSession` (in `previous.ts`) and `prefillFor` (in `entry.ts`).
+  - `SetTable`.
+  - `SetHistory` folded under Earlier.
+- **Ticket 47:** `nextUp` (in `board.ts`), `useNextUp` and `replaceSheet`.
+- **Ticket 48:** `RecordBanner` replaces `PRFlash`, with `recordLine` and `formatSetShort` in
+  `format.ts`. PR pills turn yellow.
+- 18 new tests (429 in total).
+- Checked in headless Chrome at 390 × 844 with touch events:
+  - the tab bar's pages;
+  - Me offline;
+  - the sheet opening, logging and closing by back, swipe and scrim with the board's scroll kept;
+  - a reload onto `?log=` online and offline;
+  - with three bench sets seeded three days back: prefill per set, a weight record banner that
+    didn't block the next tap, Next up swapping in place, and Earlier opening.
+- Not checked: the signed-in and paused Me cards, and the iPhone.
 
 ### Ticket 40: Redesign rules — close milestone 6, plan milestones 7–10
 `docs: Close milestone 6 and plan the redesign as milestones 7–10` · 2026-09-29

@@ -12,8 +12,8 @@ export function RestTimer() {
 
   return (
     <div className="text-right">
-      <p className="text-sm text-body">Rest</p>
-      <p className="text-3xl font-black leading-none tabular-nums text-ink">
+      <p className="text-xs font-semibold tracking-wide text-mute uppercase">Rest</p>
+      <p className="text-4xl font-black leading-none tabular-nums text-ink">
         {formatElapsed(elapsed(state.session.last_set_at, state.now))}
       </p>
     </div>

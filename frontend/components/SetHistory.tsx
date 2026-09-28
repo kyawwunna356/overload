@@ -17,22 +17,33 @@ import { SwipeToDelete } from "./SwipeToDelete";
 //
 // A set that broke a record wears a PR pill for good: each set is judged only against the sets
 // before it, so beating it later never takes the pill away. Derived every time, never stored.
-export function SetHistory({ history, now }: { history: SetLog[]; now: number }) {
+export function SetHistory({
+  history,
+  now,
+  title = "History",
+}: {
+  history: readonly SetLog[];
+  now: number;
+  // Null leaves the heading out, for a caller that labels the list itself.
+  title?: string | null;
+}) {
   const days = useMemo(() => groupByDay(history, now), [history, now]);
   // Keyed on history alone, so the clock's repaints don't redo the sweep.
   const records = useMemo(() => historyPRs(history), [history]);
 
   return (
     <section>
-      <h2 className="px-2 pb-2 text-xl font-semibold tracking-tight text-ink">History</h2>
+      {title !== null && (
+        <h2 className="px-2 pb-2 text-xl font-semibold tracking-tight text-ink">{title}</h2>
+      )}
       {days.length === 0 ? (
-        <p className="rounded-card bg-card px-6 py-5 text-body">No sets yet.</p>
+        <p className="rounded-card bg-raised px-6 py-5 text-body">No sets yet.</p>
       ) : (
         <div className="flex flex-col gap-5">
           {days.map((day) => (
             <div key={day.day}>
               <h3 className="px-2 pb-2 text-base font-semibold text-body">{day.label}</h3>
-              <ul className="divide-y divide-line overflow-hidden rounded-card bg-card">
+              <ul className="divide-y divide-line overflow-hidden rounded-card bg-raised">
                 {day.sets.map((set) => (
                   <SwipeToDelete
                     key={set.id}

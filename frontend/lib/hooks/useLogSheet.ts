@@ -16,6 +16,8 @@ export type LogSheetData = {
   history: SetLog[];
   // How long you've been doing it, from the same history.
   mastery: Mastery;
+  // Every manual end marker — they split this exercise's sessions for the Last time column.
+  endMarkers: number[];
 };
 
 const NOTHING: LogSheetData = {
@@ -23,6 +25,7 @@ const NOTHING: LogSheetData = {
   previous: null,
   history: [],
   mastery: masteryLevel('', []),
+  endMarkers: [],
 };
 
 // Everything the log sheet shows, read from Dexie only (Hard Rule 5). Returns undefined
@@ -35,6 +38,7 @@ export function useLogSheet(exerciseId: string | null): LogSheetData | undefined
     const exercise = await db.exercises.get(exerciseId);
     if (!exercise) return NOTHING;
 
+    const markers = await db.sessions.toArray();
     const history = await db.set_logs
       .where('[exercise_id+logged_at]')
       .between([exerciseId, Dexie.minKey], [exerciseId, Dexie.maxKey])
@@ -47,6 +51,7 @@ export function useLogSheet(exerciseId: string | null): LogSheetData | undefined
       previous: previousSet(exerciseId, history),
       history,
       mastery: masteryLevel(exerciseId, history),
+      endMarkers: markers.flatMap((row) => (row.ended_at === null ? [] : [row.ended_at])),
     };
   }, [exerciseId]);
 }

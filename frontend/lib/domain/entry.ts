@@ -20,6 +20,25 @@ export function prefillFrom(previous: Pick<SetLog, 'weight' | 'reps'> | null): E
   return previous ? { weight: previous.weight, reps: previous.reps } : DEFAULT_ENTRY;
 }
 
+// Where the next set's numbers come from, in order: the same set number last time (set 3 from
+// last time's set 3), else your last working set today, else your last working set ever, else the
+// default. `setNumber` counts from 1. `source` lets the sheet say which it used.
+export type Prefill = { entry: Entry; source: 'last-time' | 'today' | 'previous' | 'default' };
+
+export function prefillFor(
+  setNumber: number,
+  lastTime: readonly Pick<SetLog, 'weight' | 'reps'>[],
+  today: readonly Pick<SetLog, 'weight' | 'reps' | 'kind'>[],
+  previous: Pick<SetLog, 'weight' | 'reps'> | null,
+): Prefill {
+  const same = lastTime[setNumber - 1];
+  if (same) return { entry: prefillFrom(same), source: 'last-time' };
+  const todayWorking = today.filter((set) => set.kind === 'working').at(-1);
+  if (todayWorking) return { entry: prefillFrom(todayWorking), source: 'today' };
+  if (previous) return { entry: prefillFrom(previous), source: 'previous' };
+  return { entry: DEFAULT_ENTRY, source: 'default' };
+}
+
 export function stepWeight(weight: number, direction: 1 | -1): number {
   return clamp(round2(weight + direction * WEIGHT_STEP_KG), 0, MAX_WEIGHT_KG);
 }
