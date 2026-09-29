@@ -20,8 +20,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `bugfix: Darken the log sheet — page behind, card blocks`.
-  Before it: `feature: Rebuild the session summary and finish deck to the
+- **Last commit (on `redesign`):** `bugfix: Show the record banner as a toast at the top`.
+  Before it: `bugfix: Darken the log sheet — page behind, card blocks`, then `feature: Rebuild the session summary and finish deck to the
   mock-ups` (Ticket 52, plus the board's PR pill), then `feature: Make edit board a page with
   scrolling chips and custom exercises` (Tickets 51 and 57), `bugfix: Quieten board rows — tick badges,
   shorter lines, no level`, `feature: Show today and last time on board rows, with the week and
@@ -147,9 +147,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   since the last set, any exercise, counts up). All `now − timestamp`. There's no start button:
   your first set opens the session.
 - **Record banner** (log sheet, Ticket 48): logging a working set that breaks a weight,
-  rep-at-that-weight or e1RM record slides a yellow line in under the header,
+  rep-at-that-weight or e1RM record drops a yellow toast in at the top of the screen,
   `New record · 85 kg × 5 (was 82.5)`, for 3 seconds. It doesn't dim anything and catches no
-  taps, so the next set can be logged straight away; nothing about it is stored.
+  taps, so the next set can be logged straight away; nothing about it is stored. It's portaled
+  to the body and fixed, so the sheet's layout never shifts when it appears.
 - **PR pills** (set table, Earlier and the summary): every set that broke a record carries a small
   yellow `PR` pill, for good — beating it later doesn't take it away. Derived with `historyPRs` on
   each read, so it always agrees with the banner; a screen reader hears which records it broke.
@@ -460,6 +461,14 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Record banner as a toast (after Ticket 52)
+`bugfix: Show the record banner as a toast at the top` · 2026-09-30 · branch `redesign`
+
+- The banner sat in the log sheet's flow and pushed the set table down when it appeared; the user
+  asked for a toast instead.
+- `RecordBanner` now portals to the body, fixed at the top below the safe area (z-40, over the
+  sheet), with a shadow. Still `pointer-events: none` and gone after 3 s, so it never blocks.
 
 ### Darker log sheet (after Ticket 52)
 `bugfix: Darken the log sheet — page behind, card blocks` · 2026-09-30 · branch `redesign`
