@@ -93,7 +93,7 @@ export function Sheet({
           transition: settling ? `transform ${CLOSE_MS}ms ease-out` : undefined,
         }}
         onTransitionEnd={() => setSettling(false)}
-        className="absolute inset-x-0 bottom-0 mx-auto flex h-[92dvh] max-w-md flex-col rounded-t-card bg-card shadow-[0_-8px_32px_rgb(0_0_0/0.5)] motion-safe:animate-sheet-up"
+        className="absolute inset-x-0 bottom-0 mx-auto flex h-[92dvh] max-w-md flex-col rounded-t-card bg-page shadow-[0_-8px_32px_rgb(0_0_0/0.5)] motion-safe:animate-sheet-up"
       >
         {/* The grab strip: the one place a downward drag moves the sheet, so the content below
             still scrolls normally under a finger. touch-action none keeps the browser from

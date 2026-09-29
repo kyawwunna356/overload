@@ -39,13 +39,13 @@ export function SetHistory({
         <h2 className="px-2 pb-2 text-xl font-semibold tracking-tight text-ink">{title}</h2>
       )}
       {days.length === 0 ? (
-        <p className="rounded-card bg-raised px-6 py-5 text-body">No sets yet.</p>
+        <p className="rounded-card bg-card px-6 py-5 text-body">No sets yet.</p>
       ) : (
         <div className="flex flex-col gap-5">
           {days.map((day) => (
             <div key={day.day}>
               <h3 className="px-2 pb-2 text-base font-semibold text-body">{day.label}</h3>
-              <ul className="divide-y divide-line overflow-hidden rounded-card bg-raised">
+              <ul className="divide-y divide-line overflow-hidden rounded-card bg-card">
                 {day.sets.map((set) => (
                   <SwipeToDelete
                     key={set.id}

@@ -113,7 +113,7 @@ export function SetEntry({
 
   return (
     <>
-      <section className="rounded-card bg-raised p-6">
+      <section className="rounded-card bg-card p-6">
         <p className="pb-5 text-center text-sm text-body">{caption}</p>
         <div className="flex flex-col gap-6">
           <Stepper
@@ -179,7 +179,7 @@ export function SetEdit({
 
   return (
     <>
-      <section className="rounded-card bg-raised p-6 ring-2 ring-primary">
+      <section className="rounded-card bg-card p-6 ring-2 ring-primary">
         <p className="pb-5 text-center text-sm font-semibold text-primary">Editing set {setNumber}</p>
         <div className="flex flex-col gap-6">
           <Stepper

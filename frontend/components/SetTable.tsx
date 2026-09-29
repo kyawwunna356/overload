@@ -38,7 +38,7 @@ export function SetTable({
   };
 
   return (
-    <section aria-label="Sets" className="rounded-card bg-raised px-2 pt-4 pb-2">
+    <section aria-label="Sets" className="rounded-card bg-card px-2 pt-4 pb-2">
       <div className={`${GRID} px-4 pb-1 text-xs font-semibold tracking-wide text-mute uppercase`}>
         <span>Set</span>
         <span>Last time</span>

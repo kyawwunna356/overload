@@ -84,7 +84,7 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
   if (data === undefined) return null;
   if (data.exercise === null || table === null) {
     return (
-      <p className="rounded-card bg-raised px-6 py-5 text-body">
+      <p className="rounded-card bg-card px-6 py-5 text-body">
         That exercise isn&apos;t on this device.
       </p>
     );

@@ -20,8 +20,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Rebuild the session summary and finish deck to the
-  mock-ups` (Ticket 52, plus the board's PR pill). Before it: `feature: Make edit board a page with
+- **Last commit (on `redesign`):** `bugfix: Darken the log sheet — page behind, card blocks`.
+  Before it: `feature: Rebuild the session summary and finish deck to the
+  mock-ups` (Ticket 52, plus the board's PR pill), then `feature: Make edit board a page with
   scrolling chips and custom exercises` (Tickets 51 and 57), `bugfix: Quieten board rows — tick badges,
   shorter lines, no level`, `feature: Show today and last time on board rows, with the week and
   pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
@@ -420,7 +421,8 @@ These aren't obvious from the code and shaped later work.
   - **An edit carries on to later sets** until the sheet closes, which is how Figma shows 82.5
     prefilled against last time's 80.
   - The PR pill is record yellow everywhere, as in Figma.
-  - Inside a sheet the surface is `card` and the blocks are `raised`.
+  - Inside a sheet the surface is `page` and the blocks are `card` (darker, the user's choice;
+    it looked washed out on `card` + `raised`).
 
 - **Board decisions (Ticket 50):**
   - **"Today" means the running session,** not the calendar day. A row returns to `Last:` the
@@ -458,6 +460,14 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Darker log sheet (after Ticket 52)
+`bugfix: Darken the log sheet — page behind, card blocks` · 2026-09-30 · branch `redesign`
+
+- The user found the log sheet washed out, so every sheet surface moved down one step: the sheet
+  is `bg-page` and its blocks (entry, set table, set rows, history) are `bg-card`.
+- The live session shares the same sheet, so its blocks moved too, to match.
+- No token values changed; `raised` stays for the board and edit board.
 
 ### Ticket 52: Summary and finish deck — to the user's mock-ups (plus the board's PR pill)
 `feature: Rebuild the session summary and finish deck to the mock-ups` · 2026-09-30 · branch

@@ -27,7 +27,7 @@ export function LiveSession() {
   if (state === undefined) return null;
   if (!session) {
     return (
-      <p className="mt-4 rounded-card bg-raised px-6 py-5 text-body">
+      <p className="mt-4 rounded-card bg-card px-6 py-5 text-body">
         No session is running. Your next set starts one.
       </p>
     );
@@ -59,7 +59,7 @@ export function LiveSession() {
               <button
                 type="button"
                 onClick={() => group.exercise && replaceSheet("log", group.exercise.id)}
-                className="flex w-full touch-manipulation items-center gap-3 rounded-card bg-raised px-5 py-4 text-left active:bg-line"
+                className="flex w-full touch-manipulation items-center gap-3 rounded-card bg-card px-5 py-4 text-left active:bg-line"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block text-lg font-semibold text-ink">{group.exercise.name}</span>

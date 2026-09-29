@@ -160,7 +160,7 @@ export function SwipeToDelete({
         onTransitionEnd={() => {
           if (phase === "settling") setPhase("idle");
         }}
-        className={`relative select-none bg-raised ${
+        className={`relative select-none bg-card ${
           phase === "settling" || phase === "leaving"
             ? "motion-safe:transition-transform motion-safe:duration-150"
             : ""
