@@ -204,10 +204,11 @@ pass `now` as an argument so tests are deterministic.
 **Board (home).** Grouped by movement pattern. Each group holds the exercises **you picked**,
 in the order **you put them in** — never alphabetically, never re-sorted by what you did last,
 and logging a set never moves a row. Each row still shows its last-performed weight inline —
-value before any tap — and how long ago (`Last: 82.5 kg × 5 · 4d`, in `text-body`); once done
-this session it reads
-`Today: 3 sets · best 85 kg × 5` with a check instead. The header is the date plus an **Edit**
-button; the week strip sits at the top. Coverage is a ✓ on each pattern heading the session has
+value before any tap — and how long ago (`82.5 kg × 5 · 4d`, grey); once done this session it
+reads `3 sets · 102.5 × 5` (the heaviest set) in lime with a round tick badge instead. No labels
+and no level on the row: the colour tells the two apart (the user's choice), and a lift never
+done is just its name. The header is the date plus a lime **Edit**; the week strip sits at the
+top. Coverage is a ✓ on each pattern heading the session has
 touched. A group you haven't picked for is hidden; an empty board shows one card that offers to
 pick. Session time lives in the live session bar, not the board.
 

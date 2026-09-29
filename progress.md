@@ -20,10 +20,11 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Show today and last time on board rows, with the week
-  and pattern ticks` (Ticket 50). Before it: `docs: Close milestone 8 after the iPhone check`
-  (Ticket 49, which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit.
-  Ticket 40's docs commit is on `main`.
+- **Last commit (on `redesign`):** `bugfix: Quieten board rows — tick badges, shorter lines, no
+  level` (after Ticket 50). Before it: `feature: Show today and last time on board rows, with the
+  week and pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
+  which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit. Ticket 40's
+  docs commit is on `main`.
 - **Next: Ticket 51 — the picker as a sheet** (`?edit=`, pattern chips, Done), then Ticket 52 (the
   summary) and Ticket 53 (the milestone 9 check on the iPhone).
 - **The phone sees `redesign` only after a push**, through Vercel's preview for the branch. The
@@ -33,26 +34,27 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
-- **Tests:** 437 Vitest tests, domain layer only.
+- **Tests:** 436 Vitest tests, domain layer only.
 
 ## What works today
 
 - **Board** (`/`, Ticket 50):
-  - **Header:** the date (`Wed 30 Sep`) with an **Edit** button. Edit opens `/exercises` until
-    Ticket 51 turns it into a sheet.
+  - **Header:** the date (`Wed 30 Sep`), and **Edit** as plain lime text on the right. Edit opens
+    `/exercises`.
   - **Week strip:** this week, Monday to Sunday. Trained days are filled green, and today gets a
     green ring while a session is running.
   - **Groups:** the pattern groups you've picked for, each holding **the exercises you picked, in
     the order you put them in**. They're never re-sorted by what you did last, and logging never
     moves a row. A group with no picks is hidden. With nothing picked at all, one "Pick your
     exercises" card offers the catalogue.
-  - **Heading ticks:** a lime ✓ on a pattern heading once the running session has touched it.
-    That's all the board shows of coverage.
-  - **Rows** (`rowState` in `board.ts`): the name, then `· Level N` in `text-body`, then one
-    `text-body` line:
-    - `✓ Today: 3 sets · best 85 kg × 5` once the running session has a set of the lift;
-    - otherwise `Last: 82.5 kg × 5 · 4d` (under a day the age is left off, never "today");
-    - `New` for a lift never done.
+  - **Heading ticks:** a round pale-green badge with a lime tick (`CheckBadge`) beside a pattern
+    heading once the running session has touched it. That's all the board shows of coverage.
+  - **Rows** (`rowState` in `board.ts`): the name, then one short 13 px line with no label:
+    - `3 sets · 102.5 × 5` in lime, with the tick badge before the `›`, once the running session
+      has a set of the lift (the second part is the heaviest set);
+    - otherwise `82.5 kg × 5 · 4d` in grey (under a day the age is left off, never "today");
+    - nothing for a lift never done, so it's just its name.
+    Screen readers still hear "Today:" and "Last time:".
   - The `›` on each row says it opens the log sheet.
 - **The catalogue and manage screen** (`/exercises`, or `?pattern=…` for one group, titled by that
   pattern and nothing else): 73 exercises across the six patterns, with a search box. Each pattern
@@ -420,11 +422,14 @@ These aren't obvious from the code and shaped later work.
   - **"Best" is the heaviest working set.** At the same weight, more reps wins; then the earlier
     set. With only warmups today, the best of those is shown. e1RM was passed over, since it can
     pick a set that isn't the heaviest.
-  - **The board reads every set of your picked lifts,** because a row's level counts the days you
-    did the lift. That's a few hundred local rows. `useBoard` rebuilds on a new set, the session
-    ending, or a new minute, never on the timers' half-second repaint.
-  - **Row text is `text-body` now,** following CLAUDE.md's board rule. The quieter `text-mute`
-    from the UI polish after Ticket 30 is gone.
+  - **No level on board rows** (the user's choice, right after Ticket 50: too much text in the
+    row). The level stays on the log sheet. So `useBoard` reads just each lift's newest set and
+    newest working set again, and rebuilds on a new set, the session ending, or a new minute, never
+    on the timers' half-second repaint.
+  - **No `Last:` / `Today:` labels, no "best", no `New`** (the user's choice): grey means last
+    time, lime with a tick means today. CLAUDE.md's board rule was reworded to match.
+  - **Row text is `text-body` for last time,** following CLAUDE.md's board rule. The quieter
+    `text-mute` from the UI polish after Ticket 30 is gone.
   - **A group with no picks is hidden,** so its `+` goes with it. Edit, or the empty board's card,
     reaches the other patterns.
 
@@ -432,6 +437,22 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Board rows, quietened (after Ticket 50)
+`bugfix: Quieten board rows — tick badges, shorter lines, no level` · 2026-09-30 · branch
+`redesign`
+
+- The user found the rows cramped once they were on the phone, and chose the fixes one by one:
+  - the level is gone from the row, so `useBoard` is back to two reads per lift;
+  - no labels: `82.5 kg × 5 · 4d` in grey, `3 sets · 102.5 × 5` in lime (`formatSetShort`);
+  - a lift never done is just its name;
+  - the second line is 13 px.
+- `CheckBadge` (new): a pale-green circle with a lime tick, on a touched pattern heading and on a
+  row done this session, matching the user's mock-up.
+- The board's **Edit** is plain lime text, like `+ New` on the edit board page.
+- CLAUDE.md's board rule now describes these rows.
+- The level test left `board.test.ts` (436 tests).
+- Checked in headless Chrome at 390 × 844, with sets planted for all three row states.
 
 ### Ticket 50: Board — date header, week strip, pattern ticks, two row states
 `feature: Show today and last time on board rows, with the week and pattern ticks` · 2026-09-30 ·

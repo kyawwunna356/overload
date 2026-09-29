@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { BoardGroup } from "@/lib/domain/board";
 import { patternLabel } from "@/lib/format";
+import { CheckBadge } from "./CheckBadge";
 import { ExerciseRow } from "./ExerciseRow";
 
 // A group shows the exercises you picked for that pattern, all of them, in the order you put
@@ -17,11 +18,11 @@ export function PatternGroup({ group, covered }: { group: BoardGroup; covered: b
       {/* items-center, not items-baseline: an SVG's baseline is its bottom edge, so a
           baseline row would float the plus above the heading. */}
       <div className="flex items-center justify-between gap-4 px-2 pb-2">
-        <h2 className="text-xl font-semibold tracking-tight text-ink">
+        <h2 className="flex items-center gap-2.5 text-xl font-semibold tracking-tight text-ink">
           {label}
           {covered && (
             <>
-              <span aria-hidden className="text-primary"> ✓</span>
+              <CheckBadge size="sm" />
               <span className="sr-only">, covered this session</span>
             </>
           )}

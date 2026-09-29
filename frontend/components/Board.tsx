@@ -26,7 +26,8 @@ export function Board() {
         </h1>
         <Link
           href="/exercises"
-          className="flex h-11 touch-manipulation items-center rounded-pill bg-card px-5 text-base font-semibold text-ink active:bg-line"
+          // -m-3 p-3 keeps a thumb-sized tap area around a small label, like + New on Edit board.
+          className="-m-3 touch-manipulation p-3 text-lg font-semibold text-primary active:text-primary-active"
         >
           Edit
         </Link>

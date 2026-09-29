@@ -1,5 +1,4 @@
 import type { ListItem } from './list';
-import { masteryLevel } from './mastery';
 import { previousSet } from './previous';
 import { staleness } from './staleness';
 import { PATTERNS, type Exercise, type Pattern, type SetLog } from './types';
@@ -17,8 +16,6 @@ export type RowState =
 export type BoardRow = {
   exercise: Exercise;
   state: RowState;
-  // The mastery level; 0 for a lift never done.
-  level: number;
 };
 
 export type BoardGroup = {
@@ -36,9 +33,9 @@ export type BoardGroup = {
 // All six groups always come back, empty ones included. An entry whose exercise is missing or
 // archived is skipped, and the same exercise listed twice appears once.
 //
-// Pure and derived from `logs` and your list (Hard Rules 1 and 6). `logs` should be every set of
-// the listed exercises, since the level counts days; `sessionSets` is the session you're in, or
-// empty when there isn't one.
+// Pure and derived from `logs` and your list (Hard Rules 1 and 6). Callers with a long history
+// should pass just each exercise's newest set and newest working set — the scan below is linear in
+// `logs`. `sessionSets` is the session you're in, or empty when there isn't one.
 export function buildBoard(
   exercises: readonly Exercise[],
   logs: readonly SetLog[],
@@ -59,7 +56,6 @@ export function buildBoard(
     rows.push({
       exercise,
       state: rowState(exercise.id, sessionSets, logs, now),
-      level: masteryLevel(exercise.id, logs).level,
     });
   }
 

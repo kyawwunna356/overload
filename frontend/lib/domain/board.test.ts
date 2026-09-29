@@ -138,11 +138,10 @@ describe('buildBoard', () => {
     expect(row.state).toEqual({ kind: 'last', set: working, daysAgo: 1 });
   });
 
-  it('marks a never-performed exercise new, level 0, and still shows it', () => {
+  it('marks a never-performed exercise new, and still shows it', () => {
     const never = makeExercise({ name: 'Never' });
     const [row] = buildBoard([never], [], NOW, listOf(never))[0].rows;
     expect(row.state).toEqual({ kind: 'new' });
-    expect(row.level).toBe(0);
   });
 
   it('ignores logs for other exercises', () => {
@@ -150,19 +149,8 @@ describe('buildBoard', () => {
     const other = makeExercise({ id: 'b', name: 'Other' });
     const [row] = buildBoard([mine], [performed(other.id, 1)], NOW, listOf(mine))[0].rows;
     expect(row.state).toEqual({ kind: 'new' });
-    expect(row.level).toBe(0);
   });
 
-  it('gives each row its mastery level from the days it was done', () => {
-    const ex = makeExercise({ name: 'Deadlift' });
-    // Local dates, so the days hold in any timezone. Three distinct days reach level 2 (1, 3, 6 …);
-    // two sets on one day count once.
-    const at = (date: number, hour: number) => new Date(2025, 0, date, hour).getTime();
-    const logs = [at(3, 9), at(6, 9), at(8, 9), at(8, 18)].map((logged_at) =>
-      makeSet({ exercise_id: ex.id, logged_at }),
-    );
-    expect(buildBoard([ex], logs, at(10, 12), listOf(ex))[0].rows[0].level).toBe(2);
-  });
 
   it('does not mutate its inputs', () => {
     const exercises = [makeExercise({ id: 'a', name: 'B' }), makeExercise({ id: 'b', name: 'A' })];

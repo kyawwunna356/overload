@@ -14,10 +14,11 @@ const MINUTE_MS = 60_000;
 // The board, read from Dexie only (Hard Rule 5). Returns undefined until the first read
 // completes, which is milliseconds locally — so no loading UI is needed.
 //
-// It reads your list (the default template's items) and then every set of each listed exercise
-// through the [exercise_id+logged_at] index, since a row's level counts the days you did it. So the
-// cost follows your list's history, not the whole catalogue's. useLiveQuery re-runs it when a set
-// is logged or the list changes, so both show up without any wiring.
+// It reads your list (the default template's items) and then, per listed exercise, just the
+// newest set and the newest working set through the [exercise_id+logged_at] index — all a row's
+// "Last:" line needs; "Today:" comes from the session's own sets. So the cost follows the length of
+// your list, not the catalogue or the history. useLiveQuery re-runs it when a set is logged or the
+// list changes, so both show up without any wiring.
 export function useBoard(): BoardGroup[] | undefined {
   const state = useActiveSession();
 
@@ -29,15 +30,22 @@ export function useBoard(): BoardGroup[] | undefined {
 
     const exercises = await db.exercises.bulkGet([...new Set(list.map((item) => item.exercise_id))]);
     const listed = exercises.filter((row): row is Exercise => row !== undefined && !row.archived);
-    const histories = await Promise.all(
-      listed.map((exercise) =>
+    const logs: SetLog[] = [];
+    for (const exercise of listed) {
+      const newestFirst = () =>
         db.set_logs
           .where('[exercise_id+logged_at]')
           .between([exercise.id, Dexie.minKey], [exercise.id, Dexie.maxKey])
-          .toArray(),
-      ),
-    );
-    const logs: SetLog[] = histories.flat();
+          .reverse();
+      const [latest, latestWorking] = await Promise.all([
+        newestFirst().first(),
+        newestFirst()
+          .filter((log) => log.kind === 'working')
+          .first(),
+      ]);
+      if (latest) logs.push(latest);
+      if (latestWorking && latestWorking.id !== latest?.id) logs.push(latestWorking);
+    }
 
     return { exercises: listed, logs, list };
   }, []);
