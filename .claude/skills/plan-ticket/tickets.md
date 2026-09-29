@@ -121,7 +121,7 @@ user's decisions:
   ticket numbers shift because of this.
 - **Me keeps the `/account` URL.** Supabase's Redirect URL and the service worker's cached page both
   point there.
-- **Sheets are query params on the current page** (`?log=`, `?live`, `?edit=`), opened with
+- **Sheets are query params on the current page** (`?log=`, `?live`; edit board became a plain page in Ticket 51), opened with
   `history.pushState`. Back, swipe-down and a tap on the dimmed strip close them. A reload reopens
   them offline, because the worker ignores the query. `/exercise` and `/exercises` stay for old links.
 - **The rest time counts up with no ring.** A ring against `default_rest_sec` would add a target, which
@@ -198,8 +198,8 @@ read-only and opens with the rewards. The user's decisions:
 | # | Ticket | Status |
 |---|---|---|
 | 50 | Board — date header and Edit, the week strip on top, a ✓ on pattern headings (the coverage strip retired), two row states with the level, and empty groups hidden | done |
-| 51 | Picker as a sheet — `?edit=<pattern>`, Done, pattern chips with pick counts, the chip pre-selected from a group's `+` | next |
-| 52 | Summary and finish deck — a Duration · Sets · kg stat row, rewards open, the week strip at the bottom, and Done landing on the summary | not started |
+| 51 | Edit board page — `/exercises` as a plain page (the user's choice: no sheet, no back button, no Done — changes save as you make them), a search, a sideways-scrolling chip row with pick counts, the chip pre-selected from a group's `+`, and `+ New` for a custom exercise | done |
+| 52 | Summary and finish deck — a Duration · Sets · kg stat row, rewards open, the week strip at the bottom, and Done landing on the summary | next |
 | 53 | On-device check — run milestone 9 on the iPhone | not started |
 
 What each ticket builds from:
@@ -208,8 +208,8 @@ What each ticket builds from:
     `Today: 3 sets · best …` or `New`. `useBoard` already reads each listed exercise's history.
   - Line 2 is in `text-body`.
   - The week strip comes from `useWeek(now)`, and the heading ticks from `useCoverage`.
-- **51:** `ExercisePicker`'s one list, drag, `useFlip` and 400 ms guard are unchanged. `/exercises`
-  stays as a wrapper for old links.
+- **51:** `ExercisePicker`'s one list, drag, `useFlip` and 400 ms guard are unchanged. It stays a
+  page at `/exercises` (the user turned down a sheet); the chip lives in `?pattern=`.
 - **52:** `sessionStats(summary)` goes in `recap.ts`. Rewards fold only past 5 items, and the block is
   left out when empty.
 
@@ -224,7 +224,7 @@ stored things are two localStorage UI flags. The milestone ends with release 2.0
 | 54 | History: Sessions — grouped by week with trained-day dots, and cards with duration, counts, patterns and records | not started |
 | 55 | History: Exercises and exercise detail — A to Z with search; a records card, every session, Log a set, and editing a past set | not started |
 | 56 | First run — a derived welcome, a first-set hint, a Safari install card (7-day dismiss), and a backup prompt after the first finished session | not started |
-| 57 | Custom exercise — "Can't find it?" in the picker adds your own lift to a pattern | not started |
+| 57 | Custom exercise — `+ New` on the edit board page adds your own lift to a pattern | done (built with Ticket 51 — the user pulled it forward) |
 | 58 | On-device check and release 2.0.0 | not started |
 
 What each ticket builds from:

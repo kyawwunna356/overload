@@ -2,7 +2,7 @@ import { LOCAL_USER_ID } from './constants';
 import { db } from './db';
 import { movePick, nextSortOrder } from './domain/list';
 import { endMarkerTime, type DerivedSession } from './domain/sessions';
-import type { Pattern, Session, SetKind, SetLog, Template, TemplateItem } from './domain/types';
+import type { Exercise, Pattern, Session, SetKind, SetLog, Template, TemplateItem } from './domain/types';
 import { outboxRow } from './outbox';
 import { newId } from './uuid';
 
@@ -136,6 +136,28 @@ export async function addToList(exerciseId: string, pattern: Pattern): Promise<v
     await db.template_items.add(item);
     await db.outbox.add(outboxRow('template_items', 'upsert', item, now));
   });
+}
+
+// Your own exercise, added to the catalogue and straight onto your list, in one transaction so it
+// can't exist without being on the board you made it from. `name` is already checked
+// (`customName`). The rest time is the catalogue's usual 120 s; nothing shows it as a target.
+export async function addCustomExercise(name: string, pattern: Pattern): Promise<Exercise> {
+  const now = Date.now();
+  const exercise: Exercise = {
+    id: newId(now),
+    user_id: LOCAL_USER_ID,
+    name,
+    pattern,
+    default_rest_sec: 120,
+    archived: false,
+    updated_at: now,
+  };
+  await db.transaction('rw', [db.exercises, db.templates, db.template_items, db.outbox], async () => {
+    await db.exercises.add(exercise);
+    await db.outbox.add(outboxRow('exercises', 'upsert', exercise, now));
+    await addToList(exercise.id, pattern);
+  });
+  return exercise;
 }
 
 // Takes an exercise off your list. Its sets are untouched — history is never a casualty of

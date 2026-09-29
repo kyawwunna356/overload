@@ -2,33 +2,40 @@
 
 import { useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
-import { dropIndex, splitPicks } from "@/lib/domain/list";
-import { PATTERNS, type Exercise } from "@/lib/domain/types";
+import { customName } from "@/lib/domain/custom";
+import { dropIndex, pickCounts, splitPicks } from "@/lib/domain/list";
+import { PATTERNS, type Exercise, type Pattern } from "@/lib/domain/types";
 import { patternLabel } from "@/lib/format";
 import { useCatalogue } from "@/lib/hooks/useCatalogue";
 import { FLIP_MS, useFlip } from "@/lib/hooks/useFlip";
-import { addToList, moveInList, removeFromList, setListOrder } from "@/lib/writes";
-import { BackLink } from "./BackLink";
+import { addCustomExercise, addToList, moveInList, removeFromList, setListOrder } from "@/lib/writes";
 
 // The catalogue: every exercise the app knows, with the ones on your list first, in your order,
-// ready to drag. Tapping a row adds it to the board or takes it off — one tap, no save button and no confirmation, because
-// nothing here can be lost (Hard Rule 3: this decides what the board shows, never what you can
-// log, and removing an exercise keeps every set you ever did of it).
+// ready to drag. Tapping a row adds it to the board or takes it off — one tap, no save button and
+// no confirmation, because nothing here can be lost (Hard Rule 3: this decides what the board
+// shows, never what you can log, and removing an exercise keeps every set you ever did of it).
+// Every change saves as you make it, so there's no Done: you leave the way you came, by swiping
+// back. The one button up top adds an exercise of your own.
 //
-// A static page that reads `?pattern=` in the browser, so it opens with no signal. With a
-// pattern it shows just that group, which is what the board's Add link uses.
+// A page of its own, reached from the board's Edit (every pattern) or a group's + (that pattern's
+// chip). A static page that reads `?pattern=` in the browser, so it opens with no signal.
 export function ExercisePicker() {
+  // Which chip is selected: one pattern, or "all". It lives in the URL, replaced rather than pushed,
+  // so a reload keeps it and back still returns straight to the board.
   const requested = useSearchParams().get("pattern");
+  const view: Pattern | "all" = PATTERNS.find((pattern) => pattern === requested) ?? "all";
+  const choose = (next: Pattern | "all") =>
+    window.history.replaceState(null, "", next === "all" ? "/exercises" : `/exercises?pattern=${next}`);
+
   const catalogue = useCatalogue();
   const [query, setQuery] = useState("");
-  // Widening to every pattern is a change of view, not a navigation: going anywhere and coming
-  // back would leave "‹ Board" pointing at this page instead of the board.
-  const [showAll, setShowAll] = useState(false);
-  const only = showAll ? null : (PATTERNS.find((pattern) => pattern === requested) ?? null);
+  const [creating, setCreating] = useState(false);
+  const counts = pickCounts(catalogue?.yours ?? []);
+  const total = PATTERNS.reduce((sum, pattern) => sum + counts[pattern], 0);
 
   const needle = query.trim().toLowerCase();
   const groups = (catalogue?.groups ?? [])
-    .filter((group) => only === null || group.pattern === only)
+    .filter((group) => view === "all" || group.pattern === view)
     .map((group) => ({
       ...group,
       exercises: group.exercises.filter((exercise) =>
@@ -39,25 +46,59 @@ export function ExercisePicker() {
 
   return (
     <div className="pb-8">
-      <nav className="pb-4">
-        <BackLink href="/" label="‹ Board" />
-      </nav>
-
-      <header className="px-2 pb-5">
-        <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">
-          {only ? patternLabel(only) : "Exercises"}
-        </h1>
+      <header className="flex items-center justify-between gap-4 px-2 pb-5">
+        <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">Edit board</h1>
+        {/* -m-3 p-3 keeps a thumb-sized tap area around a small label. */}
+        <button
+          type="button"
+          aria-expanded={creating}
+          aria-label="Add a custom exercise"
+          onClick={() => setCreating((open) => !open)}
+          className="-m-3 touch-manipulation p-3 text-lg font-semibold text-primary active:text-primary-active"
+        >
+          + New
+        </button>
       </header>
 
-      <div className="px-2 pb-5">
+      {creating && catalogue && (
+        <NewExercise
+          catalogue={catalogue.groups.flatMap((group) => group.exercises)}
+          listed={catalogue.listed}
+          pattern={view === "all" ? null : view}
+          onClose={() => setCreating(false)}
+          onAdded={(pattern) => {
+            setCreating(false);
+            setQuery("");
+            choose(pattern);
+          }}
+        />
+      )}
+
+      <div className="relative px-2 pb-4">
+        <SearchIcon />
         <input
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search exercises"
           aria-label="Search exercises"
-          className="h-12 w-full rounded-control bg-card px-4 text-base text-ink placeholder:text-body"
+          className="h-12 w-full rounded-control bg-card pr-4 pl-12 text-base text-ink placeholder:text-body"
         />
+      </div>
+
+      {/* One row that scrolls sideways, running to the screen's edges; the scrollbar is hidden
+          app-wide. */}
+      <div role="radiogroup" aria-label="Pattern" className="-mx-4 flex gap-2 overflow-x-auto px-6 pb-5">
+        <Chip label="All" count={total} selected={view === "all"} onSelect={() => choose("all")} />
+        {PATTERNS.map((pattern) => (
+          <Chip
+            key={pattern}
+            label={patternLabel(pattern)}
+            count={counts[pattern]}
+            selected={view === pattern}
+            onSelect={() => choose(pattern)}
+          />
+        ))}
       </div>
 
       {catalogue === undefined ? null : groups.length === 0 ? (
@@ -68,8 +109,8 @@ export function ExercisePicker() {
         <div className="flex flex-col gap-6">
           {groups.map((group) => (
             <section key={group.pattern}>
-              {/* With one pattern open, the page title already names it. */}
-              {only === null && (
+              {/* With one pattern chosen, its chip already names it. */}
+              {view === "all" && (
                 <h2 className="px-2 pb-2 text-xl font-semibold tracking-tight text-ink">
                   {patternLabel(group.pattern)}
                 </h2>
@@ -83,19 +124,144 @@ export function ExercisePicker() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
 
-      {only && (
-        <div className="px-2 pt-6">
-          <button
-            type="button"
-            onClick={() => setShowAll(true)}
-            className="h-12 w-full touch-manipulation rounded-pill bg-card text-base font-semibold text-ink active:bg-line"
-          >
-            Show every pattern
-          </button>
+// A pattern chip: its name, how many you've picked there (a count of your own choices, never a
+// target to reach), and a tick when it's the one selected.
+function Chip({
+  label,
+  count,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  count: number;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onSelect}
+      className={`inline-flex h-9 shrink-0 touch-manipulation items-center gap-1 rounded-pill px-3.5 text-sm font-semibold whitespace-nowrap ${
+        selected ? "bg-primary-pale text-ink-deep" : "bg-card text-body active:bg-line"
+      }`}
+    >
+      {label}
+      {count > 0 && <span className="tabular-nums">{count}</span>}
+      {selected && <span aria-hidden>✓</span>}
+    </button>
+  );
+}
+
+// Your own exercise: a name and its pattern (preset to the chip you're on). It joins the catalogue
+// and your board at once. A name the catalogue already has isn't made twice; the form offers that
+// exercise instead, so your history stays under one name.
+function NewExercise({
+  catalogue,
+  listed,
+  pattern: preset,
+  onClose,
+  onAdded,
+}: {
+  catalogue: Exercise[];
+  // Ids already on your board.
+  listed: ReadonlySet<string>;
+  pattern: Pattern | null;
+  onClose: () => void;
+  onAdded: (pattern: Pattern) => void;
+}) {
+  const [name, setName] = useState("");
+  const [pattern, setPattern] = useState<Pattern | null>(preset);
+  const [failed, setFailed] = useState(false);
+  const checked = customName(name, catalogue);
+  const taken = checked.kind === "taken" ? checked.exercise : null;
+  const onBoard = taken !== null && listed.has(taken.id);
+
+  async function submit() {
+    setFailed(false);
+    try {
+      if (taken) {
+        await addToList(taken.id, taken.pattern);
+        onAdded(taken.pattern);
+      } else if (checked.kind === "ok" && pattern) {
+        await addCustomExercise(checked.name, pattern);
+        onAdded(pattern);
+      }
+    } catch {
+      setFailed(true);
+    }
+  }
+
+  const ready = (taken !== null && !onBoard) || (checked.kind === "ok" && pattern !== null);
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (ready) void submit();
+      }}
+      className="mb-5 rounded-card bg-card px-5 pt-5 pb-4"
+    >
+      <h2 className="text-lg font-semibold text-ink">New exercise</h2>
+      <input
+        autoFocus
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        placeholder="Name, e.g. Landmine Press"
+        aria-label="Exercise name"
+        autoCapitalize="words"
+        enterKeyHint="done"
+        className="mt-3 h-12 w-full rounded-control bg-raised px-4 text-base text-ink placeholder:text-body"
+      />
+      {taken ? (
+        <p className="pt-2 text-sm text-body">
+          {taken.name} is already {onBoard ? "on your board" : `in ${patternLabel(taken.pattern)}`}.
+        </p>
+      ) : (
+        <div role="radiogroup" aria-label="Pattern" className="flex flex-wrap gap-2 pt-3">
+          {PATTERNS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="radio"
+              aria-checked={pattern === option}
+              onClick={() => setPattern(option)}
+              className={`inline-flex h-9 touch-manipulation items-center rounded-pill px-3.5 text-sm font-semibold ${
+                pattern === option ? "bg-primary-pale text-ink-deep" : "bg-raised text-body active:bg-line"
+              }`}
+            >
+              {patternLabel(option)}
+            </button>
+          ))}
         </div>
       )}
-    </div>
+      {failed && (
+        <p role="alert" className="pt-2 text-sm font-semibold text-negative-deep">
+          Couldn&apos;t save that. Try again.
+        </p>
+      )}
+      <div className="flex gap-2 pt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-12 flex-1 touch-manipulation rounded-pill bg-raised text-base font-semibold text-ink active:bg-line"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={!ready}
+          className="h-12 flex-1 touch-manipulation rounded-pill bg-primary text-base font-semibold text-on-primary active:bg-primary-active disabled:bg-raised disabled:text-mute"
+        >
+          {taken && !onBoard ? "Add it to the board" : "Add"}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -235,7 +401,7 @@ function PatternList({
         </span>
         <span
           aria-hidden
-          className={`inline-flex h-9 shrink-0 items-center rounded-pill px-4 text-sm font-semibold ${
+          className={`inline-flex h-7 shrink-0 items-center rounded-pill px-3 text-[13px] font-semibold ${
             listed ? "bg-primary-pale text-ink-deep" : "bg-page text-body"
           }`}
         >
@@ -330,6 +496,24 @@ function GripIcon() {
       className="h-6 w-6"
     >
       <path d="M4 9h16M4 15h16" />
+    </svg>
+  );
+}
+
+// The magnifier inside the search box; drawn inline like the app's other icons.
+function SearchIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      className="pointer-events-none absolute top-3 left-6 h-6 w-6 text-body"
+    >
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4 4" />
     </svg>
   );
 }

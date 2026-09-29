@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dropIndex, movePick, nextSortOrder, splitPicks, type ListItem } from './list';
+import { dropIndex, movePick, nextSortOrder, pickCounts, splitPicks, type ListItem } from './list';
 
 const item = (exercise_id: string, sort_order: number): ListItem => ({ exercise_id, sort_order });
 
@@ -167,5 +167,22 @@ describe('splitPicks', () => {
     const { onBoard, rest } = splitPicks(catalogue, ['x', 'c'].map(ex));
     expect(ids(onBoard)).toEqual(['c']);
     expect(rest).toHaveLength(4);
+  });
+});
+
+describe('pickCounts', () => {
+  const pick = (id: string, pattern: 'squat' | 'push' | 'core') => ({ id, pattern });
+
+  it('has every pattern, at 0 with nothing picked', () => {
+    expect(pickCounts([])).toEqual({ squat: 0, hinge: 0, push: 0, pull: 0, accessory: 0, core: 0 });
+  });
+
+  it('counts your picks per pattern', () => {
+    const counts = pickCounts([pick('a', 'squat'), pick('b', 'push'), pick('c', 'squat')]);
+    expect(counts).toMatchObject({ squat: 2, push: 1, core: 0 });
+  });
+
+  it('counts an exercise listed twice once', () => {
+    expect(pickCounts([pick('a', 'core'), pick('a', 'core')]).core).toBe(1);
   });
 });

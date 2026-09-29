@@ -20,13 +20,15 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `bugfix: Quieten board rows — tick badges, shorter lines, no
-  level` (after Ticket 50). Before it: `feature: Show today and last time on board rows, with the
-  week and pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
+- **Last commit (on `redesign`):** `feature: Make edit board a page with scrolling chips and
+  custom exercises` (Tickets 51 and 57). Before it: `bugfix: Quieten board rows — tick badges,
+  shorter lines, no level`, `feature: Show today and last time on board rows, with the week and
+  pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
   which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit. Ticket 40's
   docs commit is on `main`.
-- **Next: Ticket 51 — the picker as a sheet** (`?edit=`, pattern chips, Done), then Ticket 52 (the
-  summary) and Ticket 53 (the milestone 9 check on the iPhone).
+- **Next: Ticket 52 — the summary** (a stat row, rewards open, the week strip at the bottom), then
+  Ticket 53 (the milestone 9 check on the iPhone). Ticket 57 (custom exercises) is already done,
+  pulled forward into Ticket 51.
 - **The phone sees `redesign` only after a push**, through Vercel's preview for the branch. The
   installed app follows `main`. With no push, Safari on the same Wi-Fi can open the Mac's preview
   at `http://<Mac's LAN IP>:3000` (plain http, so there's no service worker and no sign-in).
@@ -34,7 +36,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
-- **Tests:** 436 Vitest tests, domain layer only.
+- **Tests:** 444 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -56,15 +58,26 @@ re-reading the whole repo. **Read this file at the start of every session**, the
     - nothing for a lift never done, so it's just its name.
     Screen readers still hear "Today:" and "Last time:".
   - The `›` on each row says it opens the log sheet.
-- **The catalogue and manage screen** (`/exercises`, or `?pattern=…` for one group, titled by that
-  pattern and nothing else): 73 exercises across the six patterns, with a search box. Each pattern
-  is **one list**: your picks first, in your order, each with `On board ✓` and a grip handle you drag
-  to reorder (the board follows); then the rest of the catalogue as neutral `Add` rows. Tapping Add
-  slides the row up to the end of your picks with a brief green glow; tapping a pick slides it back
-  to its catalogue place — one tap, no save button, and removing keeps every set you ever logged.
-  Only a handle starts a drag, so the list still scrolls under a finger; the arrow keys on a focused
-  handle reorder without a pointer. Handles hide while searching. A group on the board reaches it by the `+` beside its heading,
-  and Edit (or the empty board's card) opens every pattern.
+- **Edit board** (`/exercises`, Ticket 51; a plain page, never a sheet — the user's choice):
+  - **Header:** "Edit board", and **+ New** in lime on the right. There's no back button and no
+    Done: every change saves as you make it, and you leave by swiping back.
+  - **Search box** with a magnifier icon, then **one row of pattern chips** that scrolls sideways to
+    the screen's edges: All, Squat … Core, each with how many you've picked (`All 3`, `Push 2`) and
+    a ✓ on the selected one. The chip lives in `?pattern=`, replaced rather than pushed, so a
+    reload keeps it and back goes straight to the board. The board's Edit opens All; a group's `+`
+    opens its own chip.
+  - **The list** for the chip (or every pattern under All): your picks first, in your order, each
+    with a small `On board ✓` pill and a grip handle you drag to reorder (the board follows); then
+    the rest of the catalogue with small `Add` pills. Tapping Add slides the row up to the end of
+    your picks with a brief green glow; tapping a pick slides it back — one tap, no save button,
+    and removing keeps every set you ever logged. Only a handle starts a drag, so the list still
+    scrolls under a finger; the arrow keys on a focused handle reorder without a pointer. Handles
+    hide while searching.
+  - **+ New** (Ticket 57, pulled forward by the user) opens a small form at the top: a name and a
+    pattern, preset to the chip you're on (on All, Add waits until you pick one). Add puts your lift
+    in the catalogue and on your board in one transaction (`addCustomExercise`), then jumps to its
+    chip. A name the catalogue already has, in any case, is never made twice: the form offers that
+    lift instead ("Add it to the board"), or says it's already on your board.
 - **Tab bar** (Ticket 41): Train (`/`), History (`/history`, a placeholder until milestone 10)
   and Me (`/account`), pinned at the bottom of those three pages only. A red dot on Me means
   backup is paused; "changes waiting" never badges.
@@ -433,10 +446,52 @@ These aren't obvious from the code and shaped later work.
   - **A group with no picks is hidden,** so its `+` goes with it. Edit, or the empty board's card,
     reaches the other patterns.
 
+- **Edit board decisions (Tickets 51 and 57):**
+  - **A page, not a sheet** (the user's choice). A sheet version (`?edit=`) was built first and
+    taken out before commit. CLAUDE.md's Navigation paragraph says edit board is never a sheet.
+  - **No back button and no Done** (the user's choice): changes save as they're made, and you swipe
+    back. **Unconfirmed:** whether iOS offers the edge swipe in the installed home-screen app. The
+    tab bar doesn't show on this page, so if it doesn't, the fix is to show the tab bar here.
+  - **Custom exercises were pulled forward** from milestone 10 (the user's choice). No schema
+    change: the row is an ordinary `exercises` row (`user_id` local, 120 s rest), `muscleOf` places
+    it by its pattern, and sync backs it up like the catalogue.
+  - **A custom name must be new** (`customName` in `lib/domain/custom.ts`): trimmed, inner spaces
+    collapsed, capped at 60 characters, and matched against the catalogue ignoring case. Two lifts
+    of one name would split your history, and repair merges by name anyway.
+  - `pickCounts` (in `list.ts`) feeds the chips: every pattern present, a lift listed twice counted
+    once.
+
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Tickets 51 and 57: Edit board page — scrolling chips, custom exercises
+`feature: Make edit board a page with scrolling chips and custom exercises` · 2026-09-30 · branch
+`redesign`
+
+- Built first as a sheet over the board (`?edit=`); the user wanted a page, so the sheet was taken
+  out before commit and CLAUDE.md says edit board is never a sheet.
+- `ExercisePicker` is the page:
+  - "Edit board" with `+ New`;
+  - a search box with a magnifier;
+  - one sideways-scrolling row of small chips with pick counts and a ✓ on the selected one;
+  - the chip in `?pattern=` via `replaceState`;
+  - no back link and no Done (the user's choice);
+  - smaller `On board ✓` / `Add` pills.
+  `PatternList` (drag, `useFlip`, the 400 ms guard) is unchanged.
+- Ticket 57, pulled forward:
+  - `customName` (new `lib/domain/custom.ts`) and `addCustomExercise` in `writes.ts`, one
+    transaction with the exercise, its list entry and both outbox rows;
+  - the form offers an existing lift instead of a duplicate.
+- `pickCounts` in `list.ts`. 8 new tests (444 in total).
+- Checked in headless Chrome at 390 × 844:
+  - the empty card, Edit and `+` opening the right chip;
+  - chips scrolling sideways and not adding history;
+  - an offline reload keeping the chip;
+  - "Zercher Carry" created under Accessory with both outbox rows and shown on the board;
+  - "bench PRESS" recognised as Bench Press.
+- Not checked on the iPhone yet (Ticket 53), including whether the installed app can swipe back.
 
 ### Board rows, quietened (after Ticket 50)
 `bugfix: Quieten board rows — tick badges, shorter lines, no level` · 2026-09-30 · branch

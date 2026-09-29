@@ -125,7 +125,7 @@ app/
   (app)/exercise/page.tsx        log sheet (?id=… — a static page, so it opens offline;
                                  kept for old links, the sheet is ?log=… over any page)
   (app)/session/page.tsx         session summary (?id=… — a static page, so it opens offline)
-  (app)/exercises/page.tsx       the catalogue (kept for old links; the sheet is ?edit=…)
+  (app)/exercises/page.tsx       edit board: the catalogue, a page of its own (not a sheet)
   (app)/history/page.tsx         the History tab: sessions + exercises
   (app)/history/exercise/page.tsx  exercise detail (?id=…, static like the others)
   (app)/account/page.tsx         the Me tab: backup, sign-in, install, version
@@ -223,9 +223,9 @@ not yet done this session — display only; it never limits what you can log.
 **Navigation.** Three tabs at the bottom: Train (the board), History, Me (`/account`). A live
 session bar sits above them only while a session is active (never before a set); tapping it
 opens the live session screen, where **End session** lives. Mid-set screens (log sheet, live
-session, edit board) are sheets opened with a query param on the current page
-(`?log=`, `?live`, `?edit=`) via `history.pushState`, so back closes them and a reload reopens
-them offline.
+session) are sheets opened with a query param on the current page (`?log=`, `?live`) via
+`history.pushState`, so back closes them and a reload reopens them offline. Edit board is a
+normal page (`/exercises`), never a sheet — the user's choice.
 
 **Rewards never block.** The record banner does not dim the page or catch input; you can log
 the next set while it shows. The finish deck is the only overlay, and only right after Finish.
@@ -277,8 +277,8 @@ end-to-end on a real device.
    session bar after the first set and a live screen that holds End
 8. **Log sheet as a set table**: last time's set N beside today's, per-set prefill, edit and
    undo, Next up, a record banner that never blocks
-9. **Board, picker and summary**: two row states, pattern ticks, the week strip on the board, a
-   picker sheet with chips and Done, a read-only summary with the rewards open
+9. **Board, picker and summary**: two row states, pattern ticks, the week strip on the board, an
+   edit-board page with chips and Done, a read-only summary with the rewards open
 10. **History and first run**: sessions and exercises, exercise detail, a welcome, the install
     card, a backup prompt, custom exercises
 

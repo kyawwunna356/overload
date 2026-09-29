@@ -1,3 +1,5 @@
+import type { Pattern } from './types';
+
 // Your list: which exercises the board shows, and the order you put them in. It's the one
 // thing on the board you choose rather than earn — everything else (last weight, days ago,
 // coverage) stays derived from `set_logs`. Stored as `template_items`, so a list entry is a
@@ -74,4 +76,17 @@ export function splitPicks<T extends { id: string }>(
   const onBoard = yours.filter((entry) => inCatalogue.has(entry.id));
   const picked = new Set(onBoard.map((entry) => entry.id));
   return { onBoard, rest: catalogue.filter((entry) => !picked.has(entry.id)) };
+}
+
+// How many exercises you've picked in each pattern, for the picker's chips. Every pattern is
+// present, at 0 when nothing's picked there, and an exercise listed twice counts once.
+export function pickCounts(yours: readonly { id: string; pattern: Pattern }[]): Record<Pattern, number> {
+  const counts: Record<Pattern, number> = { squat: 0, hinge: 0, push: 0, pull: 0, accessory: 0, core: 0 };
+  const seen = new Set<string>();
+  for (const entry of yours) {
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    counts[entry.pattern] += 1;
+  }
+  return counts;
 }
