@@ -16,15 +16,16 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   split into four milestones, 7–10 (Tickets 40–58 in `tickets.md`), each ending in an iPhone check.
 - **Milestone 7 — Shell and live session is finished** (Tickets 40–44). The user confirmed the
   check on the iPhone on 2026-09-29 (Ticket 44).
-- **Milestone 8 — Log sheet as a set table is built** (Tickets 45–48). Only its iPhone check is
-  left. CLAUDE.md says milestone 8.
+- **Milestone 8 — Log sheet as a set table is finished** (Tickets 45–49). The user confirmed the
+  iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
 - **Last commit (on `redesign`):** `feature: Edit a set in place and undo a delete` (Ticket 46).
   Before it on the branch: Ticket 43, then Tickets 41, 42, 45, 47 and 48 in one commit. Ticket 40's
-  docs commit is on `main`.
-- **Next: Ticket 49 — the milestone 8 check on the iPhone**, then milestone 9 (Board, picker and
-  summary, Tickets 50–53).
+  docs commit is on `main`. Ticket 49 has no code commit, like Tickets 7, 12, 16, 22 and 44 before
+  it — this docs update closes it out.
+- **Next: Ticket 50 — the board's date header, week strip, pattern ticks and two row states**
+  (milestone 9, Tickets 50–53).
 - **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `MeScreen.tsx`). The email
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
@@ -402,6 +403,15 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 49: On-device check — milestone 8 on the iPhone
+2026-09-30 · branch `redesign` · no code commit (like Tickets 7, 12, 16, 22 and 44)
+
+- The user ran the milestone 8 checklist on the iPhone: the set table's Last time column and
+  per-set prefill, editing a today row in place, undo after a swipe-delete, Next up swapping in
+  place, and the record banner — all under airplane mode, and the rest timer surviving a phone
+  lock/unlock. Everything passed with no fixes needed.
+- Milestone 8 is closed. CLAUDE.md's current milestone is now 9 (Board, picker and summary).
 
 ### Ticket 46: Edit and undo — fix a set in place, take back a delete
 `feature: Edit a set in place and undo a delete` · 2026-09-29 · branch `redesign`

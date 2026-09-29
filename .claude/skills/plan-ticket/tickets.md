@@ -169,7 +169,7 @@ Rewards never block a tap.
 | 46 | Edit and undo — tap a today row to edit it (`updateSet`), and Undo for 5 s after a delete (`restoreSet`) | done |
 | 47 | Next up — the next lift on your board not done this session, swapped in place | done |
 | 48 | Record banner — slides in under the header for 3 s, no dimming, catches no taps (replaces `PRFlash`) | done |
-| 49 | On-device check — run milestone 8 on the iPhone | next |
+| 49 | On-device check — run milestone 8 on the iPhone | done |
 
 What each ticket builds from:
 - **45:**
@@ -197,7 +197,7 @@ read-only and opens with the rewards. The user's decisions:
 
 | # | Ticket | Status |
 |---|---|---|
-| 50 | Board — date header and Edit, the week strip on top, a ✓ on pattern headings (the coverage strip retired), two row states with the level, and empty groups hidden | not started |
+| 50 | Board — date header and Edit, the week strip on top, a ✓ on pattern headings (the coverage strip retired), two row states with the level, and empty groups hidden | next |
 | 51 | Picker as a sheet — `?edit=<pattern>`, Done, pattern chips with pick counts, the chip pre-selected from a group's `+` | not started |
 | 52 | Summary and finish deck — a Duration · Sets · kg stat row, rewards open, the week strip at the bottom, and Done landing on the summary | not started |
 | 53 | On-device check — run milestone 9 on the iPhone | not started |
