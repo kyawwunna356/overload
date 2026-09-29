@@ -20,25 +20,40 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Edit a set in place and undo a delete` (Ticket 46).
-  Before it on the branch: Ticket 43, then Tickets 41, 42, 45, 47 and 48 in one commit. Ticket 40's
-  docs commit is on `main`. Ticket 49 has no code commit, like Tickets 7, 12, 16, 22 and 44 before
-  it — this docs update closes it out.
-- **Next: Ticket 50 — the board's date header, week strip, pattern ticks and two row states**
-  (milestone 9, Tickets 50–53).
+- **Last commit (on `redesign`):** `feature: Show today and last time on board rows, with the week
+  and pattern ticks` (Ticket 50). Before it: `docs: Close milestone 8 after the iPhone check`
+  (Ticket 49, which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit.
+  Ticket 40's docs commit is on `main`.
+- **Next: Ticket 51 — the picker as a sheet** (`?edit=`, pattern chips, Done), then Ticket 52 (the
+  summary) and Ticket 53 (the milestone 9 check on the iPhone).
+- **The phone sees `redesign` only after a push**, through Vercel's preview for the branch. The
+  installed app follows `main`. With no push, Safari on the same Wi-Fi can open the Mac's preview
+  at `http://<Mac's LAN IP>:3000` (plain http, so there's no service worker and no sign-in).
 - **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `MeScreen.tsx`). The email
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
-- **Tests:** 429 Vitest tests, domain layer only.
+- **Tests:** 437 Vitest tests, domain layer only.
 
 ## What works today
 
-- **Board** (`/`): six movement-pattern groups, each holding **the exercises you picked, in the
-  order you put them in** — never re-sorted by what you did last, and logging never moves a row.
-  A group you haven't picked for says "No exercises yet." Every row shows its name in white,
-  then — small and faint (`text-mute`) — the last working set (`82.5 kg × 5`, `BW × 9`) and days ago
-  (`2d`, never "today"), and a `›` so it reads as a link. A lift never done shows just its name. Nothing is folded away: you chose the list.
+- **Board** (`/`, Ticket 50):
+  - **Header:** the date (`Wed 30 Sep`) with an **Edit** button. Edit opens `/exercises` until
+    Ticket 51 turns it into a sheet.
+  - **Week strip:** this week, Monday to Sunday. Trained days are filled green, and today gets a
+    green ring while a session is running.
+  - **Groups:** the pattern groups you've picked for, each holding **the exercises you picked, in
+    the order you put them in**. They're never re-sorted by what you did last, and logging never
+    moves a row. A group with no picks is hidden. With nothing picked at all, one "Pick your
+    exercises" card offers the catalogue.
+  - **Heading ticks:** a lime ✓ on a pattern heading once the running session has touched it.
+    That's all the board shows of coverage.
+  - **Rows** (`rowState` in `board.ts`): the name, then `· Level N` in `text-body`, then one
+    `text-body` line:
+    - `✓ Today: 3 sets · best 85 kg × 5` once the running session has a set of the lift;
+    - otherwise `Last: 82.5 kg × 5 · 4d` (under a day the age is left off, never "today");
+    - `New` for a lift never done.
+  - The `›` on each row says it opens the log sheet.
 - **The catalogue and manage screen** (`/exercises`, or `?pattern=…` for one group, titled by that
   pattern and nothing else): 73 exercises across the six patterns, with a search box. Each pattern
   is **one list**: your picks first, in your order, each with `On board ✓` and a grip handle you drag
@@ -47,7 +62,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   to its catalogue place — one tap, no save button, and removing keeps every set you ever logged.
   Only a handle starts a drag, so the list still scrolls under a finger; the arrow keys on a focused
   handle reorder without a pointer. Handles hide while searching. A group on the board reaches it by the `+` beside its heading,
-  or by the full-width "Add exercises" button when the group is still empty.
+  and Edit (or the empty board's card) opens every pattern.
 - **Tab bar** (Ticket 41): Train (`/`), History (`/history`, a placeholder until milestone 10)
   and Me (`/account`), pinned at the bottom of those three pages only. A red dot on Me means
   backup is paused; "changes waiting" never badges.
@@ -75,8 +90,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
     - A swipe-delete, in the table or Earlier, shows `Set deleted · Undo` over the Log button for
       5 s. Undo (`restoreSet`) puts the same set back, with the same id and time.
     - A swipe or scroll never counts as a tap.
-- **Coverage strip** (top of the board, and on the live screen, only while a session is active):
-  six pills, one per pattern, under the title. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
+- **Coverage strip** (on the live screen only since Ticket 50, which moved the board's coverage
+  onto the ✓ on each pattern heading): six pills, one per pattern. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
   rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
   session ends (the idle gap, or Finish).
 - **Session summary** (`/session?id=…`): one session's sets grouped by exercise (in the order
@@ -399,10 +414,52 @@ These aren't obvious from the code and shaped later work.
   - The PR pill is record yellow everywhere, as in Figma.
   - Inside a sheet the surface is `card` and the blocks are `raised`.
 
+- **Board decisions (Ticket 50):**
+  - **"Today" means the running session,** not the calendar day. A row returns to `Last:` the
+    moment the session ends, by Finish or the gap.
+  - **"Best" is the heaviest working set.** At the same weight, more reps wins; then the earlier
+    set. With only warmups today, the best of those is shown. e1RM was passed over, since it can
+    pick a set that isn't the heaviest.
+  - **The board reads every set of your picked lifts,** because a row's level counts the days you
+    did the lift. That's a few hundred local rows. `useBoard` rebuilds on a new set, the session
+    ending, or a new minute, never on the timers' half-second repaint.
+  - **Row text is `text-body` now,** following CLAUDE.md's board rule. The quieter `text-mute`
+    from the UI polish after Ticket 30 is gone.
+  - **A group with no picks is hidden,** so its `+` goes with it. Edit, or the empty board's card,
+    reaches the other patterns.
+
 ## Log
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 50: Board — date header, week strip, pattern ticks, two row states
+`feature: Show today and last time on board rows, with the week and pattern ticks` · 2026-09-30 ·
+branch `redesign`
+
+- The first ticket of milestone 9. The board answers "what have I done today" and "how's my week"
+  with no extra tap.
+- `board.ts`:
+  - `rowState(exerciseId, sessionSets, history, now)` returns `today`, `last` or `new`;
+  - `BoardRow` carries `state` and `level` in place of `lastSet` and `daysSince`;
+  - `buildBoard` takes the session's sets.
+- `useBoard` reads each picked lift's full history, and takes the session from
+  `useActiveSession`.
+- `Board`:
+  - the date header and Edit;
+  - `WeekStrip` on top (its `sessionId` is now optional);
+  - `useCoverage` feeds the heading ✓;
+  - the empty-board card.
+  `CoverageStrip` left the board. `PatternGroup` lost its empty-group branch.
+- `formatDay` in `format.ts` for `Wed 30 Sep`.
+- 8 new tests (437 in total).
+- Checked in headless Chrome at 390 × 844 with touch:
+  - the empty card on a fresh install;
+  - picking three lifts and planting a set from 4 days ago gave `Last: 100 kg × 5 · 4d` and
+    `New`;
+  - logging a set gave `✓ Today: 1 set · best 100 kg × 5`, `Squat ✓` and today ringed, with no
+    row moving.
+- Not checked on the iPhone yet (Ticket 53).
 
 ### Ticket 49: On-device check — milestone 8 on the iPhone
 2026-09-30 · branch `redesign` · no code commit (like Tickets 7, 12, 16, 22 and 44)

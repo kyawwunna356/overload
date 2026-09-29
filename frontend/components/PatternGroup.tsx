@@ -6,51 +6,40 @@ import { patternLabel } from "@/lib/format";
 import { ExerciseRow } from "./ExerciseRow";
 
 // A group shows the exercises you picked for that pattern, all of them, in the order you put
-// them in — you chose them, so nothing is folded away. A pattern you haven't picked for yet says
-// so and offers the catalogue, which is the only thing to do there; once a group has exercises
-// that becomes a plus beside the heading instead, so the card stays a list of lifts.
-export function PatternGroup({ group }: { group: BoardGroup }) {
-  const picker = `/exercises?pattern=${group.pattern}`;
+// them in — you chose them, so nothing is folded away. The board only renders groups you've picked
+// for. The heading gets a ✓ once the session you're in has touched the pattern: information, never
+// a target, so an untouched heading has no mark at all.
+export function PatternGroup({ group, covered }: { group: BoardGroup; covered: boolean }) {
   const label = patternLabel(group.pattern);
 
   return (
     <section>
       {/* items-center, not items-baseline: an SVG's baseline is its bottom edge, so a
-          baseline row would float the pencil above the heading. */}
+          baseline row would float the plus above the heading. */}
       <div className="flex items-center justify-between gap-4 px-2 pb-2">
-        <h2 className="text-xl font-semibold tracking-tight text-ink">{label}</h2>
-        {group.rows.length > 0 && (
-          // -m-3 p-3 keeps a thumb-sized tap area without making the control look big.
-          <Link
-            href={picker}
-            aria-label={`Add ${label} exercises`}
-            className="-m-3 touch-manipulation p-3 text-body active:text-ink"
-          >
-            <PlusIcon />
-          </Link>
-        )}
+        <h2 className="text-xl font-semibold tracking-tight text-ink">
+          {label}
+          {covered && (
+            <>
+              <span aria-hidden className="text-primary"> ✓</span>
+              <span className="sr-only">, covered this session</span>
+            </>
+          )}
+        </h2>
+        {/* -m-3 p-3 keeps a thumb-sized tap area without making the control look big. */}
+        <Link
+          href={`/exercises?pattern=${group.pattern}`}
+          aria-label={`Add ${label} exercises`}
+          className="-m-3 touch-manipulation p-3 text-body active:text-ink"
+        >
+          <PlusIcon />
+        </Link>
       </div>
-      <div className="overflow-hidden rounded-card bg-card">
-        {group.rows.length === 0 ? (
-          <>
-            <p className="px-6 pt-5 text-body">No exercises yet.</p>
-            <div className="p-3">
-              <Link
-                href={picker}
-                className="flex h-12 touch-manipulation items-center justify-center rounded-pill bg-page text-base font-semibold text-ink active:bg-line"
-              >
-                Add exercises
-              </Link>
-            </div>
-          </>
-        ) : (
-          <ul className="divide-y divide-line">
-            {group.rows.map((row) => (
-              <ExerciseRow key={row.exercise.id} row={row} />
-            ))}
-          </ul>
-        )}
-      </div>
+      <ul className="divide-y divide-line overflow-hidden rounded-card bg-card">
+        {group.rows.map((row) => (
+          <ExerciseRow key={row.exercise.id} row={row} />
+        ))}
+      </ul>
     </section>
   );
 }

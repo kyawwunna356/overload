@@ -1,14 +1,24 @@
 import type { ListItem } from './list';
+import { masteryLevel } from './mastery';
 import { previousSet } from './previous';
 import { staleness } from './staleness';
 import { PATTERNS, type Exercise, type Pattern, type SetLog } from './types';
 
+// What a board row says on its second line.
+//   today — done in the session you're in: how many sets, and the best of them.
+//   last  — not done this session: the last working set (null if only warmups were ever logged)
+//           and the days since any set.
+//   new   — never logged.
+export type RowState =
+  | { kind: 'today'; sets: number; best: SetLog }
+  | { kind: 'last'; set: SetLog | null; daysAgo: number }
+  | { kind: 'new' };
+
 export type BoardRow = {
   exercise: Exercise;
-  // The last working set — shown inline on the row. Null when there isn't one.
-  lastSet: SetLog | null;
-  // Days since any set of this exercise; null if it was never performed.
-  daysSince: number | null;
+  state: RowState;
+  // The mastery level; 0 for a lift never done.
+  level: number;
 };
 
 export type BoardGroup = {
@@ -26,14 +36,15 @@ export type BoardGroup = {
 // All six groups always come back, empty ones included. An entry whose exercise is missing or
 // archived is skipped, and the same exercise listed twice appears once.
 //
-// Pure and derived from `logs` and your list (Hard Rules 1 and 6). Callers with a long history
-// should pass just each exercise's newest set and newest working set — the scan below is
-// linear in `logs`.
+// Pure and derived from `logs` and your list (Hard Rules 1 and 6). `logs` should be every set of
+// the listed exercises, since the level counts days; `sessionSets` is the session you're in, or
+// empty when there isn't one.
 export function buildBoard(
   exercises: readonly Exercise[],
   logs: readonly SetLog[],
   now: number,
   list: readonly ListItem[],
+  sessionSets: readonly SetLog[] = [],
 ): BoardGroup[] {
   const available = new Map(
     exercises.filter((exercise) => !exercise.archived).map((exercise) => [exercise.id, exercise]),
@@ -47,8 +58,8 @@ export function buildBoard(
     taken.add(exercise.id);
     rows.push({
       exercise,
-      lastSet: previousSet(exercise.id, logs),
-      daysSince: staleness(exercise.id, logs, now),
+      state: rowState(exercise.id, sessionSets, logs, now),
+      level: masteryLevel(exercise.id, logs).level,
     });
   }
 
@@ -57,6 +68,34 @@ export function buildBoard(
     pattern,
     rows: rows.filter((row) => row.exercise.pattern === pattern),
   }));
+}
+
+// A row's second line. Any set of this exercise in `sessionSets` makes it "today", which the row
+// keeps until the session ends — by Finish or the 90-minute gap — when it goes back to "last".
+// Both arrays may hold other exercises.
+export function rowState(
+  exerciseId: string,
+  sessionSets: readonly SetLog[],
+  history: readonly SetLog[],
+  now: number,
+): RowState {
+  const today = sessionSets.filter((set) => set.exercise_id === exerciseId);
+  if (today.length > 0) {
+    const working = today.filter((set) => set.kind === 'working');
+    return { kind: 'today', sets: today.length, best: bestOf(working.length > 0 ? working : today) };
+  }
+  const daysAgo = staleness(exerciseId, history, now);
+  if (daysAgo === null) return { kind: 'new' };
+  return { kind: 'last', set: previousSet(exerciseId, history), daysAgo };
+}
+
+// The heaviest set; at the same weight, more reps; then the earlier one, so it's stable.
+function bestOf(sets: readonly SetLog[]): SetLog {
+  return sets.reduce((best, set) => {
+    if (set.weight !== best.weight) return set.weight > best.weight ? set : best;
+    if (set.reps !== best.reps) return set.reps > best.reps ? set : best;
+    return set.logged_at < best.logged_at ? set : best;
+  });
 }
 
 // "Next up" on the log sheet: the first exercise after `currentId` in board order that has no set

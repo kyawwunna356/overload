@@ -197,8 +197,8 @@ read-only and opens with the rewards. The user's decisions:
 
 | # | Ticket | Status |
 |---|---|---|
-| 50 | Board — date header and Edit, the week strip on top, a ✓ on pattern headings (the coverage strip retired), two row states with the level, and empty groups hidden | next |
-| 51 | Picker as a sheet — `?edit=<pattern>`, Done, pattern chips with pick counts, the chip pre-selected from a group's `+` | not started |
+| 50 | Board — date header and Edit, the week strip on top, a ✓ on pattern headings (the coverage strip retired), two row states with the level, and empty groups hidden | done |
+| 51 | Picker as a sheet — `?edit=<pattern>`, Done, pattern chips with pick counts, the chip pre-selected from a group's `+` | next |
 | 52 | Summary and finish deck — a Duration · Sets · kg stat row, rewards open, the week strip at the bottom, and Done landing on the summary | not started |
 | 53 | On-device check — run milestone 9 on the iPhone | not started |
 

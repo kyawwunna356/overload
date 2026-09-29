@@ -4,25 +4,30 @@ import type { WeekDay } from "@/lib/domain/week";
 import { useActiveSession } from "@/lib/hooks/useActiveSession";
 import { useWeek } from "@/lib/hooks/useWeek";
 
-// The week this session belongs to, Monday to Sunday. A day you trained is green. While the
-// session is still going, its own day is a green outline — in progress; once it's over (Finish,
-// or the 90-minute gap) that day fills in like any other. A day off is a plain grey number — no
-// cross, no count, no target — because the week is something to look at, never something to fall
-// short of.
+// A week, Monday to Sunday: the one a session belongs to on its summary, or this week on the board
+// (`anchor` is now and there's no `sessionId`). A day you trained is green. While a session is
+// still going — that session, or on the board any session — its day is a green outline, in
+// progress; once it's over (Finish, or the 90-minute gap) that day fills in like any other. A day
+// off is a plain grey number — no cross, no count, no target — because the week is something to
+// look at, never something to fall short of.
 //
 // "Still going" comes from useActiveSession, the live clock the End bar and the recap use, so the
 // outline fills the instant the session ends.
-export function WeekStrip({ anchor, sessionId }: { anchor: number; sessionId: string }) {
+export function WeekStrip({ anchor, sessionId }: { anchor: number; sessionId?: string }) {
   const week = useWeek(anchor);
-  const live = useActiveSession()?.session?.id === sessionId;
+  const running = useActiveSession()?.session ?? null;
+  const live = running !== null && (sessionId === undefined || running.id === sessionId);
   if (week === undefined) return null;
 
   return (
-    <ol aria-label="This session's week" className="grid grid-cols-7 gap-1 rounded-card bg-card px-3 py-4">
+    <ol
+      aria-label={sessionId === undefined ? "This week" : "This session's week"}
+      className="grid grid-cols-7 gap-1 rounded-card bg-card px-3 py-4"
+    >
       {week.map((day) => (
         <li
           key={day.key}
-          aria-label={`${day.name} ${day.date}${day.trained ? ", trained" : ""}${day.anchor ? ", this session" : ""}`}
+          aria-label={`${day.name} ${day.date}${day.trained ? ", trained" : ""}${day.anchor ? (sessionId === undefined ? ", today" : ", this session") : ""}`}
           className="flex flex-col items-center gap-2"
         >
           <span aria-hidden className="text-xs font-semibold text-body">

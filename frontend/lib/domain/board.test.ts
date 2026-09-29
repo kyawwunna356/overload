@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBoard, nextUp } from './board';
+import { buildBoard, nextUp, rowState } from './board';
 import type { ListItem } from './list';
 import { makeExercise, makeSet } from './test-utils';
 import { PATTERNS, type Exercise } from './types';
@@ -68,7 +68,16 @@ describe('buildBoard', () => {
     const after = buildBoard([a, b], [performed(a.id, 5), performed(b.id, 0)], NOW, list);
     expect(namesIn(before, 'squat')).toEqual(namesIn(after, 'squat'));
     // Only the row's own values change.
-    expect(after[0].rows[1].daysSince).toBe(0);
+    expect(after[0].rows[1].state).toMatchObject({ kind: 'last', daysAgo: 0 });
+  });
+
+  it('keeps the order when a set in the session turns a row to today', () => {
+    const a = makeExercise({ id: 'a', name: 'A' });
+    const b = makeExercise({ id: 'b', name: 'B' });
+    const set = performed(b.id, 0);
+    const groups = buildBoard([a, b], [set], NOW, listOf(a, b), [set]);
+    expect(namesIn(groups, 'squat')).toEqual(['A', 'B']);
+    expect(groups[0].rows[1].state.kind).toBe('today');
   });
 
   it('sorts by sort_order, whatever the numbers are', () => {
@@ -125,23 +134,34 @@ describe('buildBoard', () => {
     const newerWarmup = performed(ex.id, 2, { kind: 'warmup', weight: 40 });
     const newerDrop = performed(ex.id, 1, { kind: 'drop', weight: 60 });
     const [row] = buildBoard([ex], [newerDrop, working, newerWarmup], NOW, listOf(ex))[0].rows;
-    expect(row.lastSet).toBe(working);
-    expect(row.daysSince).toBe(1); // any kind of set counts as performing it
+    // any kind of set counts as performing it
+    expect(row.state).toEqual({ kind: 'last', set: working, daysAgo: 1 });
   });
 
-  it('gives a never-performed exercise no lastSet and no daysSince, and still shows it', () => {
+  it('marks a never-performed exercise new, level 0, and still shows it', () => {
     const never = makeExercise({ name: 'Never' });
     const [row] = buildBoard([never], [], NOW, listOf(never))[0].rows;
-    expect(row.lastSet).toBeNull();
-    expect(row.daysSince).toBeNull();
+    expect(row.state).toEqual({ kind: 'new' });
+    expect(row.level).toBe(0);
   });
 
   it('ignores logs for other exercises', () => {
     const mine = makeExercise({ id: 'a', name: 'Mine' });
     const other = makeExercise({ id: 'b', name: 'Other' });
     const [row] = buildBoard([mine], [performed(other.id, 1)], NOW, listOf(mine))[0].rows;
-    expect(row.lastSet).toBeNull();
-    expect(row.daysSince).toBeNull();
+    expect(row.state).toEqual({ kind: 'new' });
+    expect(row.level).toBe(0);
+  });
+
+  it('gives each row its mastery level from the days it was done', () => {
+    const ex = makeExercise({ name: 'Deadlift' });
+    // Local dates, so the days hold in any timezone. Three distinct days reach level 2 (1, 3, 6 …);
+    // two sets on one day count once.
+    const at = (date: number, hour: number) => new Date(2025, 0, date, hour).getTime();
+    const logs = [at(3, 9), at(6, 9), at(8, 9), at(8, 18)].map((logged_at) =>
+      makeSet({ exercise_id: ex.id, logged_at }),
+    );
+    expect(buildBoard([ex], logs, at(10, 12), listOf(ex))[0].rows[0].level).toBe(2);
   });
 
   it('does not mutate its inputs', () => {
@@ -154,6 +174,48 @@ describe('buildBoard', () => {
     const before = structuredClone({ exercises, logs, list });
     buildBoard(exercises, logs, NOW, list);
     expect({ exercises, logs, list }).toEqual(before);
+  });
+});
+
+describe('rowState', () => {
+  const id = 'bench';
+
+  it('is today once the session has a set of it: the count and the heaviest working set', () => {
+    const session = [
+      performed(id, 0.02, { weight: 80, reps: 5 }),
+      performed(id, 0.01, { weight: 85, reps: 5 }),
+      performed(id, 0, { weight: 85, reps: 3 }),
+      performed('squat', 0.03, { weight: 140 }),
+    ];
+    expect(rowState(id, session, session, NOW)).toEqual({ kind: 'today', sets: 3, best: session[1] });
+  });
+
+  it('prefers a working set over a heavier warmup for the best, but falls back to any set', () => {
+    const warmup = performed(id, 0.02, { kind: 'warmup', weight: 100 });
+    const working = performed(id, 0.01, { weight: 80 });
+    expect(rowState(id, [warmup, working], [], NOW)).toMatchObject({ sets: 2, best: working });
+    expect(rowState(id, [warmup], [], NOW)).toMatchObject({ sets: 1, best: warmup });
+  });
+
+  it('breaks a tie at the same weight and reps by the earlier set, whatever the input order', () => {
+    const first = performed(id, 0.02, { weight: 80 });
+    const second = performed(id, 0.01, { weight: 80 });
+    expect(rowState(id, [second, first], [], NOW)).toMatchObject({ best: first });
+  });
+
+  it('is last when the session has not touched it, with the last working set and days ago', () => {
+    const old = performed(id, 4, { weight: 82.5 });
+    const other = performed('squat', 0);
+    expect(rowState(id, [other], [old, other], NOW)).toEqual({ kind: 'last', set: old, daysAgo: 4 });
+  });
+
+  it('is last with no set when only warmups were ever logged', () => {
+    const warmup = performed(id, 2, { kind: 'warmup' });
+    expect(rowState(id, [], [warmup], NOW)).toEqual({ kind: 'last', set: null, daysAgo: 2 });
+  });
+
+  it('is new with no set of it anywhere', () => {
+    expect(rowState(id, [], [performed('squat', 1)], NOW)).toEqual({ kind: 'new' });
   });
 });
 

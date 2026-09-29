@@ -66,8 +66,10 @@ describe('domain functions on the seed data', () => {
     const squat = groups.find((g) => g.pattern === 'squat');
     expect(squat?.rows.map((r) => r.exercise.name)).toEqual(['Leg Press', 'Back Squat', 'Goblet Squat']);
     // Back Squat is the most recently trained of the three and still sits where it was put.
-    expect(squat?.rows[1].lastSet?.kind).toBe('working');
-    expect(squat?.rows[2].lastSet).toBeNull(); // Goblet Squat was never performed
+    const backSquat = squat?.rows[1].state;
+    expect(backSquat?.kind === 'last' && backSquat.set?.kind).toBe('working');
+    expect(squat?.rows[1].level).toBeGreaterThan(0);
+    expect(squat?.rows[2].state).toEqual({ kind: 'new' }); // Goblet Squat was never performed
     expect(groups.find((g) => g.pattern === 'push')?.rows.map((r) => r.exercise.name)).toEqual(['Bench Press']);
     // Patterns nothing was picked for still come back, empty.
     expect(groups.find((g) => g.pattern === 'core')?.rows).toEqual([]);

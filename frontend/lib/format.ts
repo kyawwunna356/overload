@@ -81,6 +81,14 @@ export function formatDaysAgo(days: number): string {
   return whole < 1 ? 'today' : `${whole}d`;
 }
 
+// The board's header, "Tue 30 Sep": the local day in fixed English, like the history's day labels.
+const WEEKDAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export function formatDay(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${WEEKDAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+}
+
 // Local time of day, e.g. "18:42" or "6:42 PM" depending on the phone's locale.
 export function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
