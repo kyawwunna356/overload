@@ -1,6 +1,6 @@
 import { masteryLevel } from './mastery';
 import { sessionPRs, type SetPRs } from './prs';
-import type { DerivedSession } from './sessions';
+import type { DerivedSession, SessionSummary } from './sessions';
 import type { SetLog } from './types';
 
 // What a finished session was worth: one number for the weight moved, the records it broke, and
@@ -37,10 +37,23 @@ export function sessionRecap(session: DerivedSession, history: readonly SetLog[]
   });
 
   return {
-    totalKg: session.sets.reduce((sum, set) => sum + set.weight * set.reps, 0),
+    totalKg: totalKg(session.sets),
     prs: sessionPRs(session.sets, before),
     levelUps,
   };
+}
+
+// The weight moved: Σ weight × reps over every set, warmups included; bodyweight adds 0. The one
+// definition, so the summary's stat row and the finish deck always show the same number.
+export function totalKg(sets: readonly Pick<SetLog, 'weight' | 'reps'>[]): number {
+  return sets.reduce((sum, set) => sum + set.weight * set.reps, 0);
+}
+
+// The summary's stat row: how long the session lasted, how many sets, and the weight moved.
+export type SessionStats = { durationMs: number; sets: number; kg: number };
+
+export function sessionStats(summary: SessionSummary): SessionStats {
+  return { durationMs: summary.durationMs, sets: summary.setCount, kg: totalKg(summary.session.sets) };
 }
 
 // One card of the finish moment's deck. Records and level-ups are paged, so a long list becomes

@@ -20,14 +20,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Make edit board a page with scrolling chips and
-  custom exercises` (Tickets 51 and 57). Before it: `bugfix: Quieten board rows — tick badges,
+- **Last commit (on `redesign`):** `feature: Rebuild the session summary and finish deck to the
+  mock-ups` (Ticket 52, plus the board's PR pill). Before it: `feature: Make edit board a page with
+  scrolling chips and custom exercises` (Tickets 51 and 57), `bugfix: Quieten board rows — tick badges,
   shorter lines, no level`, `feature: Show today and last time on board rows, with the week and
   pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
   which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit. Ticket 40's
   docs commit is on `main`.
-- **Next: Ticket 52 — the summary** (a stat row, rewards open, the week strip at the bottom), then
-  Ticket 53 (the milestone 9 check on the iPhone). Ticket 57 (custom exercises) is already done,
+- **Next: Ticket 53** (the milestone 9 check on the iPhone). Ticket 57 (custom exercises) is already done,
   pulled forward into Ticket 51.
 - **The phone sees `redesign` only after a push**, through Vercel's preview for the branch. The
   installed app follows `main`. With no push, Safari on the same Wi-Fi can open the Mac's preview
@@ -36,7 +36,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
-- **Tests:** 444 Vitest tests, domain layer only.
+- **Tests:** 453 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -53,7 +53,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
     heading once the running session has touched it. That's all the board shows of coverage.
   - **Rows** (`rowState` in `board.ts`): the name, then one short 13 px line with no label:
     - `3 sets · 102.5 × 5` in lime, with the tick badge before the `›`, once the running session
-      has a set of the lift (the second part is the heaviest set);
+      has a set of the lift (the second part is the heaviest set). If one of today's sets broke a
+      record, a yellow **PR** pill takes the tick's place (the session recap's records, so it
+      agrees with the pop-up and the summary);
     - otherwise `82.5 kg × 5 · 4d` in grey (under a day the age is left off, never "today");
     - nothing for a lift never done, so it's just its name.
     Screen readers still hear "Today:" and "Last time:".
@@ -109,31 +111,22 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   onto the ✓ on each pattern heading): six pills, one per pattern. A pattern the session has touched is tinted with a ✓ (`Squat ✓`); the
   rest are just the name in grey. Not tappable, no counts, nothing to fail. It disappears when the
   session ends (the idle gap, or Finish).
-- **Session summary** (`/session?id=…`): one session's sets grouped by exercise (in the order
-  first performed), with totals and the time span. The span runs from the first set to **the end of
-  the session** — the moment you tapped Finish, or the last set when the gap closed it — so the
-  length is the whole workout. While the session is still running the page counts up live
-  (`Today 6:20 PM · 42:10`) instead of showing a frozen length. Read-only: no End bar since
-  Ticket 43, and opening it for a session still running brings up the live screen over it. It's
-  reached from Finish; the board's "Last session ›" link is gone until History (Ticket 54), so an
-  older summary has no way in for now. Tapping an exercise card opens its log sheet over the
-  summary. Under the header, a **week
-  strip**: the session's week, Monday to Sunday, with trained days (any set) filled green; the
-  session's own day is a green outline while it's still going and fills in once it's over. Days off are plain grey; no count, no target. Once the
-  session is over (Finish, or the 90-minute gap), a **recap card** sits above the strip: the total
-  weight lifted (`8,508 kg`, every set, warmups included), then **Muscles · Legs** (the group leaned on most), **Records · 5** and
-  **Levels · 2** as folded rows you tap to open; Muscles opens the same star as the deck. Empty parts are left out. Level-ups show the exercise and a
-  gold badge with a double up-arrow and the level.
-- **The finish moment** (only right after tapping Finish, which lands on the summary with a one-time
-  `finished=1` flag that's dropped from the URL at once): the page dims and a deck of cards pops
-  up — a dark "Workout done" card with the total and counts in bold lime, then a **Muscles** card (a
-  six-point star — Chest, Shoulders, Arms, Core, Legs, Back — each axis reaching out by that group's
-  working sets, the busiest touching the rim; counts at each corner, 0 in grey), then Records (3 per card)
-  and Levels (5 per card), spread over more cards when long. Swipe between them (CSS scroll-snap)
-  or tap the dots; Done, the dimmed page or Escape closes it and returns to the top. As it opens,
-  confetti bursts from the bottom corners (lime, yellow, off-white; gone in ~2 s, never blocks a
-  tap) and the total rolls up from 0 in 0.9 s. Reduced motion: no confetti, the total just shows. Never shown
-  for a gap-closed session or a revisit, and nothing about it is stored.
+- **Session summary** (`/session?id=…`, Ticket 52, to the user's mock-ups): it sits under the
+  **History** tab (the tab bar shows with History lit). Top to bottom: a `‹ History` link, the long
+  date (`Wednesday, 30 Sep`), `span · duration`, then a **stat row** of three tiles — Duration ·
+  Sets · kg lifted (`sessionStats`; every set, warmups included, so it matches the deck). While the
+  session runs, Duration counts up live. Once it's over: **Rewards** (a trophy per record, reading
+  `100 → 102.5 kg × 5` or `105 kg × 5 → 6 reps` on one line, the new value in yellow; a star per
+  level-up, "Reached Level N"), then **Muscles** (the star alone, names only, no counts), then
+  **Exercises**, the session's sets grouped by exercise. Empty parts are left out. Read-only:
+  tapping an exercise opens its log sheet over it, and a running session brings up the live screen.
+- **The finish deck** (only right after Finish, from the one-time `finished=1` flag): a full-screen
+  deck you swipe through (scroll-snap, dots), with a lime **Next** button that reads **Done** on the
+  last card. Cards: **Session done** (the label, long date, span, the stat row with the kg rolling
+  up, chips for records and level-ups, "Nth session this week" and the week strip with the day
+  ringed), **Rewards**, **Muscles**; an empty card isn't dealt. Confetti as it opens. Done or
+  Escape leaves you on the summary. Nothing about it is stored.
+- **Record pop-up** (log sheet): "New record" over the same one-line record as Rewards.
 - **Live session bar** (Ticket 43): from your first set until the session ends, a bar above the
   tabs on Train, History and Me: a pulsing lime dot, `Rest 1:42` big, `Session 38:10 · 12 sets`
   small. Never before a set, so there's still no Start button. A sheet covers it, so the log sheet's
@@ -465,6 +458,28 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Ticket 52: Summary and finish deck — to the user's mock-ups (plus the board's PR pill)
+`feature: Rebuild the session summary and finish deck to the mock-ups` · 2026-09-30 · branch
+`redesign`
+
+- The plan was a stat row and open rewards; the user then sent mock-ups, and both screens were
+  rebuilt to them. The deck is full screen (Session done, Rewards, Muscles) with Next/Done; the
+  summary is a History page with `‹ History`, the stat row, Rewards, Muscles and Exercises.
+- New pieces: `StatRow`, `RewardList`, `RecordChange` (one record line, shared by the rewards and
+  the pop-up), `MusclesCard`, `useSessionNumber`. `SessionRecap` is gone.
+- Domain: `totalKg` and `sessionStats` in `recap.ts`, `sessionNumberInWeek` in `week.ts`,
+  `recordParts` / `formatLongDay` / `formatOrdinal` / `formatWhole` in `format.ts`.
+- The user's corrections: no text beside the star and no counts in it, a smaller star; record
+  text small, no "Heaviest" labels, the yellow not bold, one line with no "…"; a reps record names
+  its weight before the arrow.
+- Board: a row whose lift broke a record today shows a yellow PR pill instead of the tick
+  (`rowState`'s `record`, fed from `useSessionRecap` in `useBoard`).
+- Fixed: the deck didn't open when finishing from the summary's own live sheet (the flag is now
+  watched during render).
+- The sheet colour change and the pop-up's move to a portal are someone else's work in progress
+  and were left out of this commit.
+- 453 tests. Checked in headless Chrome at 390 × 844; not on the iPhone yet (Ticket 53).
 
 ### Tickets 51 and 57: Edit board page — scrolling chips, custom exercises
 `feature: Make edit board a page with scrolling chips and custom exercises` · 2026-09-30 · branch

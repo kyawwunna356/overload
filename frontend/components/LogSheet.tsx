@@ -4,9 +4,9 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { prefillFor } from "@/lib/domain/entry";
 import { previousSession } from "@/lib/domain/previous";
-import { historyPRs } from "@/lib/domain/prs";
+import { historyPRs, type PR } from "@/lib/domain/prs";
 import { SESSION_GAP_MINUTES, deriveSessions } from "@/lib/domain/sessions";
-import { countLabel, patternLabel, recordLine } from "@/lib/format";
+import { countLabel, patternLabel } from "@/lib/format";
 import { useActiveSession } from "@/lib/hooks/useActiveSession";
 import { useLogSheet } from "@/lib/hooks/useLogSheet";
 import { useNextUp } from "@/lib/hooks/useNextUp";
@@ -49,7 +49,7 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
   const data = useLogSheet(exerciseId);
   const now = useNow();
   const active = useActiveSession();
-  const [record, setRecord] = useState<{ id: string; line: string } | null>(null);
+  const [record, setRecord] = useState<{ set: SetLog; prs: PR[] } | null>(null);
   // Stable, so the clock's repaints don't restart the banner's countdown.
   const hideRecord = useCallback(() => setRecord(null), []);
   // The today set open in the editor, and the last set deleted (for Undo). Throwaway UI state; the
@@ -135,7 +135,7 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
       </header>
 
       {/* Keyed by set, so back-to-back records each get their own entrance. */}
-      {record && <RecordBanner key={record.id} line={record.line} onDone={hideRecord} />}
+      {record && <RecordBanner key={record.set.id} set={record.set} prs={record.prs} onDone={hideRecord} />}
 
       {showTable && (
         <SetTable
@@ -164,7 +164,7 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
         setNumber={setNumber}
         prefill={prefill}
         history={data.history}
-        onRecord={(set, prs) => setRecord({ id: set.id, line: recordLine(set, prs) })}
+        onRecord={(set, prs) => setRecord({ set, prs })}
         below={table.today.length > 0 ? <NextUp exerciseId={data.exercise.id} /> : null}
       />
 

@@ -175,7 +175,16 @@ describe('rowState', () => {
       performed(id, 0, { weight: 85, reps: 3 }),
       performed('squat', 0.03, { weight: 140 }),
     ];
-    expect(rowState(id, session, session, NOW)).toEqual({ kind: 'today', sets: 3, best: session[1] });
+    expect(rowState(id, session, session, NOW)).toEqual({ kind: 'today', sets: 3, best: session[1], record: false });
+  });
+
+  it('marks a today row as a record only when its exercise broke one this session', () => {
+    const session = [performed(id, 0), performed('squat', 0.01)];
+    const records = new Set([id]);
+    expect(rowState(id, session, session, NOW, records)).toMatchObject({ kind: 'today', record: true });
+    expect(rowState('squat', session, session, NOW, records)).toMatchObject({ kind: 'today', record: false });
+    // A record from another session means nothing to a row the session hasn't touched.
+    expect(rowState('row', session, [performed('row', 3)], NOW, new Set(['row']))).toMatchObject({ kind: 'last' });
   });
 
   it('prefers a working set over a heavier warmup for the best, but falls back to any set', () => {

@@ -1,4 +1,6 @@
 import { dayKey, localDate } from './history';
+import { deriveSessions } from './sessions';
+import type { SetLog } from './types';
 
 // The week a session belongs to, as seven local calendar days, Monday first — for the strip on the
 // session summary. A day is "trained" when any set was logged on it. There is no target and no
@@ -68,4 +70,20 @@ function mondayOf(timestamp: number) {
   // getDay: Sunday 0 … Saturday 6. Days since Monday: Monday 0 … Sunday 6.
   const sinceMonday = (d.getDay() + 6) % 7;
   return localDate(new Date(d.getFullYear(), d.getMonth(), d.getDate() - sinceMonday).getTime());
+}
+
+// Which session of its week this is: 1 for the week's first, 3 for the third. `weekSets` is the
+// week's sets up to and including the session (more is fine: later sessions don't count), split by
+// the gap rule and the end markers exactly as everywhere else. A count of what you did, never a
+// target: there's no "of 4". A session that started last Sunday night counts in last week.
+export function sessionNumberInWeek(
+  weekSets: readonly SetLog[],
+  sessionStart: number,
+  gapMinutes: number,
+  endMarkers: readonly number[],
+): number {
+  const { start } = weekRange(sessionStart);
+  return deriveSessions(weekSets, gapMinutes, endMarkers).filter(
+    (session) => session.started_at >= start && session.started_at <= sessionStart,
+  ).length;
 }

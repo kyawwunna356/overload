@@ -4,12 +4,13 @@ import { staleness } from './staleness';
 import { PATTERNS, type Exercise, type Pattern, type SetLog } from './types';
 
 // What a board row says on its second line.
-//   today — done in the session you're in: how many sets, and the best of them.
+//   today — done in the session you're in: how many sets, the best of them, and whether any of
+//           them broke a record.
 //   last  — not done this session: the last working set (null if only warmups were ever logged)
 //           and the days since any set.
 //   new   — never logged.
 export type RowState =
-  | { kind: 'today'; sets: number; best: SetLog }
+  | { kind: 'today'; sets: number; best: SetLog; record: boolean }
   | { kind: 'last'; set: SetLog | null; daysAgo: number }
   | { kind: 'new' };
 
@@ -35,13 +36,16 @@ export type BoardGroup = {
 //
 // Pure and derived from `logs` and your list (Hard Rules 1 and 6). Callers with a long history
 // should pass just each exercise's newest set and newest working set — the scan below is linear in
-// `logs`. `sessionSets` is the session you're in, or empty when there isn't one.
+// `logs`. `sessionSets` is the session you're in, or empty when there isn't one; `recordIds` are
+// the exercises that broke a record in it (the recap's records, judged against full history,
+// which the board's thin `logs` can't do).
 export function buildBoard(
   exercises: readonly Exercise[],
   logs: readonly SetLog[],
   now: number,
   list: readonly ListItem[],
   sessionSets: readonly SetLog[] = [],
+  recordIds: ReadonlySet<string> = new Set(),
 ): BoardGroup[] {
   const available = new Map(
     exercises.filter((exercise) => !exercise.archived).map((exercise) => [exercise.id, exercise]),
@@ -55,7 +59,7 @@ export function buildBoard(
     taken.add(exercise.id);
     rows.push({
       exercise,
-      state: rowState(exercise.id, sessionSets, logs, now),
+      state: rowState(exercise.id, sessionSets, logs, now, recordIds),
     });
   }
 
@@ -74,11 +78,17 @@ export function rowState(
   sessionSets: readonly SetLog[],
   history: readonly SetLog[],
   now: number,
+  recordIds: ReadonlySet<string> = new Set(),
 ): RowState {
   const today = sessionSets.filter((set) => set.exercise_id === exerciseId);
   if (today.length > 0) {
     const working = today.filter((set) => set.kind === 'working');
-    return { kind: 'today', sets: today.length, best: bestOf(working.length > 0 ? working : today) };
+    return {
+      kind: 'today',
+      sets: today.length,
+      best: bestOf(working.length > 0 ? working : today),
+      record: recordIds.has(exerciseId),
+    };
   }
   const daysAgo = staleness(exerciseId, history, now);
   if (daysAgo === null) return { kind: 'new' };

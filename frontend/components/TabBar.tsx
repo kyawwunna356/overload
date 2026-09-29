@@ -11,8 +11,9 @@ import { openSheet } from "@/lib/sheets";
 
 // The three places the app has: Train (the board), History and Me. Pinned in the bottom third
 // for the thumb, one tap to any of them. Plain links, so each tab is prefetched and opens with
-// no signal. It shows only on the three tab pages; the log sheet, the picker and the session
-// summary keep their own pinned buttons until they become sheets.
+// no signal. It shows on the three tab pages and on a session's summary, which belongs to History
+// (that's where Finish's deck leaves you), so History is lit there. Other pages — the log sheet's
+// full page, edit board — keep their own buttons.
 //
 // Above the tabs, only while a session is running, sits the live bar: proof something is running
 // and one tap to it (the live screen, where End lives). It never appears before a set, so there's
@@ -31,7 +32,7 @@ const TABS: readonly Tab[] = [
 ];
 
 export function TabBar() {
-  const path = normalize(usePathname());
+  const path = tabOf(normalize(usePathname()));
   const backup = useBackupStatus();
   const active = useActiveSession();
 
@@ -109,6 +110,11 @@ export function TabBar() {
       </div>
     </>
   );
+}
+
+// The tab a page belongs to: a session summary is part of History.
+function tabOf(path: string): string {
+  return path === "/session" ? "/history" : path;
 }
 
 // The static export may serve "/account/" as well as "/account".

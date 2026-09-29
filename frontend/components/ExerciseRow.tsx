@@ -5,7 +5,8 @@ import { LogLink } from "./LogLink";
 
 // One exercise: its name, then one short line that answers the question you have at that moment.
 // Before you've done it this session it's last time, in grey (`82.5 kg × 5 · 4d`); after, it's
-// today, in lime with a tick badge (`3 sets · 102.5 × 5`, the heaviest set). The colour tells them
+// today, in lime with a tick badge (`3 sets · 102.5 × 5`, the heaviest set) — or a yellow PR pill in
+// its place when one of today's sets broke a record. The colour tells them
 // apart, so neither needs a label; a lift never done is just its name. The row never moves when
 // that line changes. Tapping opens its log sheet over the board, which the chevron says.
 export function ExerciseRow({ row }: { row: BoardRow }) {
@@ -20,7 +21,7 @@ export function ExerciseRow({ row }: { row: BoardRow }) {
           <span className="block text-base font-semibold text-ink">{exercise.name}</span>
           <StateLine state={state} />
         </span>
-        {state.kind === "today" && <CheckBadge size="md" />}
+        {state.kind === "today" && (state.record ? <PRPill /> : <CheckBadge size="md" />)}
         <span aria-hidden className="shrink-0 text-2xl leading-none text-mute">
           ›
         </span>
@@ -52,6 +53,16 @@ function StateLine({ state }: { state: RowState }) {
     <span className="block text-[13px] tabular-nums text-body">
       <span className="sr-only">Last time: </span>
       {parts.join(" · ")}
+    </span>
+  );
+}
+
+// The tick's place on a row that broke a record today: a yellow "PR" pill, the record colour.
+function PRPill() {
+  return (
+    <span className="inline-flex h-7 shrink-0 items-center rounded-pill bg-record-pale px-3 text-xs font-bold tracking-wide text-record">
+      <span aria-hidden>PR</span>
+      <span className="sr-only">New record today</span>
     </span>
   );
 }

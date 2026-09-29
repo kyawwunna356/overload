@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { sessionPRs } from './prs';
-import { recapCards, sessionRecap, type Recap } from './recap';
-import { deriveSessions, SESSION_GAP_MINUTES } from './sessions';
-import { makeSet } from './test-utils';
+import { recapCards, sessionRecap, sessionStats, totalKg, type Recap } from './recap';
+import { deriveSessions, SESSION_GAP_MINUTES, summarizeSession } from './sessions';
+import { makeExercise, makeSet } from './test-utils';
 import type { SetLog } from './types';
 
 // Dates use the LOCAL-time constructor, so these tests give the same result in any timezone.
@@ -142,5 +142,51 @@ describe('recapCards', () => {
   it('puts the muscle star second, before records and levels', () => {
     expect(shape(recap(1, 1), true)).toEqual(['total', 'muscles', 'records 1/1', 'levels 1/1']);
     expect(shape(recap(0, 0), true)).toEqual(['total', 'muscles']);
+  });
+});
+
+describe('totalKg', () => {
+  it('sums weight × reps, warmups included, bodyweight as 0', () => {
+    expect(
+      totalKg([
+        makeSet({ weight: 40, reps: 10, kind: 'warmup' }),
+        makeSet({ weight: 82.5, reps: 5 }),
+        makeSet({ weight: 0, reps: 12 }),
+      ]),
+    ).toBe(812.5);
+  });
+
+  it('is 0 with no sets', () => {
+    expect(totalKg([])).toBe(0);
+  });
+});
+
+describe('sessionStats', () => {
+  const bench = makeExercise({ id: 'ex-1', name: 'Bench', pattern: 'push' });
+
+  it('gives the duration, the set count and the kg of the whole session', () => {
+    const session = sessionOf([
+      makeSet({ id: 'w', logged_at: at(9, 1, 12, 0), weight: 40, reps: 10, kind: 'warmup' }),
+      makeSet({ id: 'a', logged_at: at(9, 1, 12, 20), weight: 82.5, reps: 5 }),
+      makeSet({ id: 'b', logged_at: at(9, 1, 12, 40), weight: 85, reps: 5 }),
+    ]);
+    expect(sessionStats(summarizeSession(session, [bench]))).toEqual({
+      durationMs: 40 * 60_000,
+      sets: 3,
+      kg: 400 + 412.5 + 425,
+    });
+  });
+
+  it('agrees with the finish deck\'s total', () => {
+    const session = sessionOf([
+      makeSet({ id: 'a', logged_at: at(9, 1, 12, 0), weight: 100, reps: 3 }),
+      makeSet({ id: 'b', logged_at: at(9, 1, 12, 5), weight: 0, reps: 10 }),
+    ]);
+    expect(sessionStats(summarizeSession(session, [bench])).kg).toBe(sessionRecap(session, []).totalKg);
+  });
+
+  it('is a zero-length session of one set', () => {
+    const session = sessionOf([makeSet({ id: 'a', logged_at: at(9, 1), weight: 60, reps: 8 })]);
+    expect(sessionStats(summarizeSession(session, [bench]))).toEqual({ durationMs: 0, sets: 1, kg: 480 });
   });
 });

@@ -199,7 +199,7 @@ read-only and opens with the rewards. The user's decisions:
 |---|---|---|
 | 50 | Board — date header and Edit, the week strip on top, a ✓ on pattern headings (the coverage strip retired), two row states with the level, and empty groups hidden | done |
 | 51 | Edit board page — `/exercises` as a plain page (the user's choice: no sheet, no back button, no Done — changes save as you make them), a search, a sideways-scrolling chip row with pick counts, the chip pre-selected from a group's `+`, and `+ New` for a custom exercise | done |
-| 52 | Summary and finish deck — a Duration · Sets · kg stat row, rewards open, the week strip at the bottom, and Done landing on the summary | next |
+| 52 | Summary and finish deck (to the user's mock-ups) — a full-screen deck after Finish (Session done with stats, reward chips, "Nth session this week" and the week; Rewards; Muscles) with Next and Done; Done lands on the summary under the History tab: long date, span · duration, Duration · Sets · kg lifted, Rewards and the Muscles card open, then Exercises | done |
 | 53 | On-device check — run milestone 9 on the iPhone | not started |
 
 What each ticket builds from:

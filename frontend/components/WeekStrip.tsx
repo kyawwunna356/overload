@@ -13,10 +13,21 @@ import { useWeek } from "@/lib/hooks/useWeek";
 //
 // "Still going" comes from useActiveSession, the live clock the End bar and the recap use, so the
 // outline fills the instant the session ends.
-export function WeekStrip({ anchor, sessionId }: { anchor: number; sessionId?: string }) {
+//
+// `markAnchor` rings the session's own day even after it's over, for the finish deck, where the
+// strip says "this is the day you just trained".
+export function WeekStrip({
+  anchor,
+  sessionId,
+  markAnchor = false,
+}: {
+  anchor: number;
+  sessionId?: string;
+  markAnchor?: boolean;
+}) {
   const week = useWeek(anchor);
   const running = useActiveSession()?.session ?? null;
-  const live = running !== null && (sessionId === undefined || running.id === sessionId);
+  const live = markAnchor || (running !== null && (sessionId === undefined || running.id === sessionId));
   if (week === undefined) return null;
 
   return (

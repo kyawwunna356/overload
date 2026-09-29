@@ -8,6 +8,7 @@ import { buildBoard, type BoardGroup } from '../domain/board';
 import type { ListItem } from '../domain/list';
 import type { Exercise, SetLog } from '../domain/types';
 import { useActiveSession } from './useActiveSession';
+import { useSessionRecap } from './useSessionRecap';
 
 const MINUTE_MS = 60_000;
 
@@ -56,11 +57,19 @@ export function useBoard(): BoardGroup[] | undefined {
   const sessionSets = state?.session?.sets;
   const minute = state === undefined ? undefined : Math.floor(state.now / MINUTE_MS);
 
+  // Which lifts broke a record this session, for the row's PR pill: the recap's own records, so the
+  // board, the pop-up and the summary can't disagree. Until it's read, rows show the plain tick.
+  const recap = useSessionRecap(state?.session ?? null);
+  const recordIds = useMemo(
+    () => new Set(recap?.prs.map((entry) => entry.set.exercise_id)),
+    [recap],
+  );
+
   return useMemo(
     () =>
       data && minute !== undefined
-        ? buildBoard(data.exercises, data.logs, minute * MINUTE_MS, data.list, sessionSets ?? [])
+        ? buildBoard(data.exercises, data.logs, minute * MINUTE_MS, data.list, sessionSets ?? [], recordIds)
         : undefined,
-    [data, minute, sessionSets],
+    [data, minute, sessionSets, recordIds],
   );
 }

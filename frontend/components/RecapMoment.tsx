@@ -2,46 +2,52 @@
 
 import { useEffect, useRef, useState } from "react";
 import { muscleBalance, topMuscle, type MuscleBalance } from "@/lib/domain/muscles";
-import { recapCards, type Recap, type RecapCard } from "@/lib/domain/recap";
+import { sessionStats, type Recap } from "@/lib/domain/recap";
 import type { SessionSummary } from "@/lib/domain/sessions";
-import { formatDuration } from "@/lib/domain/timers";
-import { countLabel, formatKg } from "@/lib/format";
+import { countLabel, formatLongDay, formatOrdinal, formatSpan, formatWhole } from "@/lib/format";
 import { useCountUp } from "@/lib/hooks/useCountUp";
+import { useSessionNumber } from "@/lib/hooks/useSessionNumber";
 import { Confetti } from "./Confetti";
 import { MuscleStar } from "./MuscleStar";
-import { LevelLine, RecordLine, exerciseNames } from "./SessionRecap";
+import { exerciseNames, hasRewards, RewardList, StarIcon, TrophyIcon } from "./RewardList";
+import { durationText, StatRow } from "./StatRow";
+import { WeekStrip } from "./WeekStrip";
 
-const PER_CARD = { records: 3, levels: 5 };
 const COUNT_UP_MS = 900;
 
-// The moment after Finish: the page dims and a deck of cards pops up in front — the total lifted,
-// then your records, then your level-ups, each spread over more cards when the list is long. Swipe
-// between them; the deck is native horizontal scrolling that snaps card by card (CSS scroll-snap),
-// so there's no gesture code and no dependency. Done, the dimmed page or Escape closes it.
+type DeckCard = "done" | "rewards" | "muscles";
+
+// The moment after Finish: a full screen of cards you swipe through — the session done (its stats,
+// what it earned in two chips, and its week), then the rewards, then the muscle star. A
+// card with nothing to show isn't dealt, so a quiet session is one card. Swiping is native
+// horizontal scrolling that snaps card by card (CSS scroll-snap), so there's no gesture code. The
+// lime button says Next, and Done on the last card; Done (or Escape) leaves you on the summary,
+// which sits under the History tab.
 //
 // Only Finish opens it, and nothing about it is stored: it's the moment, not a record (the summary
-// keeps the recap). A reload or a later visit shows the summary as usual.
+// keeps the rewards). A reload or a later visit shows the summary as usual.
 export function RecapMoment({
   summary,
   recap,
-  dayText,
   onClose,
 }: {
   summary: SessionSummary;
   recap: Recap;
-  // "Today", "Tuesday" …, already worked out by the summary.
-  dayText: string;
   onClose: () => void;
 }) {
   const balance = muscleBalance(summary.groups);
-  const cards = recapCards(recap, PER_CARD, topMuscle(balance) !== null);
-  const nameOf = exerciseNames(summary);
+  const cards: DeckCard[] = [
+    "done",
+    ...(hasRewards(recap) ? (["rewards"] as const) : []),
+    ...(topMuscle(balance) !== null ? (["muscles"] as const) : []),
+  ];
   const deck = useRef<HTMLDivElement>(null);
-  const done = useRef<HTMLButtonElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
   const [active, setActive] = useState(0);
+  const last = active >= cards.length - 1;
 
   useEffect(() => {
-    done.current?.focus();
+    button.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
@@ -63,71 +69,65 @@ export function RecapMoment({
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Workout done" className="fixed inset-0 z-40 flex flex-col">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Session done"
+      className="fixed inset-0 z-40 flex flex-col bg-page motion-safe:animate-scrim-in"
+    >
       <div
-        aria-hidden
-        onClick={onClose}
-        style={{ touchAction: "none" }}
-        className="absolute inset-0 bg-page/85 motion-safe:animate-scrim-in"
-      />
+        ref={deck}
+        onScroll={(event) => {
+          const el = event.currentTarget;
+          setActive(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
+        }}
+        style={{ touchAction: "pan-x pan-y" }}
+        className="mx-auto flex w-full max-w-md flex-1 snap-x snap-mandatory overflow-x-auto overscroll-contain pt-[max(1.5rem,env(safe-area-inset-top))] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {cards.map((card, index) => (
+          <section
+            key={card}
+            aria-label={`Card ${index + 1} of ${cards.length}`}
+            className="flex w-full shrink-0 snap-center flex-col justify-center overflow-y-auto px-4 pb-4"
+          >
+            {card === "done" && <DoneCard summary={summary} recap={recap} />}
+            {card === "rewards" && (
+              <>
+                <h2 className="px-2 pb-4 font-display text-3xl font-black tracking-tight text-ink">Rewards</h2>
+                <RewardList recap={recap} summary={summary} />
+              </>
+            )}
+            {card === "muscles" && <MusclesDeckCard balance={balance} />}
+          </section>
+        ))}
+      </div>
 
-      {/* Taps on the empty space around the cards fall through to the dimmed page and close. */}
-      <div className="pointer-events-none relative flex flex-1 flex-col justify-center gap-4 pt-[max(1rem,env(safe-area-inset-top))] motion-safe:animate-card-in">
-        <div
-          ref={deck}
-          onScroll={(event) => {
-            const el = event.currentTarget;
-            setActive(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
-          }}
-          style={{ touchAction: "pan-x" }}
-          className="pointer-events-auto mx-auto flex w-full max-w-md snap-x snap-mandatory overflow-x-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {cards.map((card, index) => (
-            <div
-              key={index}
-              aria-label={`Card ${index + 1} of ${cards.length}`}
-              className="w-full shrink-0 snap-center px-4"
-            >
-              <Card
-                card={card}
-                summary={summary}
-                recap={recap}
-                balance={balance}
-                dayText={dayText}
-                nameOf={nameOf}
-              />
-            </div>
-          ))}
-        </div>
-
+      <div className="mx-auto w-full max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         {cards.length > 1 && (
-          <div className="pointer-events-auto mx-auto flex justify-center">
-            {cards.map((_, index) => (
+          <div className="flex justify-center pb-3">
+            {cards.map((card, index) => (
               <button
-                key={index}
+                key={card}
                 type="button"
                 aria-label={`Show card ${index + 1} of ${cards.length}`}
                 aria-current={index === active}
                 onClick={() => show(index)}
-                className="touch-manipulation p-2"
+                className="touch-manipulation p-1.5"
               >
                 <span
-                  className={`block h-2 w-2 rounded-pill transition-colors ${index === active ? "bg-ink" : "bg-line"}`}
+                  className={`block h-2 w-2 rounded-pill transition-colors ${index === active ? "bg-primary" : "bg-line"}`}
                 />
               </button>
             ))}
           </div>
         )}
-      </div>
-
-      <div className="pointer-events-none relative px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <button
-          ref={done}
+          ref={button}
           type="button"
-          onClick={onClose}
-          className="pointer-events-auto mx-auto block h-14 w-full max-w-md touch-manipulation rounded-pill bg-card text-lg font-semibold text-ink active:bg-line"
+          onClick={() => (last ? onClose() : show(active + 1))}
+          className="h-14 w-full touch-manipulation rounded-pill bg-primary text-lg font-semibold text-on-primary active:bg-primary-active"
         >
-          Done
+          {last ? "Done" : "Next"}
         </button>
       </div>
 
@@ -137,108 +137,80 @@ export function RecapMoment({
   );
 }
 
-// One card. Every card sits on the card colour; on the first, the numbers carry the lime.
-function Card({
-  card,
-  summary,
-  recap,
-  balance,
-  dayText,
-  nameOf,
-}: {
-  card: RecapCard;
-  summary: SessionSummary;
-  recap: Recap;
-  balance: MuscleBalance;
-  dayText: string;
-  nameOf: (id: string) => string;
-}) {
-  const frame = "flex min-h-[50vh] flex-col rounded-card px-6 py-7 shadow-2xl";
+// The first card: the session done, its numbers, what it earned, and where it sits in the week.
+function DoneCard({ summary, recap }: { summary: SessionSummary; recap: Recap }) {
+  const stats = sessionStats(summary);
+  const number = useSessionNumber(summary.session);
+  const nameOf = exerciseNames(summary);
+  const { session } = summary;
+  const levelChip =
+    recap.levelUps.length === 1
+      ? `${nameOf(recap.levelUps[0].exerciseId)} → Level ${recap.levelUps[0].level}`
+      : `${recap.levelUps.length} level-ups`;
 
-  if (card.kind === "total") {
-    return (
-      <article className={`${frame} justify-between bg-card`}>
-        <div>
-          <p className="text-sm font-bold tracking-wide text-body uppercase">Workout done</p>
-          <p className="pt-1 font-semibold text-ink">{dayText}</p>
-        </div>
-        <div>
-          <p className="font-display text-6xl font-black leading-none tracking-tight tabular-nums text-primary">
-            <RollingKg total={recap.totalKg} />
-          </p>
-          <p className="pt-2 text-xl font-semibold text-ink">lifted</p>
-        </div>
-        <p className="font-semibold text-body">
-          <GreenNumbers
-            text={[
-              countLabel(summary.setCount, "set"),
-              countLabel(summary.exerciseCount, "exercise"),
-              formatDuration(summary.durationMs),
-            ].join(" · ")}
-          />
-        </p>
-      </article>
-    );
-  }
-
-  if (card.kind === "muscles") {
-    return (
-      <article className={`${frame} bg-card`}>
-        <p className="font-display text-3xl font-black tracking-tight text-ink">Muscles</p>
-        <p className="pt-1 text-sm text-body">Working sets by muscle group</p>
-        <div className="flex flex-1 items-center pt-2">
-          <MuscleStar balance={balance} />
-        </div>
-      </article>
-    );
-  }
-
-  const heading = card.kind === "records" ? "Records" : "Levels";
   return (
-    <article className={`${frame} bg-card`}>
-      <p className="flex items-baseline justify-between pb-5">
-        <span className="font-display text-3xl font-black tracking-tight text-ink">{heading}</span>
-        {card.of > 1 && (
-          <span className="text-sm text-body">
-            {card.page} of {card.of}
-          </span>
-        )}
+    <div className="flex flex-col items-center text-center">
+      <p className="text-sm font-bold tracking-wider text-primary uppercase">Session done</p>
+      <h2 className="pt-1 font-display text-3xl font-black tracking-tight text-ink">
+        {formatLongDay(session.started_at, session.started_at)}
+      </h2>
+      <p className="pt-1 text-sm tabular-nums text-body">
+        {formatSpan(session.started_at, session.ended_at ?? session.last_set_at)}
       </p>
-      {card.kind === "records" ? (
-        <ul className="flex flex-col gap-4">
-          {card.prs.map((entry) => (
-            <RecordLine key={entry.set.id} entry={entry} name={nameOf(entry.set.exercise_id)} />
-          ))}
-        </ul>
-      ) : (
-        <ul className="flex flex-col gap-4 text-lg">
-          {card.levelUps.map((up) => (
-            <LevelLine key={up.exerciseId} up={up} name={nameOf(up.exerciseId)} />
-          ))}
-        </ul>
+
+      <div className="w-full pt-6">
+        <StatRow duration={durationText(stats.durationMs)} sets={stats.sets} kg={<RollingKg total={stats.kg} />} />
+      </div>
+
+      {hasRewards(recap) && (
+        <div className="flex flex-wrap justify-center gap-2 pt-5">
+          {recap.prs.length > 0 && (
+            <Chip tint="bg-record-pale text-record" icon={<TrophyIcon />}>
+              {countLabel(recap.prs.length, "record")}
+            </Chip>
+          )}
+          {recap.levelUps.length > 0 && (
+            <Chip tint="bg-level-pale text-level" icon={<StarIcon />}>
+              {levelChip}
+            </Chip>
+          )}
+        </div>
       )}
-    </article>
+
+      {number !== undefined && (
+        <p className="pt-7 pb-2 text-sm font-semibold text-body">{formatOrdinal(number)} session this week</p>
+      )}
+      <div className="w-full">
+        <WeekStrip anchor={session.started_at} sessionId={session.id} markAnchor />
+      </div>
+    </div>
   );
 }
 
-// The total lifted, rolling up from 0 like a scoreboard as the deck pops in.
-function RollingKg({ total }: { total: number }) {
-  return <>{formatKg(useCountUp(total, COUNT_UP_MS))}</>;
+function Chip({ tint, icon, children }: { tint: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className={`inline-flex h-10 items-center gap-2 rounded-pill px-4 text-sm font-semibold ${tint}`}>
+      <span aria-hidden className="[&_svg]:h-4 [&_svg]:w-4">
+        {icon}
+      </span>
+      {children}
+    </span>
+  );
 }
 
-// "23 sets · 6 exercises · 1h 20m" with each number in bold lime and the words left as they are.
-function GreenNumbers({ text }: { text: string }) {
+// The last card: the session's shape, the star at full size on its own.
+function MusclesDeckCard({ balance }: { balance: MuscleBalance }) {
   return (
     <>
-      {text.split(/(\d[\d,.]*)/).map((part, index) =>
-        index % 2 === 1 ? (
-          <span key={index} className="font-black tabular-nums text-primary">
-            {part}
-          </span>
-        ) : (
-          part
-        ),
-      )}
+      <h2 className="px-2 font-display text-3xl font-black tracking-tight text-ink">Muscles</h2>
+      <div className="mx-auto w-full max-w-[19rem] pt-6">
+        <MuscleStar balance={balance} />
+      </div>
     </>
   );
+}
+
+// The kg lifted, rolling up from 0 like a scoreboard as the deck appears.
+function RollingKg({ total }: { total: number }) {
+  return <>{formatWhole(useCountUp(total, COUNT_UP_MS))}</>;
 }

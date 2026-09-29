@@ -58,20 +58,30 @@ export function formatSetShort(set: Pick<SetLog, 'weight' | 'reps'>): string {
   return `${set.weight === 0 ? 'BW' : formatNumber(set.weight)} × ${set.reps}`;
 }
 
-// The record banner's one line: "New record · 85 kg × 5 (was 82.5)". It names the loudest record
-// broken — heavier beats more reps beats a better e1RM — and what it beat.
-export function recordLine(set: Pick<SetLog, 'weight' | 'reps'>, prs: readonly PR[]): string {
+// A record in three parts, for the rewards list and the record pop-up: what kind it is, what it beat
+// and what it's now. The loudest record the set broke is the one named — heavier beats more reps
+// beats a better e1RM.
+//   weight: Heaviest            · 100  → 102.5 kg × 5
+//   reps:   Most reps at 105 kg · 105 kg × 5 → 6 reps
+//   e1rm:   Best est. 1RM       · 110  → 115 kg
+// For weight and e1RM the old value is just the number — the unit follows once, on the new one — so
+// the line stays short enough for a phone. A reps record names its weight before the arrow, since
+// "5 → 6 reps" alone doesn't say at what.
+export type RecordParts = { label: string; from: string; to: string };
+
+export function recordParts(set: Pick<SetLog, 'weight' | 'reps'>, prs: readonly PR[]): RecordParts {
   const weight = prs.find((pr) => pr.kind === 'weight');
+  if (weight) return { label: 'Heaviest', from: formatNumber(weight.previous), to: formatSet(set) };
   const reps = prs.find((pr) => pr.kind === 'reps');
+  if (reps) {
+    const load = set.weight === 0 ? 'BW' : `${formatNumber(set.weight)} kg`;
+    return { label: `Most reps at ${load}`, from: `${load} × ${reps.previous}`, to: countLabel(set.reps, 'rep') };
+  }
   const e1rm = prs.find((pr) => pr.kind === 'e1rm');
-  const was = weight
-    ? `was ${formatNumber(weight.previous)}`
-    : reps
-      ? `was ${countLabel(reps.previous, 'rep')}`
-      : e1rm
-        ? `e1RM was ${prAmount(e1rm, e1rm.previous)}`
-        : null;
-  return `New record · ${formatSet(set)}${was ? ` (${was})` : ''}`;
+  if (e1rm) {
+    return { label: 'Best est. 1RM', from: prAmount(e1rm, e1rm.previous).replace(' kg', ''), to: prAmount(e1rm, e1rm.value) };
+  }
+  return { label: 'Record', from: '', to: formatSet(set) };
 }
 
 // "today", "1d", "6d". Rounds, so a set from yesterday evening still reads "1d" the
@@ -87,6 +97,14 @@ const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 export function formatDay(timestamp: number): string {
   const d = new Date(timestamp);
   return `${WEEKDAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+}
+
+// A session's clock time, "18:04 – 19:16". Both ends land in the same minute for a short session,
+// and "1:40 – 1:40" reads like a bug, so one time is shown instead.
+export function formatSpan(start: number, end: number): string {
+  const from = formatTime(start);
+  const to = formatTime(end);
+  return from === to ? from : `${from} – ${to}`;
 }
 
 // Local time of day, e.g. "18:42" or "6:42 PM" depending on the phone's locale.
@@ -115,13 +133,33 @@ export function masteryLine(mastery: Mastery): string {
   return `${countLabel(mastery.sessions, 'session')} · ${toGo} to Level ${mastery.level + 1}`;
 }
 
-// "4,215 kg": whole kilos with fixed en-US grouping, so the phone's locale can't change it.
-const KG_GROUPING = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+// "4,215": a whole number with fixed en-US grouping, so the phone's locale can't change it.
+const GROUPING = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+export function formatWhole(value: number): string {
+  return GROUPING.format(Math.round(value));
+}
+
+// "4,215 kg": whole kilos.
 export function formatKg(total: number): string {
-  return `${KG_GROUPING.format(Math.round(total))} kg`;
+  return `${formatWhole(total)} kg`;
 }
 
 // "1 set", "12 sets", "0 exercises" — every word used here pluralises with an "s".
 export function countLabel(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? '' : 's'}`;
+}
+
+// A session's heading, "Thursday, 1 Oct" — with the year when it isn't this year's.
+const WEEKDAYS_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export function formatLongDay(timestamp: number, now: number): string {
+  const d = new Date(timestamp);
+  const day = `${WEEKDAYS_LONG[d.getDay()]}, ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+  return d.getFullYear() === new Date(now).getFullYear() ? day : `${day} ${d.getFullYear()}`;
+}
+
+// 1st, 2nd, 3rd, 4th … 11th, 12th, 13th … 21st.
+const ORDINAL_SUFFIX: Partial<Record<number, string>> = { 1: 'st', 2: 'nd', 3: 'rd' };
+export function formatOrdinal(n: number): string {
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  return `${n}${teen ? 'th' : (ORDINAL_SUFFIX[n % 10] ?? 'th')}`;
 }

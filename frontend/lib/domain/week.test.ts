@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { weekOf, weekRange } from './week';
+import { sessionNumberInWeek, weekOf, weekRange } from './week';
+import { makeSet } from './test-utils';
 
 // Every date is built with the LOCAL-time constructor, so these tests give the same result in
 // any timezone. NOW is Thursday 24 September 2026, 10:00; its week is Mon 21 – Sun 27.
@@ -99,5 +100,33 @@ describe('weekRange', () => {
     const inWeek = (time: number) => time >= start && time < end;
     expect(inWeek(at(2026, 9, 21, 0, 0))).toBe(true);
     expect(inWeek(at(2026, 9, 28, 0, 0))).toBe(false);
+  });
+});
+
+describe('sessionNumberInWeek', () => {
+  const set = (id: string, time: number) => makeSet({ id, logged_at: time });
+  // Monday, Wednesday and Thursday sessions; Sunday night before belongs to last week.
+  const sets = [
+    set('sun', at(2026, 9, 20, 22)),
+    set('mon-a', at(2026, 9, 21, 18)),
+    set('mon-b', at(2026, 9, 21, 18, 30)),
+    set('wed', at(2026, 9, 23, 7)),
+    set('thu', at(2026, 9, 24, 18)),
+  ];
+
+  it('counts the sessions of the week up to and including this one', () => {
+    expect(sessionNumberInWeek(sets, at(2026, 9, 21, 18), 90, [])).toBe(1);
+    expect(sessionNumberInWeek(sets, at(2026, 9, 23, 7), 90, [])).toBe(2);
+    expect(sessionNumberInWeek(sets, at(2026, 9, 24, 18), 90, [])).toBe(3);
+  });
+
+  it('splits two sessions on one day by the gap rule', () => {
+    const twice = [...sets, set('thu-late', at(2026, 9, 24, 21))];
+    expect(sessionNumberInWeek(twice, at(2026, 9, 24, 21), 90, [])).toBe(4);
+  });
+
+  it('splits at an end marker, as Finish does', () => {
+    const quick = [set('a', at(2026, 9, 22, 18)), set('b', at(2026, 9, 22, 18, 20))];
+    expect(sessionNumberInWeek(quick, at(2026, 9, 22, 18, 20), 90, [at(2026, 9, 22, 18, 10)])).toBe(2);
   });
 });

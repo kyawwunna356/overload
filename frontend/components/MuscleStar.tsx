@@ -5,12 +5,12 @@ import { muscleLabel } from "@/lib/format";
 const AXES: readonly Muscle[] = ["chest", "shoulders", "arms", "core", "legs", "back"];
 
 const WIDTH = 360;
-const HEIGHT = 310;
+const HEIGHT = 280;
 const CX = WIDTH / 2;
 const CY = HEIGHT / 2;
 const R = 90; // the rim: where the busiest group reaches
 // Labels sit just past the rim, a little further out at the sides where they're widest.
-const LABEL_R = { vertical: R + 30, side: R + 40 };
+const LABEL_R = { vertical: R + 22, side: R + 36 };
 const MIN_R = R * 0.12; // a group with one set still shows as a point off the centre
 
 // The session's muscle balance as a six-point star: each axis reaches out in proportion to that
@@ -69,24 +69,18 @@ export function MuscleStar({ balance }: { balance: MuscleBalance }) {
 
       {AXES.map((muscle, i) => {
         const p = at(i, i % 3 === 0 ? LABEL_R.vertical : LABEL_R.side);
-        const count = balance[muscle];
-        // The name over its count, centred on the point.
+        // Just the name, centred on the point: lime for a group the session worked, grey for one it
+        // didn't. The counts stay out of the drawing (the user's choice); screen readers still hear
+        // them through the label above.
         return (
-          <text key={muscle} x={p.x} y={p.y} textAnchor="middle">
-            <tspan
-              x={p.x}
-              dy={-4}
-              className={`text-[15px] font-semibold ${count === 0 ? "fill-mute" : "fill-ink"}`}
-            >
-              {muscleLabel(muscle)}
-            </tspan>
-            <tspan
-              x={p.x}
-              dy={18}
-              className={`text-[15px] font-black tabular-nums ${count === 0 ? "fill-mute" : "fill-primary"}`}
-            >
-              {count}
-            </tspan>
+          <text
+            key={muscle}
+            x={p.x}
+            y={p.y + 5}
+            textAnchor="middle"
+            className={`text-[15px] font-semibold ${balance[muscle] === 0 ? "fill-mute" : "fill-primary"}`}
+          >
+            {muscleLabel(muscle)}
           </text>
         );
       })}
