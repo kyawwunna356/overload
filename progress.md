@@ -23,8 +23,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestone is 10.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Fill History with sessions grouped by week` (Ticket 54,
-  with milestone 9's close). Before it: `bugfix: Ghost the next set in the log sheet's set table`, `bugfix: Close the log sheet by swiping back and shrink the
+- **Last commit (on `redesign`):** `feature: Add History's exercises view and a page per lift`
+  (Ticket 55). Before it: `feature: Fill History with sessions grouped by week` (Ticket 54, with
+  milestone 9's close), `bugfix: Ghost the next set in the log sheet's set table`, `bugfix: Close the log sheet by swiping back and shrink the
   board's week strip`, `bugfix: Make the log sheet full screen with weight and reps
   pinned above Log`, `bugfix: Show the record banner as a toast at the top`,
   `bugfix: Darken the log sheet — page behind, card blocks`, then `feature: Rebuild the session summary and finish deck to the
@@ -34,8 +35,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
   which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit. Ticket 40's
   docs commit is on `main`.
-- **Next: Ticket 55** (History: Exercises and exercise detail), then 56 (first run) and 58 (the
-  milestone 10 check and release 2.0.0). Ticket 57 (custom exercises) is already done, pulled
+- **Next: Ticket 56** (first run), then 58 (the milestone 10 check and release 2.0.0). Ticket 57 (custom exercises) is already done, pulled
   forward into Ticket 51.
 - **The phone sees `redesign` only after a push**, through Vercel's preview for the branch. The
   installed app follows `main`. With no push, Safari on the same Wi-Fi can open the Mac's preview
@@ -44,7 +44,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
-- **Tests:** 462 Vitest tests, domain layer only.
+- **Tests:** 472 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -89,13 +89,23 @@ re-reading the whole repo. **Read this file at the start of every session**, the
     in the catalogue and on your board in one transaction (`addCustomExercise`), then jumps to its
     chip. A name the catalogue already has, in any case, is never made twice: the form offers that
     lift instead ("Add it to the board"), or says it's already on your board.
-- **History** (`/history`, Ticket 54): your sessions, newest first, under a heading per week ("This
+- **History** (`/history`): a **Sessions | Exercises** switch (softly rounded, the selected half
+  lighter grey — the user's design), in `?view=exercises`, replaced so back returns to it.
+- **History: Sessions** (Ticket 54): your sessions, newest first, under a heading per week ("This
   week", "Last week", `14 – 20 Sep`) with seven bare dots, lime on days a session started. Each card
   (the user's mock-up): `Wed 30 Sep · 07:12` with a `›`, then `58m · 5 exercises · 15 sets`, then
   the patterns as lime chips and a yellow 🏆 count when it broke records. The running session says
   **Now** instead of a length. A card opens the summary. Eight weeks at a time; **Show older** adds
   eight (`?weeks=16`, replaced, so back from a summary keeps them) and hides when there's nothing
   older. Empty weeks aren't shown; with no sets, one card says so. Coming back starts at the top.
+- **History: Exercises** (Ticket 55): every lift you've logged, A to Z (archived ones too), each
+  with the last working set and days ago in grey and a `›`; a search box narrows by name. Never-done
+  lifts aren't listed.
+- **A lift's page** (`/history/exercise?id=…`, static, under the History tab): `‹ History`, the
+  name and `Push · Level 7`; a **Records** card (Heaviest, Best est. 1RM, Most reps, each in yellow
+  with its day; e1RM left out for bodyweight); a lime **Log a set** that opens the log sheet over
+  the page; then every set by day with PR pills. Tap a set to edit it in the pinned card (Cancel /
+  Save set N, over the tab bar); swipe left to delete, with Undo pinned at the bottom for 5 s.
 - **Tab bar** (Ticket 41): Train (`/`), History (`/history`)
   and Me (`/account`), pinned at the bottom of those three pages only. A red dot on Me means
   backup is paused; "changes waiting" never badges.
@@ -433,8 +443,8 @@ These aren't obvious from the code and shaped later work.
     don't move, and the PRs recompute because they're derived.
   - **Undo restores the same row** (same id and time) rather than logging a new one. The outbox
     carries the delete and then the re-insert, in order.
-  - **Only today's rows are editable for now.** Past sets become editable with History's exercise
-    detail (Ticket 55), which reuses `updateSet` and `restoreSet`.
+  - **Past sets are edited on the lift's History page** (Ticket 55), with the same `updateSet` and
+    `restoreSet`; the log sheet edits today's rows only.
   - **Saving an edit shows no record banner**, which belongs to the moment of logging. The PR pill
     still follows.
   - **An edit carries on to later sets** until the sheet closes, which is how Figma shows 82.5
@@ -489,6 +499,24 @@ entry is written in the same commit it describes.
 - The set table always shows: a lift never logged used to leave the sheet blank above the pinned
   entry.
 - The header drops the pattern and always shows the level, `Level 0` on a first time.
+
+### Ticket 55: History: Exercises and a page per lift
+`feature: Add History's exercises view and a page per lift` · 2026-09-30 · branch `redesign`
+
+- `HistoryScreen`: the Sessions | Exercises switch in `?view=`; restyled to the user's design
+  (rounded 16/12 px, selected half `bg-raised`, not lime).
+- `lib/domain/exerciseHistory.ts`: `exerciseIndex` (logged lifts A to Z, search) and
+  `exerciseRecords` (heaviest, best e1RM, most reps; working sets; ties keep the earlier set);
+  10 tests. `useExerciseIndex` reads each lift's newest set and newest working set (board pattern).
+- `ExerciseDetail` reuses `useLogSheet`, `LevelBadge`, `LogLink`, `SetEdit` and `Snackbar`;
+  `SetHistory` gains `onEdit` / `editingId`; `SetEdit`'s full-page pin goes to z-20 over the tab
+  bar; `TabBar` lights History under `/history/…`; `SearchIcon` exported from the edit board.
+- Days, not gap-rule sessions, group a lift's sets (one lift's session is almost always one day).
+- When every set has the same reps, Most reps repeats the heaviest set; kept so the card always
+  has the same rows (offered to the user to hide).
+- Checked in headless Chrome at 390 × 844 with 10 planted weeks: switch and `?view`, A to Z and
+  search, records, Log a set over the page and back, editing Friday's set 3 to × 6 with its time
+  kept, delete 90 → 89 and Undo back to 90, back to the Exercises view.
 
 ### Ticket 54: History: Sessions — weeks and a card per session
 `feature: Fill History with sessions grouped by week` · 2026-09-30 · branch `redesign`

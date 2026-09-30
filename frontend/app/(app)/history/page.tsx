@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import { HistorySessions } from "@/components/HistorySessions";
+import { HistoryScreen } from "@/components/HistoryScreen";
 
-// The History tab: your sessions, grouped by week. Ticket 55 adds the exercises view beside it.
-// The Suspense boundary is required: the list reads `?weeks=` in the browser, so the page can
-// still be prerendered as a static page that opens offline.
+// The History tab: your sessions by week, or every lift you've logged. The Suspense boundary is
+// required: the screen reads `?view=` and `?weeks=` in the browser, so the page can still be
+// prerendered as a static page that opens offline.
 export default function HistoryPage() {
   return (
     <>
@@ -13,7 +13,7 @@ export default function HistoryPage() {
         </h1>
       </header>
       <Suspense fallback={null}>
-        <HistorySessions />
+        <HistoryScreen />
       </Suspense>
     </>
   );

@@ -14,18 +14,27 @@ import { SwipeToDelete } from "./SwipeToDelete";
 // re-logging a set is a single tap. `now` comes from the caller so "Today" stays right
 // after the phone wakes.
 //
+// With `onEdit`, tapping a row opens it in the editor (a lime outline marks it while it's open),
+// as the log sheet's set table does; History's exercise page passes it.
+//
 // A set that broke a record wears a PR pill for good: each set is judged only against the sets
 // before it, so beating it later never takes the pill away. Derived every time, never stored.
 export function SetHistory({
   history,
   now,
   onDelete,
+  onEdit,
+  editingId = null,
   title = "History",
 }: {
   history: readonly SetLog[];
   now: number;
   // The log sheet deletes, so it can offer Undo.
   onDelete: (set: SetLog) => Promise<void>;
+  // Tap to edit a set; without it, rows only swipe.
+  onEdit?: (set: SetLog) => void;
+  // The set open in the editor, if any.
+  editingId?: string | null;
   // Null leaves the heading out, for a caller that labels the list itself.
   title?: string | null;
 }) {
@@ -50,7 +59,12 @@ export function SetHistory({
                   <SwipeToDelete
                     key={set.id}
                     onDelete={() => onDelete(set)}
-                    className="flex min-h-16 items-center gap-3 px-6 py-2"
+                    onTap={onEdit && (() => onEdit(set))}
+                    label={onEdit && `Edit ${formatSet(set)} logged at ${formatTime(set.logged_at)}`}
+                    frameClassName={set.id === editingId ? "rounded-control" : ""}
+                    className={`flex min-h-16 items-center gap-3 px-6 py-2 ${
+                      set.id === editingId ? "rounded-control ring-2 ring-primary ring-inset" : ""
+                    }`}
                   >
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-2 text-lg font-semibold tabular-nums text-ink">

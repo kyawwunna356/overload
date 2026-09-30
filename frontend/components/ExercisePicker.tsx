@@ -501,7 +501,7 @@ function GripIcon() {
 }
 
 // The magnifier inside the search box; drawn inline like the app's other icons.
-function SearchIcon() {
+export function SearchIcon() {
   return (
     <svg
       aria-hidden

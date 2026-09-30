@@ -193,7 +193,8 @@ function Pinned({ footer, children }: { footer: HTMLElement | null; children: Re
     );
   }
   return (
-    <div className="fixed inset-x-0 bottom-0 z-10 rounded-t-card border-t border-line bg-page px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(0_0_0/0.4)]">
+    // z-20: over the tab bar too, on a page that has one (History's exercise page).
+    <div className="fixed inset-x-0 bottom-0 z-20 rounded-t-card border-t border-line bg-page px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(0_0_0/0.4)]">
       {children}
     </div>
   );
