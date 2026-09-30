@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { PR } from "@/lib/domain/prs";
 import type { SetLog } from "@/lib/domain/types";
 import { formatSet, formatSetShort, formatTime } from "@/lib/format";
@@ -32,6 +33,14 @@ export function SetTable({
   onDelete: (set: SetLog) => Promise<void>;
 }) {
   const next = today.length + 1;
+  // After a set is logged, the Next set row is scrolled just into view, so the table's end never
+  // hides behind the pinned entry. Only when the count grows: an edit or a delete leaves you put.
+  const nextRow = useRef<HTMLLIElement>(null);
+  const count = useRef(today.length);
+  useEffect(() => {
+    if (today.length > count.current) nextRow.current?.scrollIntoView({ block: "nearest" });
+    count.current = today.length;
+  }, [today.length]);
   const lastFor = (n: number) => {
     const set = lastTime[n - 1];
     return set ? formatSetShort(set) : "—";
@@ -81,7 +90,7 @@ export function SetTable({
             </span>
           </SwipeToDelete>
         ))}
-        <li className={`${GRID} min-h-14 rounded-control bg-primary-pale px-4`}>
+        <li ref={nextRow} className={`${GRID} min-h-14 rounded-control bg-primary-pale px-4`}>
           <span className="font-semibold text-primary tabular-nums">{next}</span>
           <span className="text-lg text-mute tabular-nums">{lastFor(next)}</span>
           <span className="text-lg font-semibold text-primary">Next set</span>

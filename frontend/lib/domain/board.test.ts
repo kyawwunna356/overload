@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBoard, nextUp, rowState } from './board';
+import { buildBoard, rowState } from './board';
 import type { ListItem } from './list';
 import { makeExercise, makeSet } from './test-utils';
 import { PATTERNS, type Exercise } from './types';
@@ -213,29 +213,5 @@ describe('rowState', () => {
 
   it('is new with no set of it anywhere', () => {
     expect(rowState(id, [], [performed('squat', 1)], NOW)).toEqual({ kind: 'new' });
-  });
-});
-
-describe('nextUp', () => {
-  const order = ['squat', 'rdl', 'bench', 'ohp', 'row'];
-
-  it('is the next lift in board order not done this session', () => {
-    expect(nextUp(order, new Set(['bench']), 'bench')).toBe('ohp');
-    expect(nextUp(order, new Set(['bench', 'ohp']), 'bench')).toBe('row');
-  });
-
-  it('wraps round to the top', () => {
-    expect(nextUp(order, new Set(['row']), 'row')).toBe('squat');
-    expect(nextUp(order, new Set(['row', 'squat', 'rdl']), 'row')).toBe('bench');
-  });
-
-  it('is null when everything else is done', () => {
-    expect(nextUp(order, new Set(order), 'bench')).toBeNull();
-    expect(nextUp(['bench'], new Set(), 'bench')).toBeNull();
-    expect(nextUp([], new Set(), 'bench')).toBeNull();
-  });
-
-  it('starts from the top for a lift that is not on the board', () => {
-    expect(nextUp(order, new Set(['squat']), 'curl')).toBe('rdl');
   });
 });

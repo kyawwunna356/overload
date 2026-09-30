@@ -9,6 +9,11 @@ import { dismissOffset, dismissOutcome, gestureAxis } from "@/lib/domain/swipe";
 // dimmed strip above it, Escape, or the browser's back (the caller owns the URL; see
 // lib/sheets.ts). The content scrolls inside the sheet; the footer slot below it doesn't, so a
 // primary button placed there stays in the thumb zone and rides with the sheet when it's dragged.
+//
+// `full` fills the screen instead (the log sheet — the user's choice, so the pinned entry and a
+// long set table both fit): no dimmed strip above, square corners, and no grab strip, swipe or
+// slide — it's simply there, and a ⌄ button at the top left is the visible way out. It's still
+// over the page you came from, which keeps its place.
 
 // Where content may portal its pinned buttons. Null outside a sheet, so the same component can
 // fall back to pinning itself to the screen on a full page.
@@ -24,12 +29,14 @@ export function Sheet({
   label,
   onClose,
   scrollKey,
+  full = false,
   children,
 }: {
   label: string;
   onClose: () => void;
   // When this changes the content is new, so it scrolls back to the top.
   scrollKey?: string;
+  full?: boolean;
   children: ReactNode;
 }) {
   const [footer, setFooter] = useState<HTMLDivElement | null>(null);
@@ -93,56 +100,80 @@ export function Sheet({
           transition: settling ? `transform ${CLOSE_MS}ms ease-out` : undefined,
         }}
         onTransitionEnd={() => setSettling(false)}
-        className="absolute inset-x-0 bottom-0 mx-auto flex h-[92dvh] max-w-md flex-col rounded-t-card bg-page shadow-[0_-8px_32px_rgb(0_0_0/0.5)] motion-safe:animate-sheet-up"
+        className={`absolute inset-x-0 bottom-0 mx-auto flex max-w-md flex-col bg-page ${
+          full
+            ? "h-dvh pt-[env(safe-area-inset-top)]"
+            : "h-[92dvh] rounded-t-card shadow-[0_-8px_32px_rgb(0_0_0/0.5)] motion-safe:animate-sheet-up"
+        }`}
       >
-        {/* The grab strip: the one place a downward drag moves the sheet, so the content below
-            still scrolls normally under a finger. touch-action none keeps the browser from
-            claiming the gesture as a scroll. */}
-        <div
-          className="flex h-8 shrink-0 cursor-grab touch-none items-center justify-center"
-          onPointerDown={(event) => {
-            if (closing.current) return;
-            event.currentTarget.setPointerCapture(event.pointerId);
-            drag.current = { id: event.pointerId, y: event.clientY, x: event.clientX, at: event.timeStamp, axis: null };
-            setSettling(false);
-          }}
-          onPointerMove={(event) => {
-            const d = drag.current;
-            if (!d || d.id !== event.pointerId) return;
-            const dy = event.clientY - d.y;
-            d.axis ??= gestureAxis(event.clientX - d.x, dy);
-            if (d.axis === "y") setOffset(dismissOffset(dy));
-          }}
-          onPointerUp={(event) => {
-            const d = drag.current;
-            if (!d || d.id !== event.pointerId) return;
-            drag.current = null;
-            const dy = dismissOffset(event.clientY - d.y);
-            const velocity = dy / Math.max(1, event.timeStamp - d.at);
-            const height = panel.current?.offsetHeight ?? window.innerHeight;
-            if (d.axis === "y" && dismissOutcome(dy, height, velocity) === "close") {
-              slideOut();
-            } else {
+        {full ? (
+          // No grab strip and no swipe: the full sheet opens and closes in place, and ⌄ is the way
+          // out (with back and Escape).
+          <div className="flex h-12 shrink-0 items-center">
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className="flex h-12 w-14 touch-manipulation items-center justify-center text-body active:text-ink"
+            >
+              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          // The grab strip: the one place a downward drag moves the sheet, so the content below
+          // still scrolls normally under a finger. touch-action none keeps the browser from
+          // claiming the gesture as a scroll.
+          <div
+            className="flex h-8 shrink-0 cursor-grab touch-none items-center justify-center"
+            onPointerDown={(event) => {
+              if (closing.current) return;
+              event.currentTarget.setPointerCapture(event.pointerId);
+              drag.current = { id: event.pointerId, y: event.clientY, x: event.clientX, at: event.timeStamp, axis: null };
+              setSettling(false);
+            }}
+            onPointerMove={(event) => {
+              const d = drag.current;
+              if (!d || d.id !== event.pointerId) return;
+              const dy = event.clientY - d.y;
+              d.axis ??= gestureAxis(event.clientX - d.x, dy);
+              if (d.axis === "y") setOffset(dismissOffset(dy));
+            }}
+            onPointerUp={(event) => {
+              const d = drag.current;
+              if (!d || d.id !== event.pointerId) return;
+              drag.current = null;
+              const dy = dismissOffset(event.clientY - d.y);
+              const velocity = dy / Math.max(1, event.timeStamp - d.at);
+              const height = panel.current?.offsetHeight ?? window.innerHeight;
+              if (d.axis === "y" && dismissOutcome(dy, height, velocity) === "close") {
+                slideOut();
+              } else {
+                setSettling(true);
+                setOffset(0);
+              }
+            }}
+            onPointerCancel={() => {
+              drag.current = null;
               setSettling(true);
               setOffset(0);
-            }
-          }}
-          onPointerCancel={() => {
-            drag.current = null;
-            setSettling(true);
-            setOffset(0);
-          }}
-        >
-          <span aria-hidden className="h-1.5 w-10 rounded-pill bg-line" />
-        </div>
+            }}
+          >
+            <span aria-hidden className="h-1.5 w-10 rounded-pill bg-line" />
+          </div>
+        )}
         <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4">
           <SheetFooter.Provider value={footer}>{children}</SheetFooter.Provider>
         </div>
         <div ref={setFooter} className="shrink-0" />
-        {/* Screen readers and keyboards get a real way out; fingers use the strip or the page. */}
-        <button type="button" onClick={onClose} className="sr-only focus:not-sr-only">
-          Close
-        </button>
+        {/* Screen readers and keyboards get a real way out; fingers use the strip or the page. A
+            full sheet already has its visible ⌄. */}
+        {!full && (
+          <button type="button" onClick={onClose} className="sr-only focus:not-sr-only">
+            Close
+          </button>
+        )}
       </div>
     </div>,
     document.body,

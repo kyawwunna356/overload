@@ -28,7 +28,7 @@ export function openSheet(name: SheetName, value: string): void {
   pushed = true;
 }
 
-// Swaps what the open sheet shows (Next up) without a new history entry, so back still returns to
+// Swaps what the open sheet shows (the live screen's exercises) without a new history entry, so back still returns to
 // the page underneath rather than to the previous exercise.
 export function replaceSheet(name: SheetName, value: string): void {
   window.history.replaceState(null, '', urlWith(name, value));

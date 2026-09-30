@@ -9,9 +9,7 @@ import { SESSION_GAP_MINUTES, deriveSessions } from "@/lib/domain/sessions";
 import { countLabel, patternLabel } from "@/lib/format";
 import { useActiveSession } from "@/lib/hooks/useActiveSession";
 import { useLogSheet } from "@/lib/hooks/useLogSheet";
-import { useNextUp } from "@/lib/hooks/useNextUp";
 import { useNow } from "@/lib/hooks/useNow";
-import { replaceSheet } from "@/lib/sheets";
 import type { SetLog } from "@/lib/domain/types";
 import { deleteSet, restoreSet } from "@/lib/writes";
 import { BackLink } from "./BackLink";
@@ -31,8 +29,8 @@ export function LogSheet() {
   const id = useSearchParams().get("id");
 
   return (
-    // Bottom padding keeps the last content clear of the pinned Log button.
-    <div className="pb-56">
+    // Bottom padding keeps the last content clear of the pinned entry and Log button.
+    <div className="pb-[22rem]">
       <nav className="pb-4">
         <BackLink href="/" label="‹ Board" />
       </nav>
@@ -161,11 +159,9 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
         hidden={editing !== null}
         above={undo}
         exerciseId={data.exercise.id}
-        setNumber={setNumber}
         prefill={prefill}
         history={data.history}
         onRecord={(set, prs) => setRecord({ set, prs })}
-        below={table.today.length > 0 ? <NextUp exerciseId={data.exercise.id} /> : null}
       />
 
       {table.earlier.length > 0 && (
@@ -182,21 +178,5 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
         </details>
       )}
     </div>
-  );
-}
-
-// "Next up: Overhead Press ›" under the Log button: the next lift on your board not done this
-// session. Tapping swaps the sheet to it in place; back still returns to the page underneath.
-function NextUp({ exerciseId }: { exerciseId: string }) {
-  const next = useNextUp(exerciseId);
-  if (!next) return null;
-  return (
-    <button
-      type="button"
-      onClick={() => replaceSheet("log", next.id)}
-      className="mx-auto min-h-11 touch-manipulation px-4 font-semibold text-body active:text-ink"
-    >
-      Next up: {next.name} ›
-    </button>
   );
 }

@@ -20,8 +20,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `bugfix: Show the record banner as a toast at the top`.
-  Before it: `bugfix: Darken the log sheet — page behind, card blocks`, then `feature: Rebuild the session summary and finish deck to the
+- **Last commit (on `redesign`):** `bugfix: Make the log sheet full screen with weight and reps
+  pinned above Log`. Before it: `bugfix: Show the record banner as a toast at the top`,
+  `bugfix: Darken the log sheet — page behind, card blocks`, then `feature: Rebuild the session summary and finish deck to the
   mock-ups` (Ticket 52, plus the board's PR pill), then `feature: Make edit board a page with
   scrolling chips and custom exercises` (Tickets 51 and 57), `bugfix: Quieten board rows — tick badges,
   shorter lines, no level`, `feature: Show today and last time on board rows, with the week and
@@ -37,7 +38,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
-- **Tests:** 453 Vitest tests, domain layer only.
+- **Tests:** 449 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -85,24 +86,24 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   and Me (`/account`), pinned at the bottom of those three pages only. A red dot on Me means
   backup is paused; "changes waiting" never badges.
 - **Log sheet** (`?log=<id>` over any page, Ticket 42; `/exercise?id=…` stays as a full page for
-  old links): a sheet at 92% height over the dimmed page, which never moves, so you come back to
-  the same scroll spot. It closes on a swipe down from the grab strip, a tap above it, Back or
-  Escape, and a reload reopens it offline. Inside, top to bottom (Figma 3.1–3.2):
+  old links): **full screen** over the page you came from, which never moves, so you come back to
+  the same scroll spot. No grab strip, no swipe, no slide (the user's choice): a `⌄` at the top
+  left, Back or Escape closes it, and a reload reopens it offline. Top to bottom (Figma 3.1–3.2):
   - the name, `Push · Level 3` (the dotted level still taps open `6 sessions · 4 to Level 4`), and
     the rest timer under a small `REST` label;
   - the **set table** (Ticket 45): today's sets numbered, each beside the same set last time, with
-    a ✓ or a yellow `PR` pill, then a lime **Next set** row. Swipe a today row left to delete it.
-  - the entry block, prefilled for set N from last time's set N, else your last set today
-    (`Set 3 · prefilled from last time's set 3`). An edit carries on to the following sets. ±
-    buttons (2.5 kg, ±1 rep), and tapping a number types it. Every set is `working` (see
-    Decisions).
-  - the Log button in the sheet's footer, and under it **Next up** (Ticket 47) once this lift has
-    a set this session: the next board lift not done yet, swapped in place without a new
-    history entry;
+    a ✓ or a yellow `PR` pill, then a lime **Next set** row, scrolled into view after each log.
+    Swipe a today row left to delete it.
+  - **pinned at the bottom**, in a panel with a rounded top edge: the entry card (weight above
+    reps, each `− 100 kg +` with round buttons, no caption), then the Log button. It never scrolls
+    away however long the table grows. Prefilled for set N from last time's set N, else your last
+    set today, in grey until you change it; an edit carries on to the following sets. ± buttons
+    (2.5 kg, ±1 rep), and tapping a number types it. Every set is `working` (see Decisions).
+  - No Next up any more (removed — the user's choice).
   - **Earlier · N sessions**, folded: the old history by day, swipe to delete, PR pills.
   - **Edit and undo** (Ticket 46, Figma 3.3):
-    - Tap one of today's rows to edit it. It gets a lime outline, the entry block reads
-      `Editing set 2` with that set's numbers, and the footer becomes **Cancel** / **Save set 2**.
+    - Tap one of today's rows to edit it. The row and the pinned entry card get a lime outline,
+      the card holds that set's numbers, and the buttons become **Cancel** / **Save set 2**.
     - Save changes only the weight and reps (`updateSet`). The set keeps its time and its place.
       Tapping the same row again, or Cancel, goes back to logging.
     - A swipe-delete, in the table or Earlier, shows `Set deleted · Undo` over the Log button for
@@ -461,6 +462,23 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Log sheet: full screen, entry pinned (after Ticket 52)
+`bugfix: Make the log sheet full screen with weight and reps pinned above Log` · 2026-09-30 ·
+branch `redesign`
+
+- The user found that from the second set on, the weight and reps scrolled below the fold. The
+  log sheet is now full screen (`Sheet`'s `full`), with no grab strip, swipe or slide, and a `⌄`
+  to close; the live screen stays a 92% slider.
+- The entry card moved into the pinned footer above Log (`Pinned`), in a panel with a rounded top.
+  The user tried side-by-side steppers and chose the stacked `− 100 kg +` rows, made compact with
+  the unit beside the number; the caption and "Editing set N" went.
+- The set table scrolls its Next set row into view after each log.
+- Next up removed completely: the row, `useNextUp`, `nextUp` in `board.ts` and its 4 tests (449).
+- The user weighed a swipe-away card with a corner button to reopen it; parked for now (a
+  one-line folding card was suggested instead).
+- Checked in headless Chrome at 390 × 844: steppers and Log in view at 1, 3 and 6 sets, edit and
+  ⌄ close work.
 
 ### Record banner as a toast (after Ticket 52)
 `bugfix: Show the record banner as a toast at the top` · 2026-09-30 · branch `redesign`

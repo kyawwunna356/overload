@@ -104,23 +104,6 @@ function bestOf(sets: readonly SetLog[]): SetLog {
   });
 }
 
-// "Next up" on the log sheet: the first exercise after `currentId` in board order that has no set
-// this session, wrapping round to the top; null when every other exercise is done. Display only —
-// it reads your list for order and never limits what you can log (Hard Rule 3). If `currentId`
-// isn't on the board, it starts from the top.
-export function nextUp(
-  order: readonly string[],
-  doneThisSession: ReadonlySet<string>,
-  currentId: string,
-): string | null {
-  const start = order.indexOf(currentId);
-  for (let step = 1; step <= order.length; step++) {
-    const id = order[(start + step) % order.length];
-    if (id !== currentId && !doneThisSession.has(id)) return id;
-  }
-  return null;
-}
-
 // Your order. Equal positions fall back to the exercise id, so the result never depends on
 // the order the rows came out of the database.
 function byPosition(a: ListItem, b: ListItem): number {
