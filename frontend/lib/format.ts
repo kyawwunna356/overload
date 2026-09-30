@@ -133,6 +133,15 @@ export function masteryLine(mastery: Mastery): string {
   return `${countLabel(mastery.sessions, 'session')} · ${toGo} to Level ${mastery.level + 1}`;
 }
 
+// A session's length in few characters, for a History card: "<1m", "58m", "1h 08m". Whole minutes,
+// rounded down, like formatDuration.
+export function formatDurationShort(ms: number): string {
+  const minutes = Math.max(0, Math.floor(ms / 60_000));
+  if (minutes < 1) return '<1m';
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+}
+
 // "4,215": a whole number with fixed en-US grouping, so the phone's locale can't change it.
 const GROUPING = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 export function formatWhole(value: number): string {

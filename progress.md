@@ -17,11 +17,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Milestone 7 — Shell and live session is finished** (Tickets 40–44). The user confirmed the
   check on the iPhone on 2026-09-29 (Ticket 44).
 - **Milestone 8 — Log sheet as a set table is finished** (Tickets 45–49). The user confirmed the
-  iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
+  iPhone check (Ticket 49) on 2026-09-30, with no fixes needed.
+- **Milestone 9 — Board, picker and summary is finished** (Tickets 50–53, with 57 pulled forward).
+  The user confirmed the iPhone check (Ticket 53) on 2026-09-30: all passed. CLAUDE.md's current
+  milestone is 10.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `bugfix: Ghost the next set in the log sheet's set table`.
-  Before it: `bugfix: Close the log sheet by swiping back and shrink the
+- **Last commit (on `redesign`):** `feature: Fill History with sessions grouped by week` (Ticket 54,
+  with milestone 9's close). Before it: `bugfix: Ghost the next set in the log sheet's set table`, `bugfix: Close the log sheet by swiping back and shrink the
   board's week strip`, `bugfix: Make the log sheet full screen with weight and reps
   pinned above Log`, `bugfix: Show the record banner as a toast at the top`,
   `bugfix: Darken the log sheet — page behind, card blocks`, then `feature: Rebuild the session summary and finish deck to the
@@ -31,8 +34,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
   which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit. Ticket 40's
   docs commit is on `main`.
-- **Next: Ticket 53** (the milestone 9 check on the iPhone). Ticket 57 (custom exercises) is already done,
-  pulled forward into Ticket 51.
+- **Next: Ticket 55** (History: Exercises and exercise detail), then 56 (first run) and 58 (the
+  milestone 10 check and release 2.0.0). Ticket 57 (custom exercises) is already done, pulled
+  forward into Ticket 51.
 - **The phone sees `redesign` only after a push**, through Vercel's preview for the branch. The
   installed app follows `main`. With no push, Safari on the same Wi-Fi can open the Mac's preview
   at `http://<Mac's LAN IP>:3000` (plain http, so there's no service worker and no sign-in).
@@ -40,7 +44,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
-- **Tests:** 449 Vitest tests, domain layer only.
+- **Tests:** 462 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -85,7 +89,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
     in the catalogue and on your board in one transaction (`addCustomExercise`), then jumps to its
     chip. A name the catalogue already has, in any case, is never made twice: the form offers that
     lift instead ("Add it to the board"), or says it's already on your board.
-- **Tab bar** (Ticket 41): Train (`/`), History (`/history`, a placeholder until milestone 10)
+- **History** (`/history`, Ticket 54): your sessions, newest first, under a heading per week ("This
+  week", "Last week", `14 – 20 Sep`) with seven bare dots, lime on days a session started. Each card
+  (the user's mock-up): `Wed 30 Sep · 07:12` with a `›`, then `58m · 5 exercises · 15 sets`, then
+  the patterns as lime chips and a yellow 🏆 count when it broke records. The running session says
+  **Now** instead of a length. A card opens the summary. Eight weeks at a time; **Show older** adds
+  eight (`?weeks=16`, replaced, so back from a summary keeps them) and hides when there's nothing
+  older. Empty weeks aren't shown; with no sets, one card says so. Coming back starts at the top.
+- **Tab bar** (Ticket 41): Train (`/`), History (`/history`)
   and Me (`/account`), pinned at the bottom of those three pages only. A red dot on Me means
   backup is paused; "changes waiting" never badges.
 - **Log sheet** (`?log=<id>` over any page, Ticket 42; `/exercise?id=…` stays as a full page for
@@ -478,6 +489,23 @@ entry is written in the same commit it describes.
 - The set table always shows: a lift never logged used to leave the sheet blank above the pinned
   entry.
 - The header drops the pattern and always shows the level, `Level 0` on a first time.
+
+### Ticket 54: History: Sessions — weeks and a card per session
+`feature: Fill History with sessions grouped by week` · 2026-09-30 · branch `redesign`
+
+- Also closes milestone 9: the user's iPhone check (Ticket 53) all passed, so Ticket 53 is done and
+  CLAUDE.md moves to milestone 10.
+- `lib/domain/sessionHistory.ts` (its own file: `week.ts` already imports `history.ts`):
+  `sessionWeeks`, `weekLabel`, `sessionCard`; 13 tests, run in five timezones (Sunday-night
+  sessions, New Year, daylight-saving weeks).
+- `useHistory(weeks, now)`: one `logged_at` read from the window's first Monday minus one gap, so a
+  boundary session isn't cut; per-exercise history for `historyPRs`; one `.first()` for "older".
+- `HistorySessions`: cards restyled to the user's mock-up (day · time and ›, then `24m · 3
+  exercises · 9 sets`, lime pattern chips); the week dots lost their initials (the user's choice).
+  `formatDurationShort` in `format.ts`.
+- Checked in headless Chrome at 390 × 844 with 10 planted weeks: labels and dots, a card matching
+  its summary (9 sets, 24 min, 3 records), Show older to 16 weeks and hidden after, back keeping
+  `?weeks=16`, the empty card, and the Now card.
 
 ### Log sheet swipe-back, smaller week strip (after Ticket 52)
 `bugfix: Close the log sheet by swiping back and shrink the board's week strip` · 2026-09-30 ·

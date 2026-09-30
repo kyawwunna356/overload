@@ -1,5 +1,9 @@
-// The History tab. A placeholder until milestone 10 builds the sessions and exercises views; it
-// exists now so the tab has a static page to open, offline like every other screen.
+import { Suspense } from "react";
+import { HistorySessions } from "@/components/HistorySessions";
+
+// The History tab: your sessions, grouped by week. Ticket 55 adds the exercises view beside it.
+// The Suspense boundary is required: the list reads `?weeks=` in the browser, so the page can
+// still be prerendered as a static page that opens offline.
 export default function HistoryPage() {
   return (
     <>
@@ -8,9 +12,9 @@ export default function HistoryPage() {
           History
         </h1>
       </header>
-      <p className="rounded-card bg-card px-6 py-5 text-body">
-        Your sessions and every lift you&apos;ve logged will live here.
-      </p>
+      <Suspense fallback={null}>
+        <HistorySessions />
+      </Suspense>
     </>
   );
 }

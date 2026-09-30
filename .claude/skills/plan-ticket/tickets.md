@@ -200,7 +200,7 @@ read-only and opens with the rewards. The user's decisions:
 | 50 | Board — date header and Edit, the week strip on top, a ✓ on pattern headings (the coverage strip retired), two row states with the level, and empty groups hidden | done |
 | 51 | Edit board page — `/exercises` as a plain page (the user's choice: no sheet, no back button, no Done — changes save as you make them), a search, a sideways-scrolling chip row with pick counts, the chip pre-selected from a group's `+`, and `+ New` for a custom exercise | done |
 | 52 | Summary and finish deck (to the user's mock-ups) — a full-screen deck after Finish (Session done with stats, reward chips, "Nth session this week" and the week; Rewards; Muscles) with Next and Done; Done lands on the summary under the History tab: long date, span · duration, Duration · Sets · kg lifted, Rewards and the Muscles card open, then Exercises | done |
-| 53 | On-device check — run milestone 9 on the iPhone | not started |
+| 53 | On-device check — run milestone 9 on the iPhone | done |
 
 What each ticket builds from:
 - **50:**
@@ -221,7 +221,7 @@ stored things are two localStorage UI flags. The milestone ends with release 2.0
 
 | # | Ticket | Status |
 |---|---|---|
-| 54 | History: Sessions — grouped by week with trained-day dots, and cards with duration, counts, patterns and records | not started |
+| 54 | History: Sessions — grouped by week with trained-day dots, and cards with duration, counts, patterns and records | done |
 | 55 | History: Exercises and exercise detail — A to Z with search; a records card, every session, Log a set, and editing a past set | not started |
 | 56 | First run — a derived welcome, a first-set hint, a Safari install card (7-day dismiss), and a backup prompt after the first finished session | not started |
 | 57 | Custom exercise — `+ New` on the edit board page adds your own lift to a pattern | done (built with Ticket 51 — the user pulled it forward) |
