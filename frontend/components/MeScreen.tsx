@@ -368,7 +368,7 @@ function Glyph({ children }: { children: ReactNode }) {
   );
 }
 
-function CloudIcon() {
+export function CloudIcon() {
   return (
     <Glyph>
       <path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 9.5 4.3 4.3 0 0 0 7 18Z" />
@@ -384,7 +384,7 @@ function CheckIcon() {
   );
 }
 
-function AddIcon() {
+export function AddIcon() {
   return (
     <Glyph>
       <rect x="4" y="4" width="16" height="16" rx="4" />

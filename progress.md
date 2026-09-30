@@ -23,8 +23,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestone is 10.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Add History's exercises view and a page per lift`
-  (Ticket 55). Before it: `feature: Fill History with sessions grouped by week` (Ticket 54, with
+- **Last commit (on `redesign`):** `feature: Add a first-run welcome, pick-your-lifts setup and
+  install and backup prompts` (Ticket 56). Before it: `feature: Add History's exercises view and a
+  page per lift` (Ticket 55), `feature: Fill History with sessions grouped by week` (Ticket 54, with
   milestone 9's close), `bugfix: Ghost the next set in the log sheet's set table`, `bugfix: Close the log sheet by swiping back and shrink the
   board's week strip`, `bugfix: Make the log sheet full screen with weight and reps
   pinned above Log`, `bugfix: Show the record banner as a toast at the top`,
@@ -35,7 +36,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
   which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit. Ticket 40's
   docs commit is on `main`.
-- **Next: Ticket 56** (first run), then 58 (the milestone 10 check and release 2.0.0). Ticket 57 (custom exercises) is already done, pulled
+- **Next: Ticket 58** (the milestone 10 check on the iPhone and release 2.0.0). The user's
+  `design/` folder is in the tree, untracked; left alone until they say otherwise. Ticket 57 (custom exercises) is already done, pulled
   forward into Ticket 51.
 - **The phone sees `redesign` only after a push**, through Vercel's preview for the branch. The
   installed app follows `main`. With no push, Safari on the same Wi-Fi can open the Mac's preview
@@ -44,7 +46,7 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   code still works in code, and the flag brings it back.
 - **Local builds:** `pnpm build` (the static export plus `out/sw.js`), then `pnpm preview` on
   port 3000. `next start` no longer works.
-- **Tests:** 472 Vitest tests, domain layer only.
+- **Tests:** 483 Vitest tests, domain layer only.
 
 ## What works today
 
@@ -58,6 +60,18 @@ re-reading the whole repo. **Read this file at the start of every session**, the
     the order you put them in**. They're never re-sorted by what you did last, and logging never
     moves a row. A group with no picks is hidden. With nothing picked at all, one "Pick your
     exercises" card offers the catalogue.
+  - **First run** (Ticket 56, "value first, account later"):
+    - **Welcome screen** (the user's design 1.1): with no picks and no sets ever, the board is a
+      full screen over the tab bar — the app icon, "Overload", "Log a set in one tap. Remembers what
+      you lifted last time.", three ticks (No account needed · Works with no signal · Back up with
+      Google later), a lime **Pick your exercises** (to `/exercises?setup=1`) and **Restore from
+      backup** (to Me). Derived, so it leaves once you pick.
+    - **Hint:** picked but never logged → "Tap a lift to log your first set." over the list.
+    - **Backup prompt** (bottom of the board): after a session is over, signed out, backup
+      configured → "Back up your training" with **Back up** (to Me) and **Not now** (for good,
+      `overload.backupPromptDismissed`).
+    - **Install card** (bottom, Safari tab only, after the first set): "Add to Home Screen" with ✕,
+      which hides it for 7 days (`overload.installDismissed`).
   - **Heading ticks:** a round pale-green badge with a lime tick (`CheckBadge`) beside a pattern
     heading once the running session has touched it. That's all the board shows of coverage.
   - **Rows** (`rowState` in `board.ts`): the name, then one short 13 px line with no label:
@@ -69,6 +83,11 @@ re-reading the whole repo. **Read this file at the start of every session**, the
     - nothing for a lift never done, so it's just its name.
     Screen readers still hear "Today:" and "Last time:".
   - The `›` on each row says it opens the log sheet.
+- **Pick your lifts** (`/exercises?setup=1`, Ticket 56, the user's design): the edit board as a
+  first-timer sees it — "Pick your lifts" with "Tap Add on what you train. Change it any time.",
+  **Done** at the top right where + New would be (greyed until one pick; replaces the page with the
+  board), and a **Can't find it?** card at the top that opens into the New exercise form in place.
+  Chips keep `setup=1`. The search reads "Search 76 exercises" in both modes.
 - **Edit board** (`/exercises`, Ticket 51; a plain page, never a sheet — the user's choice):
   - **Header:** "Edit board", and **+ New** in lime on the right. There's no back button and no
     Done: every change saves as you make it, and you leave by swiping back.
@@ -499,6 +518,24 @@ entry is written in the same commit it describes.
 - The set table always shows: a lift never logged used to leave the sheet blank above the pinned
   entry.
 - The header drops the pattern and always shows the level, `Level 0` on a first time.
+
+### Ticket 56: First run — welcome, setup, install and backup prompts
+`feature: Add a first-run welcome, pick-your-lifts setup and install and backup prompts` ·
+2026-09-30 · branch `redesign`
+
+- Planned as a welcome card; the user then sent designs: the welcome became a full screen with
+  the app icon, and the edit board gained a `?setup=1` mode (Pick your lifts, Done top right,
+  Can't find it? at the top that opens into the form).
+- `lib/domain/firstRun.ts`: `firstRunStage`, `showInstallCard` (7-day snooze, Safari only, after
+  the first set), `showBackupPrompt`; 11 tests. `lib/flags.ts`: the two localStorage flags
+  (a dismissal is a choice, not training data), read live with `useSyncExternalStore`.
+- `useFirstRun`: `hasSets` and "a session is over" derived from Dexie, plus the flags.
+- `CloudIcon`/`AddIcon` exported from `MeScreen` for the prompts.
+- Checked in headless Chrome at 390 × 844: welcome with the logo loaded → Pick your lifts (Done
+  disabled, Push chip keeps setup, Bench Press added, card opens the form) → Done → board with
+  the hint → first set → install card, ✕ and the 8-day return → a 3-hour-old session shows the
+  backup prompt, Not now hides it for good.
+- The user's `design/` folder was left out of the commit.
 
 ### Ticket 55: History: Exercises and a page per lift
 `feature: Add History's exercises view and a page per lift` · 2026-09-30 · branch `redesign`

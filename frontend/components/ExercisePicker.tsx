@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { customName } from "@/lib/domain/custom";
 import { dropIndex, pickCounts, splitPicks } from "@/lib/domain/list";
@@ -14,24 +14,37 @@ import { addCustomExercise, addToList, moveInList, removeFromList, setListOrder 
 // ready to drag. Tapping a row adds it to the board or takes it off — one tap, no save button and
 // no confirmation, because nothing here can be lost (Hard Rule 3: this decides what the board
 // shows, never what you can log, and removing an exercise keeps every set you ever did of it).
-// Every change saves as you make it, so there's no Done: you leave the way you came, by swiping
-// back. The one button up top adds an exercise of your own.
+// Every change saves as you make it, so editing has no Done: you leave the way you came, by
+// swiping back. The one button up top adds an exercise of your own.
 //
 // A page of its own, reached from the board's Edit (every pattern) or a group's + (that pattern's
 // chip). A static page that reads `?pattern=` in the browser, so it opens with no signal.
+//
+// From the welcome it opens as "Pick your lifts" (`?setup=1`, the user's design): a line saying
+// what to do, Done where + New would be (to the board, so a first-timer is never left wondering how
+// to leave), and a "Can't find it?" card up top that opens into the form for your own lift.
 export function ExercisePicker() {
   // Which chip is selected: one pattern, or "all". It lives in the URL, replaced rather than pushed,
   // so a reload keeps it and back still returns straight to the board.
-  const requested = useSearchParams().get("pattern");
+  const params = useSearchParams();
+  const requested = params.get("pattern");
+  const setup = params.get("setup") === "1";
+  const router = useRouter();
   const view: Pattern | "all" = PATTERNS.find((pattern) => pattern === requested) ?? "all";
-  const choose = (next: Pattern | "all") =>
-    window.history.replaceState(null, "", next === "all" ? "/exercises" : `/exercises?pattern=${next}`);
+  const choose = (next: Pattern | "all") => {
+    const query = new URLSearchParams();
+    if (setup) query.set("setup", "1");
+    if (next !== "all") query.set("pattern", next);
+    const search = query.toString();
+    window.history.replaceState(null, "", search === "" ? "/exercises" : `/exercises?${search}`);
+  };
 
   const catalogue = useCatalogue();
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const counts = pickCounts(catalogue?.yours ?? []);
   const total = PATTERNS.reduce((sum, pattern) => sum + counts[pattern], 0);
+  const catalogueSize = catalogue?.groups.reduce((sum, group) => sum + group.exercises.length, 0);
 
   const needle = query.trim().toLowerCase();
   const groups = (catalogue?.groups ?? [])
@@ -46,19 +59,58 @@ export function ExercisePicker() {
 
   return (
     <div className="pb-8">
-      <header className="flex items-center justify-between gap-4 px-2 pb-5">
-        <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">Edit board</h1>
-        {/* -m-3 p-3 keeps a thumb-sized tap area around a small label. */}
+      {setup ? (
+        <header className="px-2 pb-5">
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">Pick your lifts</h1>
+            {/* Where + New sits on the edit board, in the same style. Replaced, so back from the
+                board doesn't return to setup. Waits for at least one pick. */}
+            <button
+              type="button"
+              disabled={total === 0}
+              onClick={() => router.replace("/")}
+              className="-m-3 touch-manipulation p-3 text-lg font-semibold text-primary active:text-primary-active disabled:text-mute"
+            >
+              Done
+            </button>
+          </div>
+          <p className="pt-2 text-sm text-body">Tap Add on what you train. Change it any time.</p>
+        </header>
+      ) : (
+        <header className="flex items-center justify-between gap-4 px-2 pb-5">
+          <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">Edit board</h1>
+          {/* -m-3 p-3 keeps a thumb-sized tap area around a small label. */}
+          <button
+            type="button"
+            aria-expanded={creating}
+            aria-label="Add a custom exercise"
+            onClick={() => setCreating((open) => !open)}
+            className="-m-3 touch-manipulation p-3 text-lg font-semibold text-primary active:text-primary-active"
+          >
+            + New
+          </button>
+        </header>
+      )}
+
+      {/* In setup, "Can't find it?" waits up top and opens into the form in its place. */}
+      {setup && catalogue && !creating && (
         <button
           type="button"
-          aria-expanded={creating}
-          aria-label="Add a custom exercise"
-          onClick={() => setCreating((open) => !open)}
-          className="-m-3 touch-manipulation p-3 text-lg font-semibold text-primary active:text-primary-active"
+          aria-expanded={false}
+          onClick={() => setCreating(true)}
+          className="mb-5 flex w-full touch-manipulation items-center gap-4 rounded-card border border-line px-6 py-4 text-left active:bg-card"
         >
-          + New
+          <span aria-hidden className="text-3xl leading-none text-primary">
+            +
+          </span>
+          <span>
+            <span className="block font-semibold text-ink">Can&apos;t find it?</span>
+            <span className="block text-body">
+              {view === "all" ? "Add a custom lift" : `Add a custom lift to ${patternLabel(view)}`}
+            </span>
+          </span>
         </button>
-      </header>
+      )}
 
       {creating && catalogue && (
         <NewExercise
@@ -80,7 +132,7 @@ export function ExercisePicker() {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search exercises"
+          placeholder={catalogueSize === undefined ? "Search exercises" : `Search ${catalogueSize} exercises`}
           aria-label="Search exercises"
           className="h-12 w-full rounded-control bg-card pr-4 pl-12 text-base text-ink placeholder:text-body"
         />
