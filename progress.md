@@ -20,8 +20,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `bugfix: Make the log sheet full screen with weight and reps
-  pinned above Log`. Before it: `bugfix: Show the record banner as a toast at the top`,
+- **Last commit (on `redesign`):** `bugfix: Close the log sheet by swiping back and shrink the
+  board's week strip`. Before it: `bugfix: Make the log sheet full screen with weight and reps
+  pinned above Log`, `bugfix: Show the record banner as a toast at the top`,
   `bugfix: Darken the log sheet — page behind, card blocks`, then `feature: Rebuild the session summary and finish deck to the
   mock-ups` (Ticket 52, plus the board's PR pill), then `feature: Make edit board a page with
   scrolling chips and custom exercises` (Tickets 51 and 57), `bugfix: Quieten board rows — tick badges,
@@ -45,7 +46,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Board** (`/`, Ticket 50):
   - **Header:** the date (`Wed 30 Sep`), and **Edit** as plain lime text on the right. Edit opens
     `/exercises`.
-  - **Week strip:** this week, Monday to Sunday. Trained days are filled green, and today gets a
+  - **Week strip:** this week, Monday to Sunday, in a compact size (36 px days; the finish deck keeps
+    the full 40 px). Trained days are filled green, and today gets a
     green ring while a session is running.
   - **Groups:** the pattern groups you've picked for, each holding **the exercises you picked, in
     the order you put them in**. They're never re-sorted by what you did last, and logging never
@@ -87,8 +89,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   backup is paused; "changes waiting" never badges.
 - **Log sheet** (`?log=<id>` over any page, Ticket 42; `/exercise?id=…` stays as a full page for
   old links): **full screen** over the page you came from, which never moves, so you come back to
-  the same scroll spot. No grab strip, no swipe, no slide (the user's choice): a `⌄` at the top
-  left, Back or Escape closes it, and a reload reopens it offline. Top to bottom (Figma 3.1–3.2):
+  the same scroll spot. No grab strip, no close button (the user's choice): a swipe back from
+  the screen's edge, Back or Escape closes it, and a reload reopens it offline. Top to bottom (Figma 3.1–3.2):
   - the name, `Push · Level 3` (the dotted level still taps open `6 sessions · 4 to Level 4`), and
     the rest timer under a small `REST` label;
   - the **set table** (Ticket 45): today's sets numbered, each beside the same set last time, with
@@ -462,6 +464,16 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Log sheet swipe-back, smaller week strip (after Ticket 52)
+`bugfix: Close the log sheet by swiping back and shrink the board's week strip` · 2026-09-30 ·
+branch `redesign`
+
+- The user found the edge swipe-back closes the log sheet in the installed app, so the `⌄` went;
+  a small top gap stays, and the sr-only Close button is back for screen readers and keyboards.
+- `WeekStrip` gets `compact` for the board: 36 px days and less padding (tried 32 px first; the
+  user found it too small).
+- The always-shown set table in `LogSheet.tsx` is someone else's work in progress and was left out.
 
 ### Log sheet: full screen, entry pinned (after Ticket 52)
 `bugfix: Make the log sheet full screen with weight and reps pinned above Log` · 2026-09-30 ·

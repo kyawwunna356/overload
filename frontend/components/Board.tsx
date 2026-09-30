@@ -33,7 +33,7 @@ export function Board() {
         </Link>
       </header>
       <div className="pb-6">
-        <WeekStrip anchor={now} />
+        <WeekStrip anchor={now} compact />
       </div>
       {picked && picked.length === 0 && <EmptyBoard />}
       {picked && picked.length > 0 && (

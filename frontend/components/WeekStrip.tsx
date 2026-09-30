@@ -15,15 +15,18 @@ import { useWeek } from "@/lib/hooks/useWeek";
 // outline fills the instant the session ends.
 //
 // `markAnchor` rings the session's own day even after it's over, for the finish deck, where the
-// strip says "this is the day you just trained".
+// strip says "this is the day you just trained". `compact` is the board's smaller strip, so the
+// lifts sit higher on the screen; the finish deck keeps the full size.
 export function WeekStrip({
   anchor,
   sessionId,
   markAnchor = false,
+  compact = false,
 }: {
   anchor: number;
   sessionId?: string;
   markAnchor?: boolean;
+  compact?: boolean;
 }) {
   const week = useWeek(anchor);
   const running = useActiveSession()?.session ?? null;
@@ -33,20 +36,22 @@ export function WeekStrip({
   return (
     <ol
       aria-label={sessionId === undefined ? "This week" : "This session's week"}
-      className="grid grid-cols-7 gap-1 rounded-card bg-card px-3 py-4"
+      className={`grid grid-cols-7 gap-1 rounded-card bg-card px-3 ${compact ? "py-3" : "py-4"}`}
     >
       {week.map((day) => (
         <li
           key={day.key}
           aria-label={`${day.name} ${day.date}${day.trained ? ", trained" : ""}${day.anchor ? (sessionId === undefined ? ", today" : ", this session") : ""}`}
-          className="flex flex-col items-center gap-2"
+          className={`flex flex-col items-center ${compact ? "gap-1.5" : "gap-2"}`}
         >
-          <span aria-hidden className="text-xs font-semibold text-body">
+          <span aria-hidden className={`font-semibold text-body ${"text-xs"}`}>
             {day.initial}
           </span>
           <span
             aria-hidden
-            className={`flex h-10 w-10 items-center justify-center rounded-pill text-base font-bold tabular-nums ${dayStyle(day, live)}`}
+            className={`flex items-center justify-center rounded-pill font-bold tabular-nums ${
+              compact ? "h-9 w-9 text-[15px]" : "h-10 w-10 text-base"
+            } ${dayStyle(day, live)}`}
           >
             {day.date}
           </span>

@@ -12,7 +12,7 @@ import { dismissOffset, dismissOutcome, gestureAxis } from "@/lib/domain/swipe";
 //
 // `full` fills the screen instead (the log sheet — the user's choice, so the pinned entry and a
 // long set table both fit): no dimmed strip above, square corners, and no grab strip, swipe or
-// slide — it's simply there, and a ⌄ button at the top left is the visible way out. It's still
+// slide — it's simply there, and you leave it by swiping back from the screen's edge. It's still
 // over the page you came from, which keeps its place.
 
 // Where content may portal its pinned buttons. Null outside a sheet, so the same component can
@@ -107,20 +107,10 @@ export function Sheet({
         }`}
       >
         {full ? (
-          // No grab strip and no swipe: the full sheet opens and closes in place, and ⌄ is the way
-          // out (with back and Escape).
-          <div className="flex h-12 shrink-0 items-center">
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={onClose}
-              className="flex h-12 w-14 touch-manipulation items-center justify-center text-body active:text-ink"
-            >
-              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
-          </div>
+          // No grab strip and no swipe: the full sheet opens and closes in place. You leave by
+          // swiping back from the screen's edge (or Back, or Escape) — the user's choice, so there's
+          // no close button, only a little room at the top.
+          <div aria-hidden className="h-4 shrink-0" />
         ) : (
           // The grab strip: the one place a downward drag moves the sheet, so the content below
           // still scrolls normally under a finger. touch-action none keeps the browser from
@@ -167,13 +157,11 @@ export function Sheet({
           <SheetFooter.Provider value={footer}>{children}</SheetFooter.Provider>
         </div>
         <div ref={setFooter} className="shrink-0" />
-        {/* Screen readers and keyboards get a real way out; fingers use the strip or the page. A
-            full sheet already has its visible ⌄. */}
-        {!full && (
-          <button type="button" onClick={onClose} className="sr-only focus:not-sr-only">
-            Close
-          </button>
-        )}
+        {/* Screen readers and keyboards get a real way out; fingers use the strip, the page, or
+            (on a full sheet) a swipe back. */}
+        <button type="button" onClick={onClose} className="sr-only focus:not-sr-only">
+          Close
+        </button>
       </div>
     </div>,
     document.body,

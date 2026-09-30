@@ -216,7 +216,7 @@ pick. Session time lives in the live session bar, not the board.
 Swipe or ± buttons for weight/reps. **Target: logging a set requires one tap and no
 keyboard in the common case.** Rest timer prominent; session timer quiet. Never two
 prominent counters on screen at once. It is a full-screen sheet over the page you came from, so
-closing it (⌄ or back) keeps your place. It has no grab strip and no swipe or slide; weight and
+closing it (a swipe back from the edge, or back) keeps your place. It has no grab strip and no swipe or slide; weight and
 reps sit pinned just above Log, so they never scroll away however long the set table grows (the
 user's choice). Today's sets are a numbered set table with a **Last time** column (the same set
 number from the previous session). There is no Next up row (removed — the user's choice).
