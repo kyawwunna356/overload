@@ -27,6 +27,8 @@ const DOUBLE_TAP_GUARD_MS = 600;
 export function SetEntry({
   exerciseId,
   prefill,
+  edit,
+  onEdit,
   history,
   onRecord,
   above,
@@ -34,6 +36,10 @@ export function SetEntry({
 }: {
   exerciseId: string;
   prefill: Prefill;
+  // Your change to the numbers, or null while untouched (the form follows the prefill). Held by
+  // the sheet, so the set table's Next set row can show what Log will record.
+  edit: Entry | null;
+  onEdit: (edit: Entry | null) => void;
   // This exercise's sets as they stood before the tap — what a new set is judged against.
   history: readonly SetLog[];
   // A logged set broke a record; the sheet shows the banner.
@@ -44,7 +50,6 @@ export function SetEntry({
   // made for the next set is still there when you come back.
   hidden?: boolean;
 }) {
-  const [edit, setEdit] = useState<Entry | null>(null); // null = untouched, follows the prefill
   const [failed, setFailed] = useState(false);
   const lastLogAt = useRef(0);
   // Inside a sheet, the Log button goes in the sheet's footer; on a full page it pins itself.
@@ -87,8 +92,8 @@ export function SetEntry({
         <Steppers
           entry={entry}
           ghost={ghost}
-          onWeight={(weight) => setEdit({ ...entry, weight })}
-          onReps={(reps) => setEdit({ ...entry, reps })}
+          onWeight={(weight) => onEdit({ ...entry, weight })}
+          onReps={(reps) => onEdit({ ...entry, reps })}
         />
         {failed && (
           <p role="alert" className="text-center text-sm font-semibold text-negative-deep">

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { PR } from "@/lib/domain/prs";
+import type { Entry } from "@/lib/domain/entry";
 import type { SetLog } from "@/lib/domain/types";
 import { formatSet, formatSetShort, formatTime } from "@/lib/format";
 import { PRPill } from "./PRPill";
@@ -20,6 +21,7 @@ export function SetTable({
   today,
   lastTime,
   records,
+  next: nextEntry,
   editingId,
   onEdit,
   onDelete,
@@ -27,6 +29,8 @@ export function SetTable({
   today: readonly SetLog[];
   lastTime: readonly SetLog[];
   records: ReadonlyMap<string, PR[]>;
+  // What the Log button will record, shown faintly on the Next set row.
+  next: Entry;
   // The set open in the editor, if any.
   editingId: string | null;
   onEdit: (set: SetLog) => void;
@@ -93,8 +97,13 @@ export function SetTable({
         <li ref={nextRow} className={`${GRID} min-h-14 rounded-control bg-primary-pale px-4`}>
           <span className="font-semibold text-primary tabular-nums">{next}</span>
           <span className="text-lg text-mute tabular-nums">{lastFor(next)}</span>
-          <span className="text-lg font-semibold text-primary">Next set</span>
-          <span />
+          <span className="text-lg font-semibold text-primary/35 tabular-nums">
+            <span className="sr-only">Next set: </span>
+            {formatSetShort(nextEntry)}
+          </span>
+          <span className="flex w-5 items-center justify-center">
+            <span aria-hidden className="h-2.5 w-2.5 rounded-pill bg-primary/50 motion-safe:animate-pulse" />
+          </span>
         </li>
       </ul>
     </section>

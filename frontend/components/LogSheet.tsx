@@ -2,11 +2,11 @@
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { prefillFor } from "@/lib/domain/entry";
+import { prefillFor, type Entry } from "@/lib/domain/entry";
 import { previousSession } from "@/lib/domain/previous";
 import { historyPRs, type PR } from "@/lib/domain/prs";
 import { SESSION_GAP_MINUTES, deriveSessions } from "@/lib/domain/sessions";
-import { countLabel, patternLabel } from "@/lib/format";
+import { countLabel } from "@/lib/format";
 import { useActiveSession } from "@/lib/hooks/useActiveSession";
 import { useLogSheet } from "@/lib/hooks/useLogSheet";
 import { useNow } from "@/lib/hooks/useNow";
@@ -54,6 +54,8 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
   // deleted set is only held here until the snackbar goes.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleted, setDeleted] = useState<SetLog | null>(null);
+  // Your change to the next set's numbers (null = follow the prefill). Kept until the sheet closes.
+  const [entryEdit, setEntryEdit] = useState<Entry | null>(null);
   const hideDeleted = useCallback(() => setDeleted(null), []);
   const remove = useCallback(async (set: SetLog) => {
     await deleteSet(set.id);
@@ -105,7 +107,6 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
     />
   );
   const prefill = prefillFor(setNumber, table.lastTime, table.today, data.previous);
-  const showTable = table.today.length > 0 || table.lastTime.length > 0;
 
   return (
     <div key={data.exercise.id} className="flex flex-col gap-4">
@@ -116,14 +117,9 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
           <h1 className="font-display text-3xl font-black leading-none tracking-tight break-words text-ink">
             {data.exercise.name}
           </h1>
+          {/* The level only, even Level 0 on a first time; the pattern is already on the board. */}
           <p className="pt-2 text-body">
-            {patternLabel(data.exercise.pattern)}
-            {data.mastery.level > 0 && (
-              <>
-                {" · "}
-                <LevelBadge mastery={data.mastery} />
-              </>
-            )}
+            <LevelBadge mastery={data.mastery} />
           </p>
         </div>
         {/* Only the rest timer here: mid-set it's the one number that matters. */}
@@ -135,16 +131,17 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
       {/* Keyed by set, so back-to-back records each get their own entrance. */}
       {record && <RecordBanner key={record.set.id} set={record.set} prs={record.prs} onDone={hideRecord} />}
 
-      {showTable && (
-        <SetTable
-          today={table.today}
-          lastTime={table.lastTime}
-          records={table.records}
-          editingId={editing?.id ?? null}
-          onEdit={(set) => setEditingId((id) => (id === set.id ? null : set.id))}
-          onDelete={remove}
-        />
-      )}
+      {/* Always shown, even before the first set ever: set 1 waits as Next set, so the sheet is
+          never blank and nothing jumps when the first set lands. */}
+      <SetTable
+        today={table.today}
+        lastTime={table.lastTime}
+        records={table.records}
+        next={entryEdit ?? prefill.entry}
+        editingId={editing?.id ?? null}
+        onEdit={(set) => setEditingId((id) => (id === set.id ? null : set.id))}
+        onDelete={remove}
+      />
 
       {editing && (
         <SetEdit
@@ -160,6 +157,8 @@ export function LogSheetBody({ exerciseId }: { exerciseId: string | null }) {
         above={undo}
         exerciseId={data.exercise.id}
         prefill={prefill}
+        edit={entryEdit}
+        onEdit={setEntryEdit}
         history={data.history}
         onRecord={(set, prs) => setRecord({ set, prs })}
       />

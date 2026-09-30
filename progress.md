@@ -20,8 +20,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed. CLAUDE.md's current milestone is 9.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `bugfix: Close the log sheet by swiping back and shrink the
-  board's week strip`. Before it: `bugfix: Make the log sheet full screen with weight and reps
+- **Last commit (on `redesign`):** `bugfix: Ghost the next set in the log sheet's set table`.
+  Before it: `bugfix: Close the log sheet by swiping back and shrink the
+  board's week strip`, `bugfix: Make the log sheet full screen with weight and reps
   pinned above Log`, `bugfix: Show the record banner as a toast at the top`,
   `bugfix: Darken the log sheet — page behind, card blocks`, then `feature: Rebuild the session summary and finish deck to the
   mock-ups` (Ticket 52, plus the board's PR pill), then `feature: Make edit board a page with
@@ -91,10 +92,13 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   old links): **full screen** over the page you came from, which never moves, so you come back to
   the same scroll spot. No grab strip, no close button (the user's choice): a swipe back from
   the screen's edge, Back or Escape closes it, and a reload reopens it offline. Top to bottom (Figma 3.1–3.2):
-  - the name, `Push · Level 3` (the dotted level still taps open `6 sessions · 4 to Level 4`), and
+  - the name, then just `Level 3` — no pattern, and `Level 0` on a first time (the dotted level
+    taps open `6 sessions · 4 to Level 4`), and
     the rest timer under a small `REST` label;
   - the **set table** (Ticket 45): today's sets numbered, each beside the same set last time, with
-    a ✓ or a yellow `PR` pill, then a lime **Next set** row, scrolled into view after each log.
+    a ✓ or a yellow `PR` pill, then the lime **next set** row: what Log will record, ghosted
+    (lime at 35%), with a pulsing dot, scrolled into view after each log. Shown even before the
+    first set ever, so the sheet is never blank.
     Swipe a today row left to delete it.
   - **pinned at the bottom**, in a panel with a rounded top edge: the entry card (weight above
     reps, each `− 100 kg +` with round buttons, no caption), then the Log button. It never scrolls
@@ -464,6 +468,16 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Log sheet: ghost next set, level only, never blank (after Ticket 52)
+`bugfix: Ghost the next set in the log sheet's set table` · 2026-09-30 · branch `redesign`
+
+- The next set row shows what Log will record (`82.5 × 5`) in lime at 35%, with a pulsing dot
+  (still under reduced motion), instead of the words "Next set" (kept for screen readers).
+- The entry's edit moved from `SetEntry` up to `LogSheetBody`, so the row follows the ± buttons.
+- The set table always shows: a lift never logged used to leave the sheet blank above the pinned
+  entry.
+- The header drops the pattern and always shows the level, `Level 0` on a first time.
 
 ### Log sheet swipe-back, smaller week strip (after Ticket 52)
 `bugfix: Close the log sheet by swiping back and shrink the board's week strip` · 2026-09-30 ·
