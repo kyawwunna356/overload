@@ -19,21 +19,17 @@ describe('firstRunStage', () => {
 });
 
 describe('showInstallCard', () => {
-  it('shows in a browser tab after the first set, never dismissed', () => {
-    expect(showInstallCard(null, NOW, false, true)).toBe(true);
+  it('shows in a browser tab, never dismissed', () => {
+    expect(showInstallCard(null, NOW, false)).toBe(true);
   });
 
   it('never shows in the installed app', () => {
-    expect(showInstallCard(null, NOW, true, true)).toBe(false);
-  });
-
-  it('waits for the first set', () => {
-    expect(showInstallCard(null, NOW, false, false)).toBe(false);
+    expect(showInstallCard(null, NOW, true)).toBe(false);
   });
 
   it('stays away for exactly a week after ✕', () => {
-    expect(showInstallCard(NOW - INSTALL_SNOOZE_MS + 1, NOW, false, true)).toBe(false);
-    expect(showInstallCard(NOW - INSTALL_SNOOZE_MS, NOW, false, true)).toBe(true);
+    expect(showInstallCard(NOW - INSTALL_SNOOZE_MS + 1, NOW, false)).toBe(false);
+    expect(showInstallCard(NOW - INSTALL_SNOOZE_MS, NOW, false)).toBe(true);
   });
 });
 

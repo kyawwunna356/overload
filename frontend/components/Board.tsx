@@ -8,7 +8,7 @@ import { useBackupStatus } from "@/lib/hooks/useBackupStatus";
 import { useBoard } from "@/lib/hooks/useBoard";
 import { useCoverage } from "@/lib/hooks/useCoverage";
 import { useStandalone } from "@/lib/hooks/useDevice";
-import { useFirstRun, type FirstRun } from "@/lib/hooks/useFirstRun";
+import { useFirstRun } from "@/lib/hooks/useFirstRun";
 import { useNow } from "@/lib/hooks/useNow";
 import { CheckBadge } from "./CheckBadge";
 import { AddIcon, CloudIcon } from "./MeScreen";
@@ -22,9 +22,9 @@ import { WeekStrip } from "./WeekStrip";
 //
 // First run (value first, account later): a brand-new phone gets a welcome screen of its own, and
 // a hint over the list until the first set — both derived, so they leave by themselves.
-// Once you've used the app, two offers wait at the bottom, under your lifts: back up (after a
-// session is over, while signed out) and, in a browser tab, add to the Home Screen. Each can be
-// put away; neither blocks anything.
+// In a Safari tab, a card above your lifts says how to add the app to the Home Screen; once a
+// session is over and you're signed out, one under them offers backup. Each can be put away;
+// neither blocks anything.
 export function Board() {
   const now = useNow();
   const groups = useBoard();
@@ -56,15 +56,20 @@ export function Board() {
       <div className="pb-6">
         <WeekStrip anchor={now} compact />
       </div>
+      {firstRun && showInstallCard(firstRun.installDismissedAt, now, standalone) && (
+        <InstallCard onDismiss={() => firstRun.dismissInstall(now)} />
+      )}
       {picked && picked.length === 0 && stage === null && <EmptyBoard />}
       {picked && picked.length > 0 && (
         <div className="flex flex-col gap-6">
           {stage === "first-set" && (
-            <p className="flex h-12 items-center gap-3 rounded-control bg-primary-pale px-4 font-semibold text-primary">
-              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0">
-                <path d="m15 6-6 6 6 6" />
+            // A note, not a button: an info mark and quiet text, nothing to tap.
+            <p className="flex items-center gap-2.5 px-2 text-sm text-body">
+              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-4 w-4 shrink-0 text-mute">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 11v5M12 8h.01" />
               </svg>
-              Tap an exercise to log your first set
+              Tap an exercise to log your first set.
             </p>
           )}
           {picked.map((group) => (
@@ -72,7 +77,9 @@ export function Board() {
           ))}
         </div>
       )}
-      {firstRun && <Offers firstRun={firstRun} now={now} backup={backup} standalone={standalone} />}
+      {firstRun && showBackupPrompt(backup, firstRun.finishedSession, firstRun.backupDismissed) && (
+        <BackupPrompt onDismiss={firstRun.dismissBackup} />
+      )}
     </>
   );
 }
@@ -137,77 +144,66 @@ function EmptyBoard() {
   );
 }
 
-// The two offers under your lifts. What they give you, never what you'd lose.
-function Offers({
-  firstRun,
-  now,
-  backup,
-  standalone,
-}: {
-  firstRun: FirstRun;
-  now: number;
-  backup: ReturnType<typeof useBackupStatus>;
-  standalone: boolean;
-}) {
-  const askBackup = showBackupPrompt(backup, firstRun.finishedSession, firstRun.backupDismissed);
-  const askInstall = showInstallCard(firstRun.installDismissedAt, now, standalone, firstRun.hasSets);
-  if (!askBackup && !askInstall) return null;
-
+// Under your lifts, once a session is over and you're signed out. What backup gives you, never
+// what you'd lose.
+function BackupPrompt({ onDismiss }: { onDismiss: () => void }) {
   return (
-    <div className="flex flex-col gap-3 pt-8">
-      {askBackup && (
-        <section className="rounded-card bg-card px-6 pt-5 pb-4">
-          <div className="flex items-start gap-4">
-            <span
-              aria-hidden
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-page text-primary"
-            >
-              <CloudIcon />
-            </span>
-            <div>
-              <h2 className="font-semibold text-ink">Back up your training</h2>
-              <p className="text-sm text-body">Sign in so a new phone gets every set back.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 pt-4">
-            <Link
-              href="/account"
-              className="flex h-11 flex-1 touch-manipulation items-center justify-center rounded-pill bg-primary font-semibold text-on-primary active:bg-primary-active"
-            >
-              Back up
-            </Link>
-            <button
-              type="button"
-              onClick={firstRun.dismissBackup}
-              className="h-11 flex-1 touch-manipulation rounded-pill font-semibold text-body active:bg-line"
-            >
-              Not now
-            </button>
-          </div>
-        </section>
-      )}
-      {askInstall && (
-        <div className="flex items-center gap-4 rounded-card border border-line py-4 pr-2 pl-6">
-          <span
-            aria-hidden
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-card text-primary"
-          >
-            <AddIcon />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-ink">Add to Home Screen</p>
-            <p className="text-sm text-body">Share → Add to Home Screen</p>
-          </div>
-          <button
-            type="button"
-            aria-label="Hide for a week"
-            onClick={() => firstRun.dismissInstall(now)}
-            className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-pill text-xl text-mute active:bg-line"
-          >
-            ✕
-          </button>
+    <section className="mt-8 rounded-card bg-card px-6 pt-5 pb-4">
+      <div className="flex items-start gap-4">
+        <span
+          aria-hidden
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-page text-primary"
+        >
+          <CloudIcon />
+        </span>
+        <div>
+          <h2 className="font-semibold text-ink">Back up your training</h2>
+          <p className="text-sm text-body">Sign in so a new phone gets every set back.</p>
         </div>
-      )}
+      </div>
+      <div className="flex items-center gap-2 pt-4">
+        <Link
+          href="/account"
+          className="flex h-11 flex-1 touch-manipulation items-center justify-center rounded-pill bg-primary font-semibold text-on-primary active:bg-primary-active"
+        >
+          Back up
+        </Link>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="h-11 flex-1 touch-manipulation rounded-pill font-semibold text-body active:bg-line"
+        >
+          Not now
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// Above your lifts, in a Safari tab only (the user's design): how to add the app to the Home Screen,
+// where it opens full screen and with no signal. ✕ puts it away for a week.
+function InstallCard({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="mb-6 flex items-center gap-3 rounded-card border border-line bg-card py-3.5 pr-1 pl-4">
+      <span
+        aria-hidden
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-primary-pale text-primary"
+      >
+        <AddIcon />
+      </span>
+      {/* Two short lines, as in the design — worded to fit a phone, never cut off with "…". */}
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-semibold text-ink">Add to your Home Screen</p>
+        <p className="text-[13px] text-body">Tap Share → Add to Home Screen</p>
+      </div>
+      <button
+        type="button"
+        aria-label="Hide for a week"
+        onClick={onDismiss}
+        className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-pill text-xl text-mute active:bg-line"
+      >
+        ✕
+      </button>
     </div>
   );
 }

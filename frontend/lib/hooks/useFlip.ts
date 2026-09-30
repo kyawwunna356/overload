@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useLayoutEffect, useRef } from 'react';
+import { pageScrollTop } from '../page';
 
 const MOVE_MS = 250;
 
@@ -24,7 +25,7 @@ export function useFlip(trigger: string): (key: string) => (el: HTMLElement | nu
 
     const now = new Map<string, number>();
     for (const [key, el] of elements.current) {
-      const visible = el.getBoundingClientRect().top + window.scrollY;
+      const visible = el.getBoundingClientRect().top + pageScrollTop();
       now.set(key, visible);
       if (!changed || reduced) continue;
 

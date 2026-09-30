@@ -17,15 +17,11 @@ export function firstRunStage(picked: boolean, hasSets: boolean): FirstRunStage 
 // How long ✕ on the install card puts it away for.
 export const INSTALL_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 
-// The Add to Home Screen card: only in a browser tab (never the installed app), only once you've
-// logged a set, and not within a week of the last ✕. `dismissedAt` is null when never dismissed.
-export function showInstallCard(
-  dismissedAt: number | null,
-  now: number,
-  standalone: boolean,
-  hasSets: boolean,
-): boolean {
-  if (standalone || !hasSets) return false;
+// The Add to Home Screen card: only in a browser tab (never the installed app), and not within a
+// week of the last ✕. It shows from the first board on (the user's design puts it above your lifts
+// before any set). `dismissedAt` is null when never dismissed.
+export function showInstallCard(dismissedAt: number | null, now: number, standalone: boolean): boolean {
+  if (standalone) return false;
   return dismissedAt === null || now - dismissedAt >= INSTALL_SNOOZE_MS;
 }
 

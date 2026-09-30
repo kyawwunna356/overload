@@ -39,20 +39,13 @@ export function TabBar() {
   if (!TABS.some((tab) => tab.href === path)) return null;
   const session = active?.session ?? null;
 
+  // The frame's bottom row (AppFrame), not fixed to the screen: the page scrolls above it, so it
+  // never needs a spacer and never moves when you switch tabs.
   return (
     <>
-      {/* Holds the bars' height in the page, so the last content scrolls clear of them. */}
-      <div
-        aria-hidden
-        className={
-          session
-            ? "h-[calc(9rem+env(safe-area-inset-bottom))]"
-            : "h-[calc(4.5rem+env(safe-area-inset-bottom))]"
-        }
-      />
-      <div className="fixed inset-x-0 bottom-0 z-10">
+      <div className="shrink-0 bg-page">
         {session && active && (
-          <div className="mx-auto max-w-md px-4 pb-2">
+          <div className="mx-auto max-w-md px-4 pt-2 pb-2">
             <button
               type="button"
               onClick={() => openSheet("live", "1")}

@@ -17,6 +17,7 @@ import {
   type SessionSummary as Summary,
 } from "@/lib/domain/sessions";
 import { LogLink } from "./LogLink";
+import { scrollPageToTop } from "@/lib/page";
 import { replaceSheet } from "@/lib/sheets";
 import { RecapMoment } from "./RecapMoment";
 import { MusclesCard } from "./MusclesCard";
@@ -69,7 +70,7 @@ export function SessionSummary() {
   const closeMoment = useCallback(() => {
     setCelebrating(false);
     // The compact recap sits at the top of the page; bring it into view.
-    window.scrollTo({ top: 0 });
+    scrollPageToTop();
   }, []);
 
   return (

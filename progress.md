@@ -23,8 +23,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestone is 10.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `bugfix: Line up the board's title, a lime first-set hint and a
-  short Add` (from the first milestone 10 phone check). Before it: `feature: Put the neon logo on
+- **Last commit (on `redesign`):** `bugfix: Keep the tab bar still in the installed app, and put the
+  install card on top` (from the milestone 10 phone check). Before it: `bugfix: Line up the
+  board's title, a lime first-set hint and a short Add`, `feature: Put the neon logo on
   the app's black as the app icon` (outside the ticket list), `feature: Add a first-run welcome, pick-your-lifts setup and
   install and backup prompts` (Ticket 56), `feature: Add History's exercises view and a
   page per lift` (Ticket 55), `feature: Fill History with sessions grouped by week` (Ticket 54, with
@@ -68,13 +69,14 @@ re-reading the whole repo. **Read this file at the start of every session**, the
       you lifted last time.", three ticks (No account needed · Works with no signal · Back up with
       Google later), a lime **Pick your exercises** (to `/exercises?setup=1`) and **Restore from
       backup** (to Me). Derived, so it leaves once you pick.
-    - **Hint:** picked but never logged → a lime pill with a `‹`, "Tap an exercise to log your
-      first set", over the list (the user's design).
+    - **Hint:** picked but never logged → a quiet note, a grey ⓘ and "Tap an exercise to log your
+      first set.", over the list (information, not a link — the user's call).
     - **Backup prompt** (bottom of the board): after a session is over, signed out, backup
       configured → "Back up your training" with **Back up** (to Me) and **Not now** (for good,
       `overload.backupPromptDismissed`).
-    - **Install card** (bottom, Safari tab only, after the first set): "Add to Home Screen" with ✕,
-      which hides it for 7 days (`overload.installDismissed`).
+    - **Install card** (top, under the week strip, the user's design; Safari tab only, from the
+      first board on): "Add to your Home Screen / Tap Share → Add to Home Screen" with a lime icon
+      and ✕, which hides it for 7 days (`overload.installDismissed`). Never in the installed app.
   - **Heading ticks:** a round pale-green badge with a lime tick (`CheckBadge`) beside a pattern
     heading once the running session has touched it. That's all the board shows of coverage.
   - **Rows** (`rowState` in `board.ts`): the name, then one short 13 px line with no label:
@@ -129,7 +131,10 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   the page; then every set by day with PR pills. Tap a set to edit it in the pinned card (Cancel /
   Save set N, over the tab bar); swipe left to delete, with Undo pinned at the bottom for 5 s.
 - **Tab bar** (Ticket 41): Train (`/`), History (`/history`)
-  and Me (`/account`), pinned at the bottom of those three pages only. A red dot on Me means
+  and Me (`/account`), at the bottom of those three pages only. It's the bottom row of `AppFrame`
+  (a full-height frame whose page scrolls inside it), not fixed to the screen: fixed, it jumped
+  between tabs in the installed app, where iOS re-measures the window on each page. A new page
+  starts at its top (`lib/page.ts` names the scroller for `useFlip` and the summary). A red dot on Me means
   backup is paused; "changes waiting" never badges.
 - **Log sheet** (`?log=<id>` over any page, Ticket 42; `/exercise?id=…` stays as a full page for
   old links): **full screen** over the page you came from, which never moves, so you come back to
@@ -511,6 +516,20 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Tab bar still, install card on top (milestone 10 phone check)
+`bugfix: Keep the tab bar still in the installed app, and put the install card on top` ·
+2026-09-30 · branch `redesign`
+
+- The tab bar jumped up and down between tabs in the installed app only (headless Chrome showed
+  nothing moving). The app is now a full-height `AppFrame`: the page scrolls inside it and the
+  tab bar is its bottom row, so the window never scrolls and nothing is fixed to it. The frame
+  resets to the top on a new path. `useFlip` and the summary's scroll-to-top use `lib/page.ts`.
+- Install card moved to the top of the board and shown from the first board in Safari (the
+  user's design); `showInstallCard` drops `hasSets` (482 tests). Worded to fit two lines, no "…".
+- The first-set hint is a grey ⓘ note instead of a lime pill, so it doesn't read as a link.
+- Re-ran the tab, History, Exercises, first-run and log sheet browser checks: all pass. The
+  iPhone confirms the tab bar.
 
 ### First phone-check fixes (milestone 10)
 `bugfix: Line up the board's title, a lime first-set hint and a short Add` · 2026-09-30 · branch
