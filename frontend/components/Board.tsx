@@ -81,7 +81,7 @@ function Welcome() {
     <div className="fixed inset-0 z-30 flex flex-col bg-page px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
         <div className="flex flex-col items-center text-center">
-          <Image src="/icons/icon-192.png" alt="" width={100} height={100} unoptimized className="rounded-[1.5rem]" />
+          <Image src="/icons/icon-512.png" alt="" width={100} height={100} unoptimized className="rounded-[1.5rem]" />
           <h1 className="pt-6 font-display text-4xl font-black tracking-tight text-ink">Overload</h1>
           <p className="pt-3 text-body">
             Log a set in one tap.

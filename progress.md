@@ -23,8 +23,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestone is 10.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Add a first-run welcome, pick-your-lifts setup and
-  install and backup prompts` (Ticket 56). Before it: `feature: Add History's exercises view and a
+- **Last commit (on `redesign`):** `feature: Put the neon logo on the app's black as the app icon`
+  (outside the ticket list). Before it: `feature: Add a first-run welcome, pick-your-lifts setup and
+  install and backup prompts` (Ticket 56), `feature: Add History's exercises view and a
   page per lift` (Ticket 55), `feature: Fill History with sessions grouped by week` (Ticket 54, with
   milestone 9's close), `bugfix: Ghost the next set in the log sheet's set table`, `bugfix: Close the log sheet by swiping back and shrink the
   board's week strip`, `bugfix: Make the log sheet full screen with weight and reps
@@ -36,8 +37,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
   which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit. Ticket 40's
   docs commit is on `main`.
-- **Next: Ticket 58** (the milestone 10 check on the iPhone and release 2.0.0). The user's
-  `design/` folder is in the tree, untracked; left alone until they say otherwise. Ticket 57 (custom exercises) is already done, pulled
+- **Next: Ticket 58** (the milestone 10 check on the iPhone and release 2.0.0). `design/logo/` holds
+  the logo's masters (`overload-logo.svg`, `overload-logo-1024.png`) and `mockups.html`. Ticket 57 (custom exercises) is already done, pulled
   forward into Ticket 51.
 - **The phone sees `redesign` only after a push**, through Vercel's preview for the branch. The
   installed app follows `main`. With no push, Safari on the same Wi-Fi can open the Mac's preview
@@ -508,6 +509,19 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Logo: the neon mark on the app's black
+`feature: Put the neon logo on the app's black as the app icon` · 2026-09-30 · branch `redesign`
+
+- The user kept their own neon logo (glows and all) after seeing new concepts and flat redraws.
+  Its grey background was lifted off and the glow laid back onto `#0e0f0c`, so the icon melts into
+  the page; the mark spans 70% of the square (the user's pick between 52% original and 80%).
+- The SVG wraps the PNG: soft glow can't be drawn as exact vector shapes without changing it.
+- Replaced `app/icon.png`, `app/apple-icon.png` and `public/icons/*`. The maskable icon sits at 55%
+  so Android's circle crop doesn't clip the arrow; iOS doesn't use it.
+- The welcome screen shows `icon-512.png` instead of 192, sharp at 100 px on a 3× screen.
+- `design/logo/` keeps the masters and `mockups.html` (the logo in seven places).
+- An installed iPhone keeps its old icon until the app is removed and added again.
 
 ### Log sheet: ghost next set, level only, never blank (after Ticket 52)
 `bugfix: Ghost the next set in the log sheet's set table` · 2026-09-30 · branch `redesign`
