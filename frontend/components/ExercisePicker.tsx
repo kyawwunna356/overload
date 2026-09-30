@@ -310,7 +310,8 @@ function NewExercise({
           disabled={!ready}
           className="h-12 flex-1 touch-manipulation rounded-pill bg-primary text-base font-semibold text-on-primary active:bg-primary-active disabled:bg-raised disabled:text-mute"
         >
-          {taken && !onBoard ? "Add it to the board" : "Add"}
+          {/* Short either way: the line above already says where a known lift lives. */}
+          Add
         </button>
       </div>
     </form>

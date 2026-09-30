@@ -23,8 +23,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestone is 10.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Put the neon logo on the app's black as the app icon`
-  (outside the ticket list). Before it: `feature: Add a first-run welcome, pick-your-lifts setup and
+- **Last commit (on `redesign`):** `bugfix: Line up the board's title, a lime first-set hint and a
+  short Add` (from the first milestone 10 phone check). Before it: `feature: Put the neon logo on
+  the app's black as the app icon` (outside the ticket list), `feature: Add a first-run welcome, pick-your-lifts setup and
   install and backup prompts` (Ticket 56), `feature: Add History's exercises view and a
   page per lift` (Ticket 55), `feature: Fill History with sessions grouped by week` (Ticket 54, with
   milestone 9's close), `bugfix: Ghost the next set in the log sheet's set table`, `bugfix: Close the log sheet by swiping back and shrink the
@@ -67,7 +68,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
       you lifted last time.", three ticks (No account needed · Works with no signal · Back up with
       Google later), a lime **Pick your exercises** (to `/exercises?setup=1`) and **Restore from
       backup** (to Me). Derived, so it leaves once you pick.
-    - **Hint:** picked but never logged → "Tap a lift to log your first set." over the list.
+    - **Hint:** picked but never logged → a lime pill with a `‹`, "Tap an exercise to log your
+      first set", over the list (the user's design).
     - **Backup prompt** (bottom of the board): after a session is over, signed out, backup
       configured → "Back up your training" with **Back up** (to Me) and **Not now** (for good,
       `overload.backupPromptDismissed`).
@@ -509,6 +511,17 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### First phone-check fixes (milestone 10)
+`bugfix: Line up the board's title, a lime first-set hint and a short Add` · 2026-09-30 · branch
+`redesign`
+
+- From the user's first pass of the milestone 10 check:
+  - the board's header had no `px-2`, so its title sat 8 px left of History's and Me's and jumped
+    when switching tabs;
+  - the first-set hint became the user's lime pill with a `‹`;
+  - New exercise's button always reads **Add** (it said "Add it to the board" for a known name).
+- "The install card doesn't show" was the installed app, where it's hidden on purpose.
 
 ### Logo: the neon mark on the app's black
 `feature: Put the neon logo on the app's black as the app icon` · 2026-09-30 · branch `redesign`

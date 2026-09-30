@@ -40,7 +40,8 @@ export function Board() {
 
   return (
     <>
-      <header className="flex items-center justify-between gap-4 pb-5">
+      {/* px-2, like History and Me, so the title doesn't jump sideways when you switch tabs. */}
+      <header className="flex items-center justify-between gap-4 px-2 pb-5">
         <h1 className="font-display text-4xl font-black leading-none tracking-tight text-ink">
           {formatDay(now)}
         </h1>
@@ -59,7 +60,12 @@ export function Board() {
       {picked && picked.length > 0 && (
         <div className="flex flex-col gap-6">
           {stage === "first-set" && (
-            <p className="-mb-2 px-2 text-body">Tap a lift to log your first set.</p>
+            <p className="flex h-12 items-center gap-3 rounded-control bg-primary-pale px-4 font-semibold text-primary">
+              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0">
+                <path d="m15 6-6 6 6 6" />
+              </svg>
+              Tap an exercise to log your first set
+            </p>
           )}
           {picked.map((group) => (
             <PatternGroup key={group.pattern} group={group} covered={covered?.[group.pattern] ?? false} />
