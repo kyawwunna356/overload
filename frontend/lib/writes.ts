@@ -1,3 +1,4 @@
+import Dexie from 'dexie';
 import { LOCAL_USER_ID } from './constants';
 import { db } from './db';
 import { movePick, nextSortOrder } from './domain/list';
@@ -158,6 +159,38 @@ export async function addCustomExercise(name: string, pattern: Pattern): Promise
     await addToList(exercise.id, pattern);
   });
   return exercise;
+}
+
+// Deletes an exercise for good, the user's choice: every set of it, its place on your board, and
+// the exercise itself, in one transaction. The sets and list entries are deleted outright, set
+// deletes queued first. The exercise row is archived rather than deleted: archiving syncs where a
+// delete wouldn't (see lib/domain/repair.ts), so every device hides it, and a later catalogue
+// update, which matches by name, never brings it back. Nothing reads an archived exercise as one in
+// use (`customName`, repair, the board, the picker), so adding the name again makes a new exercise
+// with no history. Session end markers stay: they're final (Hard Rule 2), and one left with no
+// sets around it changes nothing. Deleting one that's already gone does nothing.
+export async function deleteExercise(exerciseId: string): Promise<void> {
+  const now = Date.now();
+  await db.transaction('rw', [db.exercises, db.template_items, db.set_logs, db.outbox], async () => {
+    const exercise = await db.exercises.get(exerciseId);
+    if (!exercise || exercise.archived) return;
+
+    const sets = await db.set_logs
+      .where('[exercise_id+logged_at]')
+      .between([exerciseId, Dexie.minKey], [exerciseId, Dexie.maxKey])
+      .toArray();
+    const listed = await db.template_items.where('exercise_id').equals(exerciseId).toArray();
+    const archived: Exercise = { ...exercise, archived: true, updated_at: now };
+
+    await db.set_logs.bulkDelete(sets.map((set) => set.id));
+    await db.template_items.bulkDelete(listed.map((item) => item.id));
+    await db.exercises.put(archived);
+    await db.outbox.bulkAdd([
+      ...sets.map((set) => outboxRow('set_logs', 'delete', set, now)),
+      ...listed.map((item) => outboxRow('template_items', 'delete', item, now)),
+      outboxRow('exercises', 'upsert', archived, now),
+    ]);
+  });
 }
 
 // Takes an exercise off your list. Its sets are untouched — history is never a casualty of

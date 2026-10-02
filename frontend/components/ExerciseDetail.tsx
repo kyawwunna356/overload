@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { exerciseRecords, type Best } from "@/lib/domain/exerciseHistory";
 import { dayLabel, groupByDay } from "@/lib/domain/history";
@@ -8,7 +8,7 @@ import type { SetLog } from "@/lib/domain/types";
 import { formatNumber, formatSet, patternLabel } from "@/lib/format";
 import { useLogSheet } from "@/lib/hooks/useLogSheet";
 import { useNow } from "@/lib/hooks/useNow";
-import { deleteSet, restoreSet } from "@/lib/writes";
+import { deleteExercise, deleteSet, restoreSet } from "@/lib/writes";
 import { BackLink } from "./BackLink";
 import { LevelBadge } from "./LevelBadge";
 import { LogLink } from "./LogLink";
@@ -19,8 +19,9 @@ import { Snackbar } from "./Snackbar";
 // One lift's page under History (`?id=`): its name and level, the best you've done at it, a way to
 // log a set, and every set you've ever logged of it by day. Past sets can be fixed here — tap one
 // to edit it in the same pinned card as the log sheet (the set keeps its time, so its session,
-// records and summary simply recompute), swipe it left to delete it, with Undo. A static page that
-// reads the local database, so it opens with no signal; nothing on it is stored.
+// records and summary simply recompute), swipe it left to delete it, with Undo. At the bottom the
+// whole lift can be deleted for good, sets and all. A static page that reads the local database, so
+// it opens with no signal; nothing on it is stored.
 export function ExerciseDetail() {
   const id = useSearchParams().get("id");
   const data = useLogSheet(id);
@@ -65,9 +66,10 @@ export function ExerciseDetail() {
     // Room under the last set for the pinned edit card while it's open.
     <div className={editing ? "pb-72" : "pb-8"}>
       <nav className="pb-4">
-        <BackLink href="/history?view=exercises" label="‹ History" />
+        <BackLink href="/history?view=exercises" label="‹ History" plain />
       </nav>
-      {data.exercise === null ? (
+      {/* A deleted lift is archived, never shown: its page reads as gone. */}
+      {data.exercise === null || data.exercise.archived ? (
         <p className="rounded-card bg-card px-6 py-5 text-body">That exercise isn&apos;t on this device.</p>
       ) : (
         <div className="flex flex-col gap-5">
@@ -103,6 +105,8 @@ export function ExerciseDetail() {
             editingId={editing?.set.id ?? null}
             title={null}
           />
+
+          <DeleteExercise exerciseId={data.exercise.id} name={data.exercise.name} />
         </div>
       )}
 
@@ -160,6 +164,61 @@ function RecordsCard({ records, now }: { records: ReturnType<typeof exerciseReco
         ))}
       </dl>
     </section>
+  );
+}
+
+// Deleting the lift for good: the button opens a choice, Cancel or a red Delete, like End session's,
+// and only a one-line warning (the user's choice). Afterwards back to History's exercises, replacing this
+// page so back doesn't return to a lift that's gone.
+function DeleteExercise({ exerciseId, name }: { exerciseId: string; name: string }) {
+  const router = useRouter();
+  // Throwaway UI state: whether the choice is showing. Never stored.
+  const [choosing, setChoosing] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const confirm = async () => {
+    setFailed(false);
+    try {
+      await deleteExercise(exerciseId);
+      router.replace("/history?view=exercises");
+    } catch {
+      setFailed(true);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 pt-4">
+      {failed && (
+        <p role="alert" className="text-center text-sm font-semibold text-negative-deep">
+          Couldn&apos;t delete that. Try again.
+        </p>
+      )}
+      {choosing && (
+        <div role="group" aria-label={`Delete ${name}?`} className="flex flex-col gap-3 motion-safe:animate-sheet-in">
+          <div className="px-2">
+            <p className="text-xl font-semibold break-words text-ink">Delete {name}?</p>
+            <p className="pt-1 text-body">This action can&apos;t be undone.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void confirm()}
+            className="h-14 w-full touch-manipulation rounded-pill bg-negative text-lg font-semibold text-ink active:opacity-80"
+          >
+            Delete
+          </button>
+        </div>
+      )}
+      <button
+        type="button"
+        aria-expanded={choosing}
+        onClick={() => setChoosing((open) => !open)}
+        className={`h-14 w-full touch-manipulation rounded-pill border border-line text-lg font-semibold active:bg-line ${
+          choosing ? "text-ink" : "text-negative-deep"
+        }`}
+      >
+        {choosing ? "Cancel" : "Delete exercise"}
+      </button>
+    </div>
   );
 }
 

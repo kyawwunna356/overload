@@ -23,8 +23,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestone is 10.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `bugfix: Block a custom name that's already taken in any
-  category`. Before it: `bugfix: Keep the tab bar still in the installed app, and put the
+- **Last commit (on `redesign`):** `feature: Delete an exercise for good, with all its sets`.
+  Before it: `bugfix: Block a custom name that's already taken in any category`, `bugfix: Keep the tab bar still in the installed app, and put the
   install card on top` (from the milestone 10 phone check), `bugfix: Line up the
   board's title, a lime first-set hint and a short Add`, `feature: Put the neon logo on
   the app's black as the app icon` (outside the ticket list), `feature: Add a first-run welcome, pick-your-lifts setup and
@@ -127,11 +127,15 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **History: Exercises** (Ticket 55): every lift you've logged, A to Z (archived ones too), each
   with the last working set and days ago in grey and a `›`; a search box narrows by name. Never-done
   lifts aren't listed.
-- **A lift's page** (`/history/exercise?id=…`, static, under the History tab): `‹ History`, the
+- **A lift's page** (`/history/exercise?id=…`, static, under the History tab): `‹ History` as
+  plain lime text (no pill, the user's choice), the
   name and `Push · Level 7`; a **Records** card (Heaviest, Best est. 1RM, Most reps, each in yellow
   with its day; e1RM left out for bodyweight); a lime **Log a set** that opens the log sheet over
   the page; then every set by day with PR pills. Tap a set to edit it in the pinned card (Cancel /
   Save set N, over the tab bar); swipe left to delete, with Undo pinned at the bottom for 5 s.
+  At the bottom, **Delete exercise** (red text) opens "Delete Bench Press? / This action can't be
+  undone." with a red **Delete**, the button becoming **Cancel**. Delete removes every set of the
+  lift and its place on the board, archives the lift, and lands on History's exercises. No Undo.
 - **Tab bar** (Ticket 41): Train (`/`), History (`/history`)
   and Me (`/account`), at the bottom of those three pages only. It's the bottom row of `AppFrame`
   (a full-height frame whose page scrolls inside it), not fixed to the screen: fixed, it jumped
@@ -512,6 +516,14 @@ These aren't obvious from the code and shaped later work.
     collapsed, capped at 60 characters, and matched against the catalogue ignoring case. Two lifts
     of one name would split your history, and repair merges by name anyway. A taken name blocks
     Add outright (the user's choice), in any pattern; the form no longer adds the existing lift.
+  - **Deleting a lift for good** (`deleteExercise` in `writes.ts`, the user's request): sets and list
+    entries are deleted (queued as deletes), the exercise row is **archived**, not deleted, because
+    an archive syncs and a delete doesn't, and the catalogue updates match by name, so a deleted
+    built-in lift never returns. Archived lifts don't count for `customName` or repair, so adding
+    the name again makes a new lift with no history. **Known gap:** another device that already
+    pulled those sets keeps them (deletes don't reach other devices); the lift is hidden there.
+    Session end markers stay (final, Hard Rule 2). Only reachable from a lift's page, so a lift
+    never logged can't be deleted, only taken off the board.
   - `pickCounts` (in `list.ts`) feeds the chips: every pattern present, a lift listed twice counted
     once.
 
@@ -519,6 +531,17 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Delete an exercise for good (milestone 10 phone check)
+`feature: Delete an exercise for good, with all its sets` · 2026-10-02 · branch `redesign`
+
+- A lift's History page ends with **Delete exercise** → "Delete X? This action can't be undone."
+  → red **Delete** or **Cancel** (the user cut a longer description). No Undo.
+- `deleteExercise`: one transaction deletes the sets and list entries and archives the exercise;
+  the outbox gets the set deletes first. Archiving is the tombstone that syncs (as in repair), and
+  re-adding the name makes a fresh lift. Other devices keep sets they already pulled.
+- The page reads an archived lift as gone ("isn't on this device").
+- `BackLink` gained `plain`: lime text instead of the pill, used for `‹ History` on a lift's page.
 
 ### One name, one category (milestone 10 phone check)
 `bugfix: Block a custom name that's already taken in any category` · 2026-10-02 · branch

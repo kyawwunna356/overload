@@ -10,14 +10,19 @@ import { useRouter } from "next/navigation";
 //
 // `direct` skips the history: after a sign-in round trip through Google, going back would land
 // on Google's page (or, in the installed app, leave it).
+//
+// `plain` drops the pill for lime text, like the board's Edit (the user's choice on a lift's
+// History page). -m-3 p-3 keeps a thumb-sized tap area around the small label.
 export function BackLink({
   href,
   label,
   direct = false,
+  plain = false,
 }: {
   href: string;
   label: string;
   direct?: boolean;
+  plain?: boolean;
 }) {
   const router = useRouter();
 
@@ -31,7 +36,11 @@ export function BackLink({
           router.back();
         }
       }}
-      className="inline-flex h-12 touch-manipulation items-center rounded-pill bg-card px-5 text-base font-semibold text-ink active:bg-line"
+      className={
+        plain
+          ? "-m-3 inline-flex touch-manipulation items-center p-3 text-lg font-semibold text-primary active:text-primary-active"
+          : "inline-flex h-12 touch-manipulation items-center rounded-pill bg-card px-5 text-base font-semibold text-ink active:bg-line"
+      }
     >
       {label}
     </Link>
