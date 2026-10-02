@@ -18,6 +18,10 @@ describe('customName', () => {
     expect(customName('bench  press', [bench])).toEqual({ kind: 'taken', exercise: bench });
   });
 
+  it('refuses the name whatever pattern you meant it for: one name, one category', () => {
+    expect(customName('BENCH PRESS', [bench])).toEqual({ kind: 'taken', exercise: bench });
+  });
+
   it('ignores an archived exercise with the name', () => {
     const archived = makeExercise({ name: 'Old Lift', archived: true });
     expect(customName('Old Lift', [archived])).toEqual({ kind: 'ok', name: 'Old Lift' });

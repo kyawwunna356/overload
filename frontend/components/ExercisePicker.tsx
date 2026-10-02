@@ -211,8 +211,9 @@ function Chip({
 }
 
 // Your own exercise: a name and its pattern (preset to the chip you're on). It joins the catalogue
-// and your board at once. A name the catalogue already has isn't made twice; the form offers that
-// exercise instead, so your history stays under one name.
+// and your board at once. A name the catalogue already has, in any case and any pattern, isn't
+// made twice: the form says where that lift lives and Add stays off, so one name has one category
+// and your history stays under it.
 function NewExercise({
   catalogue,
   listed,
@@ -237,10 +238,7 @@ function NewExercise({
   async function submit() {
     setFailed(false);
     try {
-      if (taken) {
-        await addToList(taken.id, taken.pattern);
-        onAdded(taken.pattern);
-      } else if (checked.kind === "ok" && pattern) {
+      if (checked.kind === "ok" && pattern) {
         await addCustomExercise(checked.name, pattern);
         onAdded(pattern);
       }
@@ -249,7 +247,7 @@ function NewExercise({
     }
   }
 
-  const ready = (taken !== null && !onBoard) || (checked.kind === "ok" && pattern !== null);
+  const ready = checked.kind === "ok" && pattern !== null;
 
   return (
     <form
@@ -271,8 +269,9 @@ function NewExercise({
         className="mt-3 h-12 w-full rounded-control bg-raised px-4 text-base text-ink placeholder:text-body"
       />
       {taken ? (
-        <p className="pt-2 text-sm text-body">
-          {taken.name} is already {onBoard ? "on your board" : `in ${patternLabel(taken.pattern)}`}.
+        <p role="status" className="pt-2 text-sm text-body">
+          {taken.name} already exists in {patternLabel(taken.pattern)}
+          {onBoard ? " and is on your board." : ". Add it from the list below."}
         </p>
       ) : (
         <div role="radiogroup" aria-label="Pattern" className="flex flex-wrap gap-2 pt-3">
@@ -310,7 +309,6 @@ function NewExercise({
           disabled={!ready}
           className="h-12 flex-1 touch-manipulation rounded-pill bg-primary text-base font-semibold text-on-primary active:bg-primary-active disabled:bg-raised disabled:text-mute"
         >
-          {/* Short either way: the line above already says where a known lift lives. */}
           Add
         </button>
       </div>

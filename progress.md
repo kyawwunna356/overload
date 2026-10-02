@@ -23,8 +23,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   milestone is 10.
 - **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
   merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `bugfix: Keep the tab bar still in the installed app, and put the
-  install card on top` (from the milestone 10 phone check). Before it: `bugfix: Line up the
+- **Last commit (on `redesign`):** `bugfix: Block a custom name that's already taken in any
+  category`. Before it: `bugfix: Keep the tab bar still in the installed app, and put the
+  install card on top` (from the milestone 10 phone check), `bugfix: Line up the
   board's title, a lime first-set hint and a short Add`, `feature: Put the neon logo on
   the app's black as the app icon` (outside the ticket list), `feature: Add a first-run welcome, pick-your-lifts setup and
   install and backup prompts` (Ticket 56), `feature: Add History's exercises view and a
@@ -111,8 +112,9 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   - **+ New** (Ticket 57, pulled forward by the user) opens a small form at the top: a name and a
     pattern, preset to the chip you're on (on All, Add waits until you pick one). Add puts your lift
     in the catalogue and on your board in one transaction (`addCustomExercise`), then jumps to its
-    chip. A name the catalogue already has, in any case, is never made twice: the form offers that
-    lift instead ("Add it to the board"), or says it's already on your board.
+    chip. A name the catalogue already has, in any case and any pattern, is never made twice: the
+    form says "Bench Press already exists in Push. Add it from the list below." (or "… and is on
+    your board.") and Add stays grey, so one name lives in one category.
 - **History** (`/history`): a **Sessions | Exercises** switch (softly rounded, the selected half
   lighter grey — the user's design), in `?view=exercises`, replaced so back returns to it.
 - **History: Sessions** (Ticket 54): your sessions, newest first, under a heading per week ("This
@@ -508,7 +510,8 @@ These aren't obvious from the code and shaped later work.
     it by its pattern, and sync backs it up like the catalogue.
   - **A custom name must be new** (`customName` in `lib/domain/custom.ts`): trimmed, inner spaces
     collapsed, capped at 60 characters, and matched against the catalogue ignoring case. Two lifts
-    of one name would split your history, and repair merges by name anyway.
+    of one name would split your history, and repair merges by name anyway. A taken name blocks
+    Add outright (the user's choice), in any pattern; the form no longer adds the existing lift.
   - `pickCounts` (in `list.ts`) feeds the chips: every pattern present, a lift listed twice counted
     once.
 
@@ -516,6 +519,16 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### One name, one category (milestone 10 phone check)
+`bugfix: Block a custom name that's already taken in any category` · 2026-10-02 · branch
+`redesign`
+
+- New exercise with a name the catalogue already has (any letter case, any pattern) now shows
+  where that lift lives and keeps Add grey. Before, Add lit up and put the existing lift on the
+  board, which read as making a second one.
+- `customName` already matched ignoring case across patterns; a test pins the cross-case match
+  (483 tests).
 
 ### Tab bar still, install card on top (milestone 10 phone check)
 `bugfix: Keep the tab bar still in the installed app, and put the install card on top` ·
