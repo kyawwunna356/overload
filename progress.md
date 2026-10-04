@@ -19,12 +19,16 @@ re-reading the whole repo. **Read this file at the start of every session**, the
 - **Milestone 8 — Log sheet as a set table is finished** (Tickets 45–49). The user confirmed the
   iPhone check (Ticket 49) on 2026-09-30, with no fixes needed.
 - **Milestone 9 — Board, picker and summary is finished** (Tickets 50–53, with 57 pulled forward).
-  The user confirmed the iPhone check (Ticket 53) on 2026-09-30: all passed. CLAUDE.md's current
-  milestone is 10.
-- **The redesign is built on the `redesign` branch** (the user's choice), pushed to GitHub but not
-  merged: `main` and the installed app stay on 1.0.0 until the redesign is ready.
-- **Last commit (on `redesign`):** `feature: Delete an exercise for good, with all its sets`.
-  Before it: `bugfix: Block a custom name that's already taken in any category`, `bugfix: Keep the tab bar still in the installed app, and put the
+  The user confirmed the iPhone check (Ticket 53) on 2026-09-30: all passed.
+- **Milestone 10 — History and first run is finished** (Tickets 54–58). The user confirmed the
+  iPhone check on 2026-10-02, after the duplicate-name and delete-exercise fixes.
+- **Released 2.0.0 on 2026-10-04** (Ticket 58, tag `v2.0.0`): `redesign` was fast-forwarded into
+  `main` and pushed, so Vercel's production deploy and the installed app now run the redesign.
+  CLAUDE.md's current milestone line still says 10; the build order has no step 11 yet.
+- **The redesign was built on the `redesign` branch** (the user's choice) and is now merged into
+  `main`. The branch is kept, so Vercel's preview URL for it still works.
+- **Last commit (on `main` and `redesign`):** `chore: Release 2.0.0 — the redesign, with its
+  changelog and README`. Before it: `feature: Delete an exercise for good, with all its sets`, `bugfix: Block a custom name that's already taken in any category`, `bugfix: Keep the tab bar still in the installed app, and put the
   install card on top` (from the milestone 10 phone check), `bugfix: Line up the
   board's title, a lime first-set hint and a short Add`, `feature: Put the neon logo on
   the app's black as the app icon` (outside the ticket list), `feature: Add a first-run welcome, pick-your-lifts setup and
@@ -40,11 +44,12 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   pattern ticks` (Ticket 50), `docs: Close milestone 8 after the iPhone check` (Ticket 49,
   which has no code commit), then Tickets 46, 43, and 41/42/45/47/48 in one commit. Ticket 40's
   docs commit is on `main`.
-- **Next: Ticket 58** (the milestone 10 check on the iPhone and release 2.0.0). `design/logo/` holds
+- **Next:** nothing is planned. Every step of the build order is built; a new step or ticket is
+  the user's call. `design/logo/` holds
   the logo's masters (`overload-logo.svg`, `overload-logo-1024.png`) and `mockups.html`. Ticket 57 (custom exercises) is already done, pulled
   forward into Ticket 51.
-- **The phone sees `redesign` only after a push**, through Vercel's preview for the branch. The
-  installed app follows `main`. With no push, Safari on the same Wi-Fi can open the Mac's preview
+- **The installed app follows `main`**: every push to `main` redeploys production. Vercel also
+  builds a preview of any other pushed branch. With no push, Safari on the same Wi-Fi can open the Mac's preview
   at `http://<Mac's LAN IP>:3000` (plain http, so there's no service worker and no sign-in).
 - **Sign-in is Google only on screen** (`SHOW_EMAIL_CODE = false` in `MeScreen.tsx`). The email
   code still works in code, and the flag brings it back.
@@ -531,6 +536,19 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### Release 2.0.0 — the redesign (Ticket 58)
+`chore: Release 2.0.0 — the redesign, with its changelog and README` · 2026-10-04 · tag `v2.0.0`
+
+- Closes milestone 10 and the redesign (milestones 7–10, Tickets 40–58). The user confirmed the
+  iPhone check on 2026-10-02.
+- `frontend/package.json` is 2.0.0, so Me shows "Overload 2.0.0".
+- `CHANGELOG.md` has the 2.0.0 entry, grouped like 1.0.0's.
+- The README is rewritten for 2.0.0: what it does, tab by tab; the layout, rebuilt from the real
+  files; the roadmap, with steps 7–10. It also fixes stale names (`MeScreen.tsx`'s email flag, the
+  Me tab) and notes how Delete exercise syncs.
+- Released by fast-forwarding `main` to `redesign` (no merge commit) on the user's go; the tag is
+  pushed too.
 
 ### Delete an exercise for good (milestone 10 phone check)
 `feature: Delete an exercise for good, with all its sets` · 2026-10-02 · branch `redesign`

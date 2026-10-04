@@ -225,7 +225,7 @@ stored things are two localStorage UI flags. The milestone ends with release 2.0
 | 55 | History: Exercises and exercise detail — A to Z with search; a records card, every session, Log a set, and editing a past set | done |
 | 56 | First run — a derived welcome, a first-set hint, a Safari install card (7-day dismiss), and a backup prompt after the first finished session | done |
 | 57 | Custom exercise — `+ New` on the edit board page adds your own lift to a pattern | done (built with Ticket 51 — the user pulled it forward) |
-| 58 | On-device check and release 2.0.0 | not started |
+| 58 | On-device check and release 2.0.0 | done |
 
 What each ticket builds from:
 - **54:**

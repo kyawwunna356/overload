@@ -1,6 +1,6 @@
 # Overload
 
-**Version 1.0.0**, the first launch. See the [changelog](CHANGELOG.md).
+**Version 2.0.0**, the redesign. See the [changelog](CHANGELOG.md).
 
 A personal strength log. It does three things:
 
@@ -13,42 +13,56 @@ offline: the app opens with no connection, every read comes from the phone, and 
 ever a background backup. It's built for one person first; friends can sign in too, each with their
 own private log, and nothing is ever shared between them.
 
-> **Status: 1.0.0.** All six steps of the [Roadmap](#roadmap) are built. Steps 1–5 were each checked
-> on a real iPhone. Step 6 (sync and install) has its final on-device run-through still to do.
+> **Status: 2.0.0.** All ten steps of the [Roadmap](#roadmap) are built, and each was checked on a
+> real iPhone.
 
 ## What it does
 
-- **The board** (`/`) shows the exercises **you picked**, grouped by movement pattern, each group in
-  **the order you put them in**. It's never re-sorted by what you did last, and logging never moves a
-  row. Each row shows its last working set and how long ago (`82.5 kg × 5 · 3d`). A group with
-  nothing picked offers the catalogue.
-- **Your list** comes from a catalogue of 76 exercises (`/exercises`, or the `+` on a group). One
-  tap adds or removes an exercise, with no save button. There's a search box, and you drag a row by
-  its handle to reorder. Removing an exercise keeps every set you ever logged.
-- **The log sheet** (`/exercise?id=…`) shows the last working set as large ghost values.
-  - One tap repeats it; otherwise use the ± buttons (2.5 kg, 1 rep) or type.
-  - The rest timer counts up in the corner.
-  - The whole history sits below, grouped by day. Swipe a set left to delete it.
-  - Sets that broke a record carry a `PR` pill.
-  - The header shows the exercise's mastery level.
-- **Records flash.** Logging a set that beats your heaviest weight, your reps at that weight, or your
-  estimated one-rep max drops a "New record" card in for a few seconds.
-- **Sessions happen by themselves.** There's no Start Workout: your first set opens a session and 90
-  idle minutes close it. While one runs, a small grey session timer sits on the board and a
-  coverage strip shows which patterns it has touched (`Squat ✓ Hinge ✓ Push …`).
-- **The session summary** (`/session?id=…`) shows:
-  - what you did, grouped by exercise;
-  - the week's training days;
-  - once the session is over, a recap: total weight lifted, the muscle groups it leaned on (a
-    six-point star), records, and level-ups.
+Three tabs sit at the bottom: **Train**, **History** and **Me**.
 
-  **End session** asks you to resume or finish. Finishing opens a celebratory deck of cards, with
-  confetti.
-- **Backup and restore.** Sign in once with Google (`/account`, or the line at the bottom of the
-  board). From then on your log backs up to Supabase in the background and syncs both ways between
-  your devices. Sign in on a new device and your history comes back.
-- **Installs as an app.** Open it in Safari, then **Share → Add to Home Screen**: full-screen, its own
-  icon, and it opens with no signal.
+- **Train, the board** (`/`), shows the exercises **you picked**, grouped by movement pattern, each
+  group in **the order you put them in**. It's never re-sorted by what you did last, and logging
+  never moves a row.
+  - On top: the date, a lime **Edit**, and this week's training days, Monday to Sunday.
+  - Each row shows its last working set and how long ago, in grey (`82.5 kg × 5 · 4d`). Once you've
+    done it this session it reads `3 sets · 102.5 × 5` in lime, with a tick.
+  - A pattern heading gets a tick once the session has touched it. There's no "5/8 done".
+- **The log sheet** opens full screen over the page you're on (`?log=<id>`), so back closes it and
+  you keep your place.
+  - A set table: today's sets numbered, each beside the same set last time.
+  - Weight and reps are pinned above **Log**, prefilled from last time's set with the same number,
+    so the common case is one tap. ± buttons step 2.5 kg and 1 rep; tapping a number types it.
+  - Tap a set to edit it; swipe it left to delete, with Undo.
+  - The rest timer counts up near the top. Older history folds away under **Earlier**.
+  - Beating your heaviest weight, your reps at that weight or your estimated one-rep max drops a
+    "New record" banner in for a few seconds. It never blocks the next set, and the set keeps a
+    `PR` pill for good.
+- **Sessions happen by themselves.** There's no Start Workout: your first set opens a session and 90
+  idle minutes close it.
+  - While one runs, a bar above the tabs shows the rest time and the session time.
+  - Tapping the bar opens the live session (`?live`): the session clock, the patterns touched, and
+    every exercise so far.
+  - **End session** asks you to resume or finish. Finishing deals a deck of cards: Session done,
+    Rewards and Muscles, with confetti.
+- **The session summary** (`/session?id=…`) shows the duration, sets and kg lifted. Once the session
+  is over it adds Rewards (records and level-ups) and Muscles (the muscle-balance star), then every
+  exercise's sets.
+- **History** (`/history`) has two views:
+  - **Sessions**, newest first, grouped by week, each with its length, counts, patterns and records.
+  - **Exercises**, A to Z with a search. Each lift has a page (`/history/exercise?id=…`) with its
+    records, every set by day (tap to edit, swipe to delete), **Log a set**, and **Delete
+    exercise**, which removes the lift and all its sets for good.
+- **Edit board** (`/exercises`) is the catalogue of 76 exercises. Pattern chips and a search narrow
+  it. One tap adds or removes an exercise, with no save button, and you drag a pick by its handle to
+  reorder. Removing an exercise keeps every set you ever logged. **+ New** adds a lift of your own;
+  a name that already exists, in any category, is refused.
+- **Me** (`/account`) is backup and the app's version. Sign in once with Google, and your log backs
+  up to Supabase in the background and syncs both ways between your devices. Sign in on a new device
+  and your history comes back.
+- **First run:** a welcome screen, then **Pick your lifts**. Before the first set, a hint says to tap
+  an exercise. After a session, a card offers backup.
+- **Installs as an app.** Open it in Safari, then **Share → Add to Home Screen** (a card on the board
+  says so): full-screen, its own icon, and it opens with no signal.
 
 ## How it thinks
 
@@ -67,7 +81,7 @@ The app is built around a few decisions that shape every feature. They're spelle
   database.
 - **Local first.** Every read comes from the on-device database, and every write goes there first
   with a queued copy for the backup. The UI never waits on the network. The one exception is the
-  sign-in screen, used once per device.
+  sign-in on Me, used once per device.
 - **Coverage, not completion.** There's no "5/8 done" and nothing to fail. The week strip shows
   which days you trained, with no target.
 - **History is forward compatible.** Schema changes only ever add. Every stored row is read through
@@ -103,36 +117,48 @@ frontend/                 the app
   app/
     theme.css             every colour, font and radius — the one place to change the look
     manifest.webmanifest  the home-screen install; icon.png, apple-icon.png beside it
-    (app)/                the screens: board /, log sheet /exercise?id=…, summary /session?id=…,
-                          catalogue /exercises, sign-in and backup /account
-  components/             Board, PatternGroup, ExerciseRow, CoverageStrip, LogSheet, SetEntry,
-                          SetHistory, SwipeToDelete, PRFlash, PRPill, LevelBadge, RestTimer,
-                          SessionHeader, SessionSummary, SessionEndBar, SessionRecap, RecapMoment,
-                          MuscleStar, WeekStrip, Confetti, ExercisePicker, AccountForm, BackupLine,
-                          GoogleMark, SyncAgent, BackLink
+    (app)/                the screens, each a static page that opens offline: the board /,
+                          History /history and /history/exercise?id=…, the summary /session?id=…,
+                          edit board /exercises, Me /account, and /exercise?id=… for old links.
+                          layout.tsx is the frame with the tab bar, the live bar and the sheets
+  components/
+    shell                 AppFrame, TabBar, Sheet, SheetHost, BackLink, LogLink, Snackbar, SyncAgent
+    board                 Board, PatternGroup, ExerciseRow, CheckBadge, WeekStrip
+    log sheet             LogSheet, SetTable, SetEntry, SetHistory, SwipeToDelete, RestTimer,
+                          RecordBanner, RecordChange, PRPill, LevelBadge
+    sessions              LiveSession, CoverageStrip, SessionSummary, StatRow, RewardList,
+                          MusclesCard, MuscleStar, RecapMoment, Confetti
+    history               HistoryScreen, HistorySessions, HistoryExercises, ExerciseDetail
+    the rest              ExercisePicker (edit board), MeScreen, GoogleMark
   lib/
     db.ts                 Dexie schema, migrations (v1–v5), readers on every table
-    writes.ts             the write path, each one Dexie + outbox transaction: logSet, deleteSet,
-                          endSession, addToList, removeFromList, moveInList, setListOrder
+    writes.ts             the write path, each one Dexie + outbox transaction: logSet, updateSet,
+                          deleteSet, restoreSet, endSession, addToList, addCustomExercise,
+                          deleteExercise, removeFromList, moveInList, setListOrder
+    sheets.ts             sheets in the URL (?log=, ?live), opened with history.pushState
+    page.ts               the one scroller every page scrolls inside
+    flags.ts              the two first-run dismissals, in localStorage
     outbox.ts             how a queued change is written
     seed.ts               the exercise catalogue (plus dev-only fake training)
     format.ts             display helpers (weights, "days ago", times)
     hooks/                read Dexie live for the UI (useBoard, useLogSheet, useCatalogue,
-                          useActiveSession, useSessionSummary, useSessionRecap, useWeek, useCoverage,
-                          useNow …) and the one way into sync (useAccount, useBackupStatus,
-                          useSyncAgent, useInstall)
+                          useActiveSession, useSessionSummary, useSessionRecap, useHistory,
+                          useExerciseIndex, useFirstRun, useWeek, useCoverage, useNow …) and the one
+                          way into sync (useAccount, useBackupStatus, useSyncAgent, useInstall)
     domain/               pure functions over plain data — no db, sync, react or next
       types.ts rows.ts    row types, and the readers that keep old rows readable
       previous staleness  last working set and days since, for each board row
-      board list          the board from your list; where a new or dragged pick goes
-      entry history       the log sheet's stepping and parsing; history grouped by day
+      board list custom   board rows; where a new or dragged pick goes; naming your own lift
+      entry history       the log sheet's prefill, stepping and parsing; history grouped by day
       sessions timers     the gap rule and session summaries; elapsed time and labels
+      sessionHistory      History's weeks of session cards
+      exerciseHistory     History's exercise index and each lift's records
       coverage week       patterns a session touched; the Mon–Sun strip
       prs mastery         weight / reps / e1RM records; levels from days trained
       recap muscles       what a finished session was worth; the muscle-balance star
-      swipe               the swipe-to-delete gesture's decisions
+      firstRun swipe      the welcome, hint and prompts; the swipe-to-delete gesture
       replica repair      local ↔ remote rows, push batches, pull decisions; merging duplicates
-      signin              email and code helpers, the phone's owner, the backup line
+      signin              email and code helpers, the phone's owner, the backup status
       fixtures/           frozen samples of stored data (history-v1, history-v3), never edited
     sync/                 the only code that talks to Supabase
       sync.ts             syncNow: owner guard → adopt → push → pull → repair, one at a time
@@ -204,7 +230,7 @@ pnpm dev          # http://localhost:3000
 | `pnpm test` | Vitest |
 
 The repo uses **pnpm only**; don't commit any other lockfile. The version lives in
-`frontend/package.json` and shows at the bottom of the Back up screen.
+`frontend/package.json` and shows at the bottom of the Me tab.
 
 ### Seed data
 
@@ -236,7 +262,7 @@ The app runs fully without a backend; Supabase is the durable copy. To set one u
    - Enable the Google provider in Supabase with the client ID and secret.
    - Under **URL Configuration**, add every address the app runs on to **Redirect URLs**, with
      `/**` on the end, or Google can't return to it.
-5. **Email codes** are built but hidden (`SHOW_EMAIL_CODE` in `components/AccountForm.tsx`). To use
+5. **Email codes** are built but hidden (`SHOW_EMAIL_CODE` in `components/MeScreen.tsx`). To use
    them, put `{{ .Token }}` in the *Magic Link* and *Confirm signup* email templates and set up
    custom SMTP (for example Resend with your own domain), since Supabase's own sender only reaches
    the project's team.
@@ -252,7 +278,9 @@ The app runs fully without a backend; Supabase is the durable copy. To set one u
   your history. If two devices ever end up with duplicate copies, a repair step merges them.
 - **One owner per phone:** the first account to back up from a phone owns its data, so a friend
   signing in on it can't receive your history.
-- **Deletes don't travel:** deleting a set on one device doesn't delete it on another.
+- **Deletes don't travel:** deleting a set on one device doesn't delete it on another. **Delete
+  exercise** archives the lift, and the archive does travel, so it disappears everywhere; but sets
+  another device already pulled stay on that device.
 
 Migrations are **additive only**: a later one adds tables or nullable or defaulted columns, and never
 renames, drops or retypes a column.
@@ -315,9 +343,19 @@ on a real device.
    follows.
 5. **Rewards** ✅: the PR flash and pills, the week strip, mastery levels, the session recap, the
    finish celebration, and the muscle-balance star.
-6. **Sync and install** ✅ *(built; final iPhone run-through to do)*: Supabase with Google sign-in,
-   backup and restore across devices, a static export on Vercel, and an offline service worker for
-   the home-screen app.
+6. **Sync and install** ✅: Supabase with Google sign-in, backup and restore across devices, a static
+   export on Vercel, and an offline service worker for the home-screen app.
+
+The redesign (version 2.0.0) followed, in four more steps:
+
+7. **Shell and live session** ✅: the tab bar (Train, History, Me), sheets over any page, a live
+   session bar after the first set, and a live screen that holds End.
+8. **Log sheet as a set table** ✅: last time's set N beside today's, per-set prefill, edit and undo,
+   and a record banner that never blocks.
+9. **Board, picker and summary** ✅: two row states, pattern ticks, the week strip on the board, an
+   edit-board page with chips, and a read-only summary with the rewards open.
+10. **History and first run** ✅: sessions and exercises, a page per lift, a welcome, the install
+    card, a backup prompt, and custom exercises.
 
 ## Contributing
 
