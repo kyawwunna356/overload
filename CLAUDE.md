@@ -94,11 +94,13 @@ Do not build these, do not suggest them, do not leave hooks for them:
 
 | Layer | Choice |
 |---|---|
-| Framework | Next.js (App Router), client-heavy — no SSR on the logging path |
+| Framework | Next.js 16 (App Router) as a static export, React 19 — no server at all |
 | Language | TypeScript, strict |
 | Local store | Dexie over IndexedDB, `useLiveQuery` for reactivity |
 | Remote | Supabase Postgres + RLS. No custom backend server. |
-| Sync | Hand-rolled outbox, last-write-wins on `updated_at` |
+| Sync | Hand-rolled outbox, last-write-wins on `updated_at`, pull by server-set `synced_at` |
+| Offline | Hand-rolled service worker that precaches the whole export |
+| Hosting | Vercel; every push to `main` deploys production (the installed app) |
 | IDs | Client-generated UUIDv7 (time-sortable, no reconciliation) |
 | Styling | Tailwind |
 | Tests | Vitest, domain layer only |
@@ -114,13 +116,14 @@ Domain (lib/domain/)            pure functions, no I/O, fully tested
   ↓
 Local store (lib/db.ts)         Dexie — the single read path for the UI
   ↓
-Sync (lib/sync/)                flush outbox on `online` + on foreground
+Sync (lib/sync/)                push the outbox, pull, repair — on open, `online`, foreground
   ↓
 Supabase Postgres               durable archive only
 ```
 
 ```
 app/
+  (app)/layout.tsx               the frame: tab bar, live session bar, sheets (?log=, ?live)
   (app)/page.tsx                 board (home) — the Train tab
   (app)/exercise/page.tsx        log sheet (?id=… — a static page, so it opens offline;
                                  kept for old links, the sheet is ?log=… over any page)
@@ -129,18 +132,28 @@ app/
   (app)/history/page.tsx         the History tab: sessions + exercises
   (app)/history/exercise/page.tsx  exercise detail (?id=…, static like the others)
   (app)/account/page.tsx         the Me tab: backup, sign-in, install, version
+  theme.css                      every colour, font and radius (semantic tokens only)
 lib/
-  db.ts                          Dexie schema + migrations
+  db.ts                          Dexie schema + migrations (v1–v5), a reader on every table
+  writes.ts                      every write: Dexie + its outbox row in one transaction
+  outbox.ts  sheets.ts  page.ts  flags.ts  seed.ts  format.ts
   domain/                        PURE. no db, no sync, no react.
-    sessions.ts  timers.ts  prs.ts  coverage.ts  staleness.ts
-  sync/
-    outbox.ts  push.ts  pull.ts  supabase.ts
-  hooks/
-    useElapsed.ts  useBoard.ts  useActiveSession.ts  useWakeLock.ts
+    previous.ts  sessions.ts  timers.ts  prs.ts  coverage.ts  staleness.ts  week.ts
+    mastery.ts  board.ts  list.ts  custom.ts  recap.ts  muscles.ts  history.ts
+    sessionHistory.ts  exerciseHistory.ts  firstRun.ts  rows.ts  replica.ts  repair.ts …
+    fixtures/                    frozen history-vN.json samples, never edited
+  sync/                          the only code that imports @supabase
+    sync.ts  push.ts  pull.ts  adopt.ts  repair.ts  auth.ts  owner.ts  triggers.ts  supabase.ts
+  hooks/                         the UI's only way to read Dexie or reach sync
+    useBoard.ts  useLogSheet.ts  useActiveSession.ts  useSessionSummary.ts  useHistory.ts
+    useCatalogue.ts  useNow.ts  useAccount.ts  useSyncAgent.ts …
 components/
-  PatternGroup.tsx  ExerciseRow.tsx  SetEntry.tsx  RestTimer.tsx
-  TabBar.tsx  Sheet.tsx  SheetHost.tsx  LiveBar.tsx  LiveSession.tsx
-  SetTable.tsx  RecordBanner.tsx  Snackbar.tsx
+  AppFrame.tsx  TabBar.tsx  Sheet.tsx  SheetHost.tsx  Board.tsx  PatternGroup.tsx
+  ExerciseRow.tsx  LogSheet.tsx  SetTable.tsx  SetEntry.tsx  RestTimer.tsx  RecordBanner.tsx
+  LiveSession.tsx  SessionSummary.tsx  HistoryScreen.tsx  ExerciseDetail.tsx
+  ExercisePicker.tsx  MeScreen.tsx  Snackbar.tsx …
+scripts/
+  build-sw.mjs                   writes out/sw.js after next build
 ```
 
 ---
@@ -152,7 +165,7 @@ exercises       (id, user_id, name, pattern, default_rest_sec, archived, updated
                 -- pattern: squat | hinge | push | pull | accessory | core
 
 templates       (id, user_id, name, is_default, updated_at)
-template_items  (id, template_id, exercise_id, pattern, sort_order)
+template_items  (id, user_id, template_id, exercise_id, pattern, sort_order, updated_at)
                 -- YOUR list: which exercises the board shows, and sort_order is the
                 -- order you put them in. set_logs NEVER references these
 
@@ -165,7 +178,12 @@ sessions        (id, user_id, started_at, ended_at, template_id?, updated_at)
                 -- set_logs by the gap rule. template_id is a label only
 
 outbox          (id, table, op, payload, created_at)   -- local only, never synced
+sync_state      (key, at, id)                          -- local only: where each pull stopped
 ```
+
+In Supabase every synced table also has a server-set `synced_at` (the pull cursor). A deleted
+exercise is **archived**, never deleted, because an archive syncs and a delete doesn't; its sets
+are deleted.
 
 Critical index — the query the entire app is built around:
 
@@ -187,11 +205,16 @@ previousSession(exerciseId, logs, before, gapMinutes)
                                    // from its set N
 elapsed(sinceTimestamp, now)       // seconds; powers both timers
 assignSession(logs, gapMinutes)    // gap rule → session_id per log
-staleness(exerciseId, logs, now)   // days since last performed → board sort
+staleness(exerciseId, logs, now)   // days since last performed → the row's `· 4d`
 coverage(sessionLogs, exercises)   // { squat: true, hinge: false, ... }
 detectPR(set, history)             // weight | reps | e1RM PR → reward moment
 weekOf(anchor, setTimes, now)      // Mon–Sun: which days you trained → week strip
 masteryLevel(exerciseId, logs)     // days you did it → level (1, 3, 6, 10 … sessions)
+deriveSessions(logs, gapMinutes, endMarkers)
+                                   // the gap rule + end markers → the sessions themselves
+rowState(exerciseId, sessionSets, history, now)
+                                   // a board row: last time, or today's sets and best
+customName(input, catalogue)       // a new lift's name: tidy, and refused if already taken
 ```
 
 All take data in, return data out. No fetching, no dates from `new Date()` inside —
@@ -213,7 +236,7 @@ touched. A group you haven't picked for is hidden; an empty board shows one card
 pick. Session time lives in the live session bar, not the board.
 
 **Log sheet.** Previous set shown as large ghost values. One tap to repeat identical.
-Swipe or ± buttons for weight/reps. **Target: logging a set requires one tap and no
+± buttons for weight/reps (2.5 kg, 1 rep); tapping a number types it. **Target: logging a set requires one tap and no
 keyboard in the common case.** Rest timer prominent; session timer quiet. Never two
 prominent counters on screen at once. It is a full-screen sheet over the page you came from, so
 closing it (a swipe back from the edge, or back) keeps your place. It has no grab strip and no swipe or slide; weight and
@@ -277,9 +300,10 @@ end-to-end on a real device.
 7. **Shell and live session**: tab bar (Train, History, Me), sheets over any page, a live
    session bar after the first set and a live screen that holds End
 8. **Log sheet as a set table**: last time's set N beside today's, per-set prefill, edit and
-   undo, Next up, a record banner that never blocks
+   undo, a record banner that never blocks (Next up was built, then removed)
 9. **Board, picker and summary**: two row states, pattern ticks, the week strip on the board, an
-   edit-board page with chips and Done, a read-only summary with the rewards open
+   edit-board page with chips (no Done: it saves as you go), a read-only summary with the
+   rewards open
 10. **History and first run**: sessions and exercises, exercise detail, a welcome, the install
     card, a backup prompt, custom exercises
 
@@ -308,7 +332,7 @@ committing, so it lands in the same commit (the commit skill has the step).
   `startWorkout()`. This app doesn't. See Hard Rule 2.
 - **Letting the template constrain the log.** See Hard Rule 3.
 - **Putting Supabase calls in components.** See Hard Rule 5.
-- **Assuming IndexedDB is permanent.** Safari evicts script-written storage. Once step 5
-  exists, Supabase is the durable copy; until then, accept the risk knowingly.
+- **Assuming IndexedDB is permanent.** Safari evicts script-written storage. Supabase is the
+  durable copy, but only once you sign in on Me; a device that never signed in has none.
 - **A flat list of 20 exercises.** Defeats the entire point. Group by pattern, collapse to
   likely picks.

@@ -28,8 +28,8 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   any new work starts.
 - **The redesign was built on the `redesign` branch** (the user's choice) and is now merged into
   `main`. The branch is kept, so Vercel's preview URL for it still works.
-- **Last commit (on `main`):** `docs: Mark every build step done after the 2.0.0 release`.
-  Before it: `chore: Release 2.0.0 — the redesign, with its changelog and README` (tag `v2.0.0`,
+- **Last commit (on `main`):** `docs: Bring CLAUDE.md up to date with 2.0.0`. Before it:
+  `docs: Mark every build step done after the 2.0.0 release`, `chore: Release 2.0.0 — the redesign, with its changelog and README` (tag `v2.0.0`,
   also on `redesign`), `feature: Delete an exercise for good, with all its sets`, `bugfix: Block a custom name that's already taken in any category`, `bugfix: Keep the tab bar still in the installed app, and put the
   install card on top` (from the milestone 10 phone check), `bugfix: Line up the
   board's title, a lime first-set hint and a short Add`, `feature: Put the neon logo on
@@ -538,6 +538,20 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### CLAUDE.md matches 2.0.0
+`docs: Bring CLAUDE.md up to date with 2.0.0` · 2026-10-04 · branch `main`
+
+- The file tree lists what exists: the frame, `writes.ts`, `sheets.ts`, every sync file, the real
+  hooks and components. Gone: `LiveBar.tsx`, `useElapsed.ts`, `useWakeLock.ts`, `sync/outbox.ts`.
+- Stack: Next.js 16 static export, the service worker, and Vercel deploying `main`.
+- Data model: `template_items` gains `user_id` / `updated_at`; `sync_state`, `synced_at`, and how
+  Delete exercise archives the lift.
+- Domain contract: `staleness` feeds the row's age (the board isn't sorted); adds
+  `deriveSessions`, `rowState` and `customName` with their real signatures.
+- Log sheet: ± buttons and tap to type (it said "swipe", which it never had). Build order notes
+  that Next up was removed and edit board has no Done. The IndexedDB trap: backup exists once you
+  sign in. The README already matched 2.0.0, so it's unchanged.
 
 ### CLAUDE.md after the release
 `docs: Mark every build step done after the 2.0.0 release` · 2026-10-04 · branch `main`
