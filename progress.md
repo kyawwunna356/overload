@@ -24,11 +24,13 @@ re-reading the whole repo. **Read this file at the start of every session**, the
   iPhone check on 2026-10-02, after the duplicate-name and delete-exercise fixes.
 - **Released 2.0.0 on 2026-10-04** (Ticket 58, tag `v2.0.0`): `redesign` was fast-forwarded into
   `main` and pushed, so Vercel's production deploy and the installed app now run the redesign.
-  CLAUDE.md's current milestone line still says 10; the build order has no step 11 yet.
+  CLAUDE.md's current milestone now reads "none": a new step is added to the build order before
+  any new work starts.
 - **The redesign was built on the `redesign` branch** (the user's choice) and is now merged into
   `main`. The branch is kept, so Vercel's preview URL for it still works.
-- **Last commit (on `main` and `redesign`):** `chore: Release 2.0.0 — the redesign, with its
-  changelog and README`. Before it: `feature: Delete an exercise for good, with all its sets`, `bugfix: Block a custom name that's already taken in any category`, `bugfix: Keep the tab bar still in the installed app, and put the
+- **Last commit (on `main`):** `docs: Mark every build step done after the 2.0.0 release`.
+  Before it: `chore: Release 2.0.0 — the redesign, with its changelog and README` (tag `v2.0.0`,
+  also on `redesign`), `feature: Delete an exercise for good, with all its sets`, `bugfix: Block a custom name that's already taken in any category`, `bugfix: Keep the tab bar still in the installed app, and put the
   install card on top` (from the milestone 10 phone check), `bugfix: Line up the
   board's title, a lime first-set hint and a short Add`, `feature: Put the neon logo on
   the app's black as the app icon` (outside the ticket list), `feature: Add a first-run welcome, pick-your-lifts setup and
@@ -536,6 +538,13 @@ These aren't obvious from the code and shaped later work.
 
 Newest first. One entry per commit, matching `git log`; hashes are left out because an
 entry is written in the same commit it describes.
+
+### CLAUDE.md after the release
+`docs: Mark every build step done after the 2.0.0 release` · 2026-10-04 · branch `main`
+
+- CLAUDE.md's "Current milestone: 10" now reads "none": all ten steps are built and released, and
+  a new step goes in the build order before new work starts.
+- Committed on `main` directly (the user's ask); `redesign` stays at the release commit.
 
 ### Release 2.0.0 — the redesign (Ticket 58)
 `chore: Release 2.0.0 — the redesign, with its changelog and README` · 2026-10-04 · tag `v2.0.0`
